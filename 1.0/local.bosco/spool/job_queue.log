@@ -1,0 +1,108 @@
+107 1 CreationTimestamp 1407250258
+101 0.0 Job Machine
+103 0.0 NextClusterNum 1
+105 
+103 0.0 NextClusterNum 2
+101 01.-1 Job Machine
+101 1.0 Job Machine
+103 1.0 GlobalJobId "midway-login1.rcc.local#1.0#1407250332"
+103 01.-1 ClusterId 1
+103 01.-1 BufferSize 524288
+103 01.-1 NiceUser false
+103 01.-1 CoreSize 0
+103 01.-1 CumulativeSlotTime 0
+103 01.-1 OnExitHold false
+103 01.-1 RequestCpus 1
+103 01.-1 GridResource "batch condor antonyu@login01.osgconnect.net"
+103 01.-1 BufferBlockSize 32768
+103 01.-1 Err "/home/antonyu/bosco/local.bosco/bosco-test/boscotest.CLgok/test.stderr"
+103 01.-1 ImageSize_RAW 24
+103 01.-1 ImageSize 25
+103 01.-1 CurrentTime time()
+103 01.-1 WantCheckpoint false
+103 01.-1 CommittedTime 0
+103 01.-1 WhenToTransferOutput "ON_EXIT"
+103 01.-1 TargetType "Machine"
+103 01.-1 Cmd "/bin/echo"
+103 01.-1 JobUniverse 9
+103 01.-1 ExitBySignal false
+103 01.-1 TransferIn false
+103 01.-1 Iwd "/home/antonyu"
+103 01.-1 NumRestarts 0
+103 01.-1 CommittedSuspensionTime 0
+103 01.-1 User "antonyu@rcc.local"
+103 01.-1 Owner "antonyu"
+103 01.-1 grid_resource batch
+103 01.-1 NumSystemHolds 0
+103 01.-1 CumulativeSuspensionTime 0
+103 01.-1 Environment ""
+103 01.-1 Requirements true
+103 01.-1 RequestDisk DiskUsage
+103 01.-1 MinHosts 1
+103 01.-1 JobNotification 0
+103 01.-1 NumCkpts_RAW 0
+103 01.-1 NumCkpts 0
+103 01.-1 LastSuspensionTime 0
+103 01.-1 NumJobStarts 0
+103 01.-1 WantRemoteSyscalls false
+103 01.-1 JobPrio 0
+103 01.-1 RootDir "/"
+103 01.-1 CurrentHosts 0
+103 01.-1 StreamOut false
+103 01.-1 WantRemoteIO true
+103 01.-1 OnExitRemove true
+103 01.-1 DiskUsage_RAW 24
+103 01.-1 DiskUsage 25
+103 01.-1 In "/dev/null"
+103 01.-1 PeriodicRemove false
+103 01.-1 ExecutableSize_RAW 24
+103 01.-1 ExecutableSize 25
+103 01.-1 RemoteUserCpu 0.0
+103 01.-1 LocalUserCpu 0.0
+103 01.-1 RemoteSysCpu 0.0
+103 01.-1 LocalSysCpu 0.0
+103 01.-1 CompletionDate 0
+103 01.-1 RemoteWallClockTime 0.0
+103 1.0 bosco_test_id "bosco-test.4131"
+103 01.-1 Rank 0.0
+103 01.-1 LeaveJobInQueue false
+103 01.-1 KillSig "SIGTERM"
+103 01.-1 CondorVersion "$CondorVersion: 8.2.2 Jun 30 2014 BuildID: 256485 PRE-RELEASE-UWCS $"
+103 01.-1 MyType "Job"
+103 01.-1 StreamErr false
+103 01.-1 PeriodicHold false
+103 01.-1 FileSystemDomain "rcc.local"
+103 01.-1 WantClaiming false
+103 01.-1 Out "/home/antonyu/bosco/local.bosco/bosco-test/boscotest.CLgok/test.stdout"
+103 01.-1 UserLog "/home/antonyu/bosco/local.bosco/bosco-test/boscotest.CLgok/logfile"
+103 1.0 LastJobStatus 0
+103 1.0 JobStatus 1
+103 01.-1 PeriodicRelease false
+103 01.-1 Args "Hello"
+103 01.-1 RequestMemory ifthenelse(MemoryUsage =!= undefined,MemoryUsage,( ImageSize + 1023 ) / 1024)
+103 01.-1 MaxHosts 1
+103 01.-1 TotalSuspensions 0
+103 01.-1 CommittedSlotTime 0
+103 01.-1 TransferInputSizeMB 0
+103 01.-1 CondorPlatform "$CondorPlatform: x86_64_RedHat6 $"
+103 01.-1 ShouldTransferFiles "IF_NEEDED"
+103 01.-1 ExitStatus 0
+103 01.-1 QDate 1407250332
+103 01.-1 EnteredCurrentStatus 1407250332
+103 01.-1 TransferExecutable false
+103 1.0 ProcId 0
+106 
+105 
+103 1.0 Managed "External"
+106 
+105 
+103 1.0 EnteredCurrentStatus 1407250342
+103 1.0 HoldReason "Failed to start transfer GAHP: Agent pid 25708\n"
+103 1.0 HoldReasonCode 0
+103 1.0 HoldReasonSubCode 0
+103 1.0 LastJobStatus 1
+103 1.0 JobStatus 5
+103 1.0 Managed "Schedd"
+103 1.0 NumSystemHolds 1
+103 1.0 ReleaseReason undefined
+106 

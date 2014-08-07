@@ -1,0 +1,11 @@
+universe = grid
+grid_resource = batch condor antonyu@login01.osgconnect.net
+output = /home/antonyu/bosco/local.bosco/bosco-test/boscotest.CLgok/test.stdout
+error = /home/antonyu/bosco/local.bosco/bosco-test/boscotest.CLgok/test.stderr
+transfer_executable=false
+executable = /bin/echo
+arguments = Hello
+log = /home/antonyu/bosco/local.bosco/bosco-test/boscotest.CLgok/logfile
+notification = NEVER
++bosco_test_id = "bosco-test.4131"
+queue

@@ -1,0 +1,6 @@
+000 (001.000.000) 08/05 09:52:12 Job submitted from host: <127.0.0.1:11000?sock=24928_9728_3>
+...
+012 (001.000.000) 08/05 09:52:22 Job was held.
+	Failed to start transfer GAHP: Agent pid 25708\n
+	Code 0 Subcode 0
+...

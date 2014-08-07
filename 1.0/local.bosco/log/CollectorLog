@@ -1,0 +1,187 @@
+08/05/14 09:50:57 Can't open directory "/home/condor/config" as PRIV_UNKNOWN, errno: 13 (Permission denied)
+08/05/14 09:50:57 Cannot open /home/condor/config: Permission denied
+08/05/14 09:50:57 Setting maximum file descriptors to 10240.
+08/05/14 09:50:57 ******************************************************
+08/05/14 09:50:57 ** condor_collector (CONDOR_COLLECTOR) STARTING UP
+08/05/14 09:50:57 ** /home/antonyu/bosco/sbin/condor_collector
+08/05/14 09:50:57 ** SubsystemInfo: name=COLLECTOR type=COLLECTOR(3) class=DAEMON(1)
+08/05/14 09:50:57 ** Configuration: subsystem:COLLECTOR local:<NONE> class:DAEMON
+08/05/14 09:50:57 ** $CondorVersion: 8.2.2 Jun 30 2014 BuildID: 256485 PRE-RELEASE-UWCS $
+08/05/14 09:50:57 ** $CondorPlatform: x86_64_RedHat6 $
+08/05/14 09:50:57 ** PID = 24932
+08/05/14 09:50:57 ** Log last touched time unavailable (No such file or directory)
+08/05/14 09:50:57 ******************************************************
+08/05/14 09:50:57 Using config source: /home/antonyu/bosco/etc/condor_config
+08/05/14 09:50:57 Using local config sources: 
+08/05/14 09:50:57    /home/antonyu/bosco/local.bosco/condor_config.local
+08/05/14 09:50:57    /home/antonyu/bosco/local.bosco/config/condor_config.factory
+08/05/14 09:50:57 config Macros = 87, Sorted = 87, StringBytes = 3039, TablesBytes = 3188
+08/05/14 09:50:57 CLASSAD_CACHING is ENABLED
+08/05/14 09:50:57 Daemon Log is logging: D_ALWAYS D_ERROR
+08/05/14 09:50:57 SharedPortEndpoint: waiting for connections to named socket collector
+08/05/14 09:50:57 DaemonCore: command socket at <127.0.0.1:11000?sock=collector>
+08/05/14 09:50:57 DaemonCore: private command socket at <127.0.0.1:11000?sock=collector>
+08/05/14 09:50:57 In ViewServer::Init()
+08/05/14 09:50:57 In CollectorDaemon::Init()
+08/05/14 09:50:57 In ViewServer::Config()
+08/05/14 09:50:57 In CollectorDaemon::Config()
+08/05/14 09:50:57 ABSENT_REQUIREMENTS = None
+08/05/14 09:50:57 OfflineCollectorPlugin::configure: no persistent store was defined for off-line ads.
+08/05/14 09:50:57 enable: Creating stats hash table
+08/05/14 09:50:57 Enabling CCB Server.
+08/05/14 09:50:58 WARNING: UDP does not support connecting to a shared port! (requested address is collector midway-login1.rcc.local:11000?sock=collector with SharedPortID=collector)
+08/05/14 09:50:58 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:50:58 Number of Active Workers 0
+08/05/14 09:50:58 (Sending 0 ads in response to query)
+08/05/14 09:50:58 Query info: matched=0; skipped=0; query_time=0.000680; send_time=0.000093; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:39524>; projection={}
+08/05/14 09:50:58 Number of Active Workers 1
+08/05/14 09:50:58 (Sending 0 ads in response to query)
+08/05/14 09:50:58 Query info: matched=0; skipped=0; query_time=0.000583; send_time=0.000064; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:45612>; projection={}
+08/05/14 09:50:58 NegotiatorAd  : Inserting ** "< midway-login1.rcc.local >"
+08/05/14 09:50:58 stats: Inserting new hashent for 'Negotiator':'midway-login1.rcc.local':'127.0.0.1'
+08/05/14 09:51:01 MasterAd     : Inserting ** "< midway-login1.rcc.local >"
+08/05/14 09:51:01 stats: Inserting new hashent for 'Master':'midway-login1.rcc.local':'127.0.0.1'
+08/05/14 09:51:04 ScheddAd     : Inserting ** "< midway-login1.rcc.local , 127.0.0.1 >"
+08/05/14 09:51:04 stats: Inserting new hashent for 'Schedd':'midway-login1.rcc.local':'127.0.0.1'
+08/05/14 09:51:58 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:51:58 Number of Active Workers 0
+08/05/14 09:51:58 (Sending 0 ads in response to query)
+08/05/14 09:51:58 Query info: matched=0; skipped=0; query_time=0.000679; send_time=0.000094; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:36490>; projection={}
+08/05/14 09:51:58 Number of Active Workers 1
+08/05/14 09:51:58 (Sending 1 ads in response to query)
+08/05/14 09:51:58 Query info: matched=1; skipped=2; query_time=0.000843; send_time=0.000512; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:63510>; projection={}
+08/05/14 09:52:11 DaemonCore: Can't receive command request from 10.50.180.71 (perhaps a timeout?)
+08/05/14 09:52:11 Got SIGHUP.  Re-reading config files.
+08/05/14 09:52:11 Can't open directory "/home/condor/config" as PRIV_CONDOR, errno: 13 (Permission denied)
+08/05/14 09:52:11 Cannot open /home/condor/config: Permission denied
+08/05/14 09:52:11 In ViewServer::Config()
+08/05/14 09:52:11 In CollectorDaemon::Config()
+08/05/14 09:52:11 ABSENT_REQUIREMENTS = None
+08/05/14 09:52:11 OfflineCollectorPlugin::configure: no persistent store was defined for off-line ads.
+08/05/14 09:52:11 DaemonCore: Can't receive command request from 10.50.180.71 (perhaps a timeout?)
+08/05/14 09:52:11 DaemonCore: Can't receive command request from 10.50.180.71 (perhaps a timeout?)
+08/05/14 09:52:11 NegotiatorAd  : Inserting ** "< midway-login1.rcc.local >"
+08/05/14 09:52:12 WARNING: UDP does not support connecting to a shared port! (requested address is collector midway-login1.rcc.local:11000?sock=collector with SharedPortID=collector)
+08/05/14 09:52:17 SubmittorAd  : Inserting ** "< antonyu@rcc.localmidway-login1.rcc.local , 127.0.0.1 >"
+08/05/14 09:52:17 stats: Inserting new hashent for 'Submittor':'antonyu@rcc.local':'127.0.0.1'
+08/05/14 09:52:17 Number of Active Workers 0
+08/05/14 09:52:17 (Sending 1 ads in response to query)
+08/05/14 09:52:17 Query info: matched=1; skipped=0; query_time=0.000925; send_time=0.000452; type=Negotiator; requirements={true}; peer=<10.50.180.71:51786>; projection={}
+08/05/14 09:52:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:52:18 Number of Active Workers 0
+08/05/14 09:52:18 (Sending 0 ads in response to query)
+08/05/14 09:52:18 Query info: matched=0; skipped=0; query_time=0.000722; send_time=0.000086; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:54465>; projection={}
+08/05/14 09:52:18 Number of Active Workers 1
+08/05/14 09:52:18 (Sending 2 ads in response to query)
+08/05/14 09:52:18 Query info: matched=2; skipped=2; query_time=0.001074; send_time=0.000618; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:55877>; projection={}
+08/05/14 09:52:22 GridAd  : Inserting ** "< batch CONDOR antonyu@login01.osgconnect.netantonyumidway-login1.rcc.local >"
+08/05/14 09:52:22 stats: Inserting new hashent for 'Grid':'batch antonyu@login01.osgconnect.net':'127.0.0.1'
+08/05/14 09:52:25 DaemonCore: Can't receive command request from 10.50.180.71 (perhaps a timeout?)
+08/05/14 09:53:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:53:18 Number of Active Workers 0
+08/05/14 09:53:18 (Sending 0 ads in response to query)
+08/05/14 09:53:18 Query info: matched=0; skipped=0; query_time=0.000865; send_time=0.000144; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:34032>; projection={}
+08/05/14 09:53:18 Number of Active Workers 1
+08/05/14 09:53:18 (Sending 2 ads in response to query)
+08/05/14 09:53:18 Query info: matched=2; skipped=3; query_time=0.000892; send_time=0.000576; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:45097>; projection={}
+08/05/14 09:54:19 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:54:19 Number of Active Workers 0
+08/05/14 09:54:19 (Sending 0 ads in response to query)
+08/05/14 09:54:19 Query info: matched=0; skipped=0; query_time=0.000717; send_time=0.000097; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:46343>; projection={}
+08/05/14 09:54:19 Number of Active Workers 1
+08/05/14 09:54:19 (Sending 2 ads in response to query)
+08/05/14 09:54:19 Query info: matched=2; skipped=3; query_time=0.000915; send_time=0.000609; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:39164>; projection={}
+08/05/14 09:55:19 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:55:19 Number of Active Workers 0
+08/05/14 09:55:19 (Sending 0 ads in response to query)
+08/05/14 09:55:19 Query info: matched=0; skipped=0; query_time=0.000831; send_time=0.000114; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:47041>; projection={}
+08/05/14 09:55:19 Number of Active Workers 1
+08/05/14 09:55:19 (Sending 2 ads in response to query)
+08/05/14 09:55:19 Query info: matched=2; skipped=3; query_time=0.000849; send_time=0.000492; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:54644>; projection={}
+08/05/14 09:56:19 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:56:19 Number of Active Workers 0
+08/05/14 09:56:19 (Sending 0 ads in response to query)
+08/05/14 09:56:19 Query info: matched=0; skipped=0; query_time=0.000754; send_time=0.000119; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:59736>; projection={}
+08/05/14 09:56:19 Number of Active Workers 1
+08/05/14 09:56:19 (Sending 2 ads in response to query)
+08/05/14 09:56:19 Query info: matched=2; skipped=3; query_time=0.000958; send_time=0.000600; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:54877>; projection={}
+08/05/14 09:57:11 NegotiatorAd  : Inserting ** "< midway-login1.rcc.local >"
+08/05/14 09:57:18 Number of Active Workers 0
+08/05/14 09:57:18 (Sending 1 ads in response to query)
+08/05/14 09:57:18 Query info: matched=1; skipped=0; query_time=0.000916; send_time=0.000510; type=Negotiator; requirements={true}; peer=<10.50.180.71:43920>; projection={}
+08/05/14 09:57:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:57:18 Number of Active Workers 0
+08/05/14 09:57:18 (Sending 0 ads in response to query)
+08/05/14 09:57:18 Query info: matched=0; skipped=0; query_time=0.000581; send_time=0.000080; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:45627>; projection={}
+08/05/14 09:57:18 Number of Active Workers 1
+08/05/14 09:57:18 (Sending 2 ads in response to query)
+08/05/14 09:57:18 Query info: matched=2; skipped=3; query_time=0.000821; send_time=0.000537; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:46962>; projection={}
+08/05/14 09:58:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:58:18 Number of Active Workers 0
+08/05/14 09:58:18 (Sending 0 ads in response to query)
+08/05/14 09:58:18 Query info: matched=0; skipped=0; query_time=0.000722; send_time=0.000093; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:59386>; projection={}
+08/05/14 09:58:18 Number of Active Workers 1
+08/05/14 09:58:18 (Sending 2 ads in response to query)
+08/05/14 09:58:18 Query info: matched=2; skipped=3; query_time=0.000924; send_time=0.000629; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:32908>; projection={}
+08/05/14 09:59:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 09:59:18 Number of Active Workers 0
+08/05/14 09:59:18 (Sending 0 ads in response to query)
+08/05/14 09:59:18 Query info: matched=0; skipped=0; query_time=0.000720; send_time=0.000091; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:32894>; projection={}
+08/05/14 09:59:18 Number of Active Workers 1
+08/05/14 09:59:18 (Sending 2 ads in response to query)
+08/05/14 09:59:18 Query info: matched=2; skipped=3; query_time=0.000867; send_time=0.000616; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:35144>; projection={}
+08/05/14 10:00:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 10:00:18 Number of Active Workers 0
+08/05/14 10:00:18 (Sending 0 ads in response to query)
+08/05/14 10:00:18 Query info: matched=0; skipped=0; query_time=0.000679; send_time=0.000109; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:56204>; projection={}
+08/05/14 10:00:18 Number of Active Workers 1
+08/05/14 10:00:18 (Sending 2 ads in response to query)
+08/05/14 10:00:18 Query info: matched=2; skipped=3; query_time=0.000947; send_time=0.000586; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:53618>; projection={}
+08/05/14 10:01:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 10:01:18 Number of Active Workers 0
+08/05/14 10:01:18 (Sending 0 ads in response to query)
+08/05/14 10:01:18 Query info: matched=0; skipped=0; query_time=0.000725; send_time=0.000115; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:49636>; projection={}
+08/05/14 10:01:18 Number of Active Workers 1
+08/05/14 10:01:18 (Sending 2 ads in response to query)
+08/05/14 10:01:18 Query info: matched=2; skipped=3; query_time=0.000976; send_time=0.000580; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:52236>; projection={}
+08/05/14 10:02:11 NegotiatorAd  : Inserting ** "< midway-login1.rcc.local >"
+08/05/14 10:02:18 Got QUERY_STARTD_PVT_ADS
+08/05/14 10:02:18 Number of Active Workers 0
+08/05/14 10:02:18 (Sending 0 ads in response to query)
+08/05/14 10:02:18 Query info: matched=0; skipped=0; query_time=0.000704; send_time=0.000127; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:36877>; projection={}
+08/05/14 10:02:18 Number of Active Workers 1
+08/05/14 10:02:18 (Sending 2 ads in response to query)
+08/05/14 10:02:18 Query info: matched=2; skipped=3; query_time=0.000923; send_time=0.000539; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:53251>; projection={}
+08/05/14 10:02:19 Number of Active Workers 0
+08/05/14 10:02:19 (Sending 1 ads in response to query)
+08/05/14 10:02:19 Query info: matched=1; skipped=0; query_time=0.000947; send_time=0.000498; type=Negotiator; requirements={true}; peer=<10.50.180.71:44886>; projection={}
+08/05/14 10:02:38 Got QUERY_STARTD_PVT_ADS
+08/05/14 10:02:38 Number of Active Workers 0
+08/05/14 10:02:38 (Sending 0 ads in response to query)
+08/05/14 10:02:38 Query info: matched=0; skipped=0; query_time=0.000735; send_time=0.000096; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:55171>; projection={}
+08/05/14 10:02:38 Number of Active Workers 1
+08/05/14 10:02:38 (Sending 2 ads in response to query)
+08/05/14 10:02:38 Query info: matched=2; skipped=3; query_time=0.000935; send_time=0.000580; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:35973>; projection={}
+08/05/14 10:03:38 Got QUERY_STARTD_PVT_ADS
+08/05/14 10:03:38 Number of Active Workers 0
+08/05/14 10:03:38 (Sending 0 ads in response to query)
+08/05/14 10:03:38 Query info: matched=0; skipped=0; query_time=0.000690; send_time=0.000103; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:43735>; projection={}
+08/05/14 10:03:38 Number of Active Workers 1
+08/05/14 10:03:38 (Sending 2 ads in response to query)
+08/05/14 10:03:38 Query info: matched=2; skipped=3; query_time=0.000997; send_time=0.000524; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:55844>; projection={}
+08/05/14 10:04:38 Got QUERY_STARTD_PVT_ADS
+08/05/14 10:04:38 Number of Active Workers 0
+08/05/14 10:04:38 (Sending 0 ads in response to query)
+08/05/14 10:04:38 Query info: matched=0; skipped=0; query_time=0.000707; send_time=0.000136; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:42393>; projection={}
+08/05/14 10:04:38 Number of Active Workers 1
+08/05/14 10:04:38 (Sending 2 ads in response to query)
+08/05/14 10:04:38 Query info: matched=2; skipped=3; query_time=0.000871; send_time=0.000528; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:45660>; projection={}
+08/05/14 10:05:38 Got QUERY_STARTD_PVT_ADS
+08/05/14 10:05:38 Number of Active Workers 0
+08/05/14 10:05:38 (Sending 0 ads in response to query)
+08/05/14 10:05:38 Query info: matched=0; skipped=0; query_time=0.000719; send_time=0.000130; type=MachinePrivate; requirements={true}; peer=<10.50.180.71:52361>; projection={}
+08/05/14 10:05:38 Number of Active Workers 1
+08/05/14 10:05:38 (Sending 2 ads in response to query)
+08/05/14 10:05:38 Query info: matched=2; skipped=3; query_time=0.000895; send_time=0.000569; type=Any; requirements={( ( ( MyType == "Scheduler" ) || ( MyType == "Submitter" ) ) || ( ( MyType == "Machine" ) ) )}; peer=<10.50.180.71:56555>; projection={}
+08/05/14 10:06:01 Got SIGTERM. Performing graceful shutdown.
+08/05/14 10:06:01 **** condor_collector (condor_COLLECTOR) pid 24932 EXITING WITH STATUS 0

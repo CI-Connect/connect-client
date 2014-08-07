@@ -1,0 +1,2 @@
+grid_resource = batch condor antonyu@login01.osgconnect.net
+SUBMIT_EXPRS = grid_resource

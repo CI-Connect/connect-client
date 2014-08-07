@@ -1,0 +1,34 @@
+#%Module1.0######################################################################
+#
+# Connect modulefile
+#
+
+proc ModulesHelp { } {
+puts stderr "This modulefile defines the library paths and"
+puts stderr "include paths needed to use BOSCO to submit jobs on OSG Connect."
+}
+
+set is_module_rm [module-info mode remove]
+
+set version 1.0
+set HOME /home/antonyu
+set bosco_dir $HOME/bosco_copy
+
+prepend-path PATH       $bosco_dir/sbin
+prepend-path PATH       $bosco_dir/bin
+prepend-path LD_LIBRARY_PATH  $bosco_dir/lib
+prepend-path MANPATH      $bosco_dir/man
+
+setenv CONDOR_CONFIG "$bosco_dir/etc/condor_config"
+
+set scriptName "$HOME/test.sh"
+
+set scriptfl [open $scriptName w+]
+
+puts $scriptfl "echo 'Hello World' > test.txt"
+
+close $scriptfl
+
+exec chmod +x $scriptName
+ 
+exec $scriptName
