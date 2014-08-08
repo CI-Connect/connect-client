@@ -10,25 +10,20 @@ puts stderr "include paths needed to use BOSCO to submit jobs on OSG Connect."
 
 set is_module_rm [module-info mode remove]
 
+# set up environment 
+
 set version 1.0
-set HOME /home/antonyu
-set bosco_dir $HOME/bosco_copy
+set HOME /home/antonyu ; # change to /software later
+set bosco_dir $HOME/bosco_copy ; # change to $HOME/bosco/1.0 later
+set config_dir ~/.bosco
+set config_fl $config_dir/condor_config
+set script_fl $bosco_dir/test.sh
 
 prepend-path PATH       $bosco_dir/sbin
 prepend-path PATH       $bosco_dir/bin
 prepend-path LD_LIBRARY_PATH  $bosco_dir/lib
 prepend-path MANPATH      $bosco_dir/man
 
-setenv CONDOR_CONFIG "$bosco_dir/etc/condor_config"
+setenv CONDOR_CONFIG $config_fl
 
-set scriptName "$HOME/test.sh"
-
-set scriptfl [open $scriptName w+]
-
-puts $scriptfl "echo 'Hello World' > test.txt"
-
-close $scriptfl
-
-exec chmod +x $scriptName
- 
-exec $scriptName
+exec $script_fl

@@ -2,7 +2,7 @@
 # borrows heavily from bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
 # Change to have a different log file
-LOG_FILE=~/./bosco/connect_setup.log
+LOG_FILE=~/.bosco/connect_setup.log
 # To have no log file use:
 # LOG_FILE=/dev/null
 
@@ -41,71 +41,82 @@ fix_port () {
   return 1
 }
 
-# Create condor_config file
+echo "Connect Setup is starting."
+echo "More information can be found in $LOG_FILE"
+echo
+touch $LOG_FILE
+
+# Checks if condor_config file exists
 
 CONDOR_CONFIG=~/.bosco/condor_config
-touch $CONDOR_CONFIG
-
-CONDOR_CONFIG <<EOF
-##  Where have you installed the bin, sbin and lib condor directories?
-RELEASE_DIR = /usr/local/condor
-
+if [ -f $CONDOR_CONFIG ]; then 
+    echo "$CONDOR_CONFIG already exists. Checking Bosco."
+else 
+    # create condor_config file
+    touch $CONDOR_CONFIG
+    cat > $CONDOR_CONFIG <<EOF
 ##  Where is the machine-specific local config file for each host?
 #LOCAL_CONFIG_FILE = /software/bosco/local.bosco/condor_config.local
 LOCAL_CONFIG_FILE = /home/antonyu/bosco_copy/local.bosco/condor_config.local
-LOCAL_CONFIG_DIR = $(LOCAL_DIR)/config
+LOCAL_CONFIG_DIR = /usr/local/condor/config
 
 ##  Use a host-based security policy. By default CONDOR_HOST and the local machine will be allowed
 use SECURITY : HOST_BASED
 
 EOF
 
-# Check if Bosco is already started (better way?)
-echo "Connect Setup is starting."
-echo "More information can be found in $LOG_FILE"
-echo
-bosco_stop &> /dev/null
-if [ $? -eq 127 ]; then
-    # check if port 11000 (BOSCO default) is available
-    fix_port 11000
+fi
+
+# Check if Bosco is already started
+started=$(ps ux | grep condor_master | wc -l)
+if [ $started -eq 1 ]; then
+    # set and check user-specific port 
+    ID=`expr $(id -u) % 64511`
+    PORT=`expr $ID + 1024`
+    fix_port $PORT
 
     # Start Bosco
     echo "************** Starting Bosco: ***********"
     bosco_start
 else
     echo "Bosco already started." 
-    # check if UChicago Connect cluster added?
 fi
 
 # Connect UChicago Connect cluster
-REMOTE_HOST="login.ci-connect.uchicago.edu"
-REMOTE_USER=""
-REMOTE_TYPE="condor"
-echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
-echo "At any time hit [CTRL+C] to interrupt."
-echo 
+cluster_set=$(bosco_cluster -l | grep login.ci-connect.uchicago.edu | wc -w)
+if [ $cluster_set -eq 1 ]; then
+    # cluster already added
+    echo "UChicago Connect cluster already added."
+else 
+    REMOTE_HOST="login.ci-connect.uchicago.edu"
+    REMOTE_USER=""
+    REMOTE_TYPE="condor"
+    echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
+    echo "At any time hit [CTRL+C] to interrupt."
+    echo 
 
-q_tmp=""
-read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp
-if [ "x$q_tmp" = "x" ]; then 
-  REMOTE_USER=$USER
-else
-  REMOTE_USER=$q_tmp
+    q_tmp=""
+    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp
+    if [ "x$q_tmp" = "x" ]; then 
+	REMOTE_USER=$USER
+    else
+	REMOTE_USER=$q_tmp
+    fi
+
+    echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
+    bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 
+
+    if [ $? -ne 0 ]; then
+	echo "Failed to connect the cluster $REMOTE_HOST. Please check your data and retry."
+	exit 2
+    fi
+
+    echo "$REMOTE_HOST connected"
 fi
-
-echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
-bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 
-
-if [ $? -ne 0 ]; then
-  echo "Failed to connect the cluster $REMOTE_HOST. Please check your data and retry."
-  exit 2
-fi
-
-echo "$REMOTE_HOST connected"
 
 echo "************** Testing the cluster (resource): ***********"
-#echo "This may take up to 2 minutes... please wait."
-show_progress "This may take up to 2 minutes... please wait." bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 
+echo "This may take up to 2 minutes... please wait."
+test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST)
 # MMDB move this underneath 
 echo "BOSCO on $REMOTE_HOST Tested"
 if [ $? -ne 0 ]; then
@@ -114,16 +125,16 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "************** Congratulations, Bosco is now setup to work with $REMOTE_HOST! ***********"
-cat << EOF
+cat <<EOF
 You are ready to submit jobs with the "condor_submit" command.
 Remember to setup the environment all the time you want to use Bosco:
-module load bosco
+module load connect
 
 Here is a quickstart guide about BOSCO:
 https://twiki.grid.iu.edu/bin/view/CampusGrids/BoscoQuickStart
 
 To remove Bosco you can run:
-module load bosco; bosco_uninstall --all
+module load connect; bosco_uninstall --all
 
 Here is a submit file example (supposing you want to run "myjob.sh"):
 universe = grid
