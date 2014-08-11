@@ -1,10 +1,13 @@
 #!/bin/bash
-# borrows heavily from bosco_quickstart, first version 5/2/2013, by Marco Mambelli
+# based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
 # Change to have a different log file
 LOG_FILE=~/.bosco/connect_setup.log
 # To have no log file use:
 # LOG_FILE=/dev/null
+
+LOCAL_DIR=~/.bosco
+factory_config=~/.bosco/config/condor_config.factory
 
 fix_port () {
   # Checks if the port is available
@@ -23,49 +26,130 @@ fix_port () {
     let tmp_port=$tmp_port+1
   done
   if [ $tmp_port -eq $start_port ]; then
-    # Initil port is available
-    return 0
+      # Initial port is available
+      echo "Using port $tmp_port" >> $LOG_FILE
+  elif [ $tmp_port -le $tmp_max ]; then
+	  # Found a free port in the range	 
+	  echo "Using port $tmp_port" >> $LOG_FILE
+  else 
+      echo "No free port in range $start_port to $tmp_port" >> $LOG_FILE
+      return 1
   fi
-  if [ $tmp_port -le $tmp_max ]; then
-    # Found a free port in the range
-    factory_config=$HOME/bosco/local.bosco/config/condor_config.factory
-    echo "Port $start_port is busy. Replacing port $start_port with $tmp_port. Before:" >> $LOG_FILE
-    grep $start_port $factory_config >> $LOG_FILE
-    sed "s;$start_port;$tmp_port;" < $factory_config > ${factory_config}.new
-    mv ${factory_config}.new ${factory_config}
-    echo "After replacement:" >> $LOG_FILE
-    grep $tmp_port $factory_config >> $LOG_FILE
-    return 0
+  old_port=$(grep SHARED_PORT_ARGS $factory_config | cut -d ' ' -f 4)
+  if [ $old_port -eq $tmp_port ]; then
+      # Replace port number in $factory_config                                 
+      sed "s;$old_port;$tmp_port;" < $factory_config > ${factory_config}.new
+      mv ${factory_config}.new ${factory_config}
   fi
-  echo "No free port in range $start_port to $tmp_port" >> $LOG_FILE
-  return 1
+  return 0
 }
 
 echo "Connect Setup is starting."
 echo "More information can be found in $LOG_FILE"
 echo
+[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR
+[ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
+[ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
 touch $LOG_FILE
 
-# Checks if condor_config file exists
+# Check if config files exist
 
-CONDOR_CONFIG=~/.bosco/condor_config
-if [ -f $CONDOR_CONFIG ]; then 
-    echo "$CONDOR_CONFIG already exists. Checking Bosco."
-else 
-    # create condor_config file
-    touch $CONDOR_CONFIG
-    cat > $CONDOR_CONFIG <<EOF
-##  Where is the machine-specific local config file for each host?
-#LOCAL_CONFIG_FILE = /software/bosco/local.bosco/condor_config.local
-LOCAL_CONFIG_FILE = /home/antonyu/bosco_copy/local.bosco/condor_config.local
-LOCAL_CONFIG_DIR = /usr/local/condor/config
+CONDOR_CONFIG=$LOCAL_DIR/condor_config
+LOCAL_CONFIG=$LOCAL_DIR/condor_config.local
 
-##  Use a host-based security policy. By default CONDOR_HOST and the local machine will be allowed
-use SECURITY : HOST_BASED
-
+[ -f $CONDOR_CONFIG ] || cat > $CONDOR_CONFIG  <<EOF
+##  Where is the machine-specific local config file for each host?            
+LOCAL_CONFIG_FILE = $LOCAL_DIR/condor_config.local
+LOCAL_CONFIG_DIR = $LOCAL_DIR/config
+## Use a host-based security policy. By default CONDOR_HOST and the local machine will be allowed
+use SECURITY: HOST_BASED
 EOF
 
-fi
+[ -f $LOCAL_CONFIG ] || cat > $LOCAL_CONFIG <<EOF
+RELEASE_DIR = /home/antonyu/bosco_copy
+LOCAL_DIR = $LOCAL_DIR
+COLLECTOR_NAME = Personal Condor at midway-login2.rcc.local
+FILESYSTEM_DOMAIN = rcc.local
+GANGLIAD_METRICS_CONFIG_DIR
+LOCK = /tmp/condor-lock.0.616903333532722
+NETWORK_INTERFACE = 127.0.0.1
+IS_BOSCO = True
+MAIL = /bin/mailx
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
+UID_DOMAIN = rcc.local
+PREEN_ARGS = -r
+CONDOR_HOST = midway-login2.rcc.local
+CONDOR_IDS = 974760720.974760720
+CREATE_CORE_FILES = False
+GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE = 10
+EOF
+
+[ -f $factory_config ] || echo '#
+# Things you have to edit
+#
+
+##  What machine is your central manager?
+CONDOR_HOST = $(FULL_HOSTNAME)
+COLLECTOR_HOST = $(CONDOR_HOST):11000?sock=collector
+
+##  This macro is used to specify a short description of your pool. 
+COLLECTOR_NAME      = $(CONDOR_HOST)
+
+# What hosts can run jobs to this cluster.
+FLOCK_FROM = 
+
+# Jobs submitted here can run at.
+FLOCK_TO = 
+
+##############################################
+# Things that are safe to leave
+#
+
+CAMPUSFACTORY = $(SBIN)/runfactory
+CAMPUSFACTORY_ARGS = -c $(LIBEXEC)/campus_factory/etc/campus_factory.conf
+CAMPUSFACTORY_ENVIRONMENT = "PYTHONPATH=$(LIBEXEC)/campus_factory/python-lib CAMPUSFACTORY_DIR=$(LIBEXEC)/campus_factory _campusfactory_GLIDEIN_DIRECTORY=$(LIBEXEC)/campus_factory/share/glidein_jobs"
+
+# Enabled Shared Port
+USE_SHARED_PORT = True
+SHARED_PORT_ARGS = -p 11000     
+
+# What daemons should I run?
+DAEMON_LIST = COLLECTOR, SCHEDD, NEGOTIATOR, MASTER, SHARED_PORT, CAMPUSFACTORY
+
+# Remove glidein jobs that get put on hold for over 24 hours.
+SYSTEM_PERIODIC_REMOVE = (GlideinJob == TRUE && JobStatus == 5 && time() - EnteredCurrentStatus > 3600*24*1)
+
+#
+# Security definitions
+#
+SEC_ENABLE_MATCH_PASSWORD_AUTHENTICATION = TRUE
+
+SEC_DEFAULT_ENCRYPTION = OPTIONAL
+SEC_DEFAULT_INTEGRITY = REQUIRED
+# To allow status read
+SEC_READ_INTEGRITY = OPTIONAL
+
+ALLOW_ADMINISTRATOR = $(FULL_HOSTNAME) $(IP_ADDRESS)
+
+SEC_PASSWORD_FILE = $(LOCAL_DIR)/passwdfile
+
+# Daemons have their own passwdfile, always owned by the daemon user
+COLLECTOR.SEC_PASSWORD_FILE = $(LOCAL_DIR)/passwdfile.daemon
+NEGOTIATOR.SEC_PASSWORD_FILE = $(LOCAL_DIR)/passwdfile.daemon
+GRIDMANAGER.SEC_PASSWORD_FILE = $(LOCAL_DIR)/passwdfile.daemon
+
+SEC_ADVERTISE_STARTD_AUTHENTICATION = REQUIRED
+SEC_ADVERTISE_STARTD_INTEGRITY = REQUIRED
+SEC_ADVERTISE_STARTD_AUTHENTICATION_METHODS = PASSWORD
+SEC_CLIENT_AUTHENTICATION_METHODS = FS, PASSWORD
+
+ALLOW_ADVERTISE_STARTD = condor_pool@*/*
+ALLOW_DAEMON = $(ALLOW_DAEMON) condor_pool@*/* $(FULL_HOSTNAME) $(IP_ADDRESS)
+
+SEC_DAEMON_AUTHENTICATION = REQUIRED
+SEC_DAEMON_INTEGRITY = REQUIRED
+SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
+SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD' > $factory_config
 
 # Check if Bosco is already started
 started=$(ps ux | grep condor_master | wc -l)
