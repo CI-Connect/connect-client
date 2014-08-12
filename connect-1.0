@@ -12,9 +12,8 @@ set is_module_rm [module-info mode remove]
 
 # set up environment 
 
-set version 1.0
 set HOME /home/antonyu ; # change to /software later
-set bosco_dir $HOME/bosco_copy ; # change to $HOME/bosco/1.0 later
+set bosco_dir $HOME/bosco
 set config_dir ~/.bosco
 set config_fl $config_dir/condor_config
 set script_fl $bosco_dir/connect.sh
@@ -28,6 +27,6 @@ setenv CONDOR_CONFIG $config_fl
 
 set res [exec $script_fl -qn update </dev/null | tee /dev/tty] 
 
-# set res [exec $script_fl </dev/null]
 
-# puts stderr $res
+
+

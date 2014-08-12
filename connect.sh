@@ -1,13 +1,15 @@
 #!/bin/bash
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
+LOCAL_DIR=$HOME/.bosco
+BOSCO_DIR=$HOME/bosco
+
 # Change to have a different log file
-LOG_FILE=~/.bosco/connect_setup.log
+LOG_FILE=$LOCAL_DIR/connect_setup.log
 # To have no log file use:
 # LOG_FILE=/dev/null
 
-LOCAL_DIR=~/.bosco
-factory_config=~/.bosco/config/condor_config.factory
+factory_config=$LOCAL_DIR/config/condor_config.factory
 
 fix_port () {
   # Checks if the port is available
@@ -50,7 +52,8 @@ echo
 [ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR
 [ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
 [ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
-touch $LOG_FILE
+[ -d $LOCAL_DIR/execute ] || mkdir $LOCAL_DIR/execute
+[ -f $LOG_FILE ] || touch $LOG_FILE
 
 # Check if config files exist
 
@@ -65,12 +68,14 @@ LOCAL_CONFIG_DIR = $LOCAL_DIR/config
 use SECURITY: HOST_BASED
 EOF
 
+HOST_NAME=$(hostname)
+
 [ -f $LOCAL_CONFIG ] || cat > $LOCAL_CONFIG <<EOF
-RELEASE_DIR = /home/antonyu/bosco_copy
+RELEASE_DIR = $BOSCO_DIR
 LOCAL_DIR = $LOCAL_DIR
-COLLECTOR_NAME = Personal Condor at midway-login2.rcc.local
+COLLECTOR_NAME = Personal Condor at $HOST_NAME.rcc.local
 FILESYSTEM_DOMAIN = rcc.local
-GANGLIAD_METRICS_CONFIG_DIR
+GANGLIAD_METRICS_CONFIG_DIR = $BOSCO_DIR/etc/condor/ganglia.d
 LOCK = /tmp/condor-lock.0.616903333532722
 NETWORK_INTERFACE = 127.0.0.1
 IS_BOSCO = True
@@ -78,7 +83,7 @@ MAIL = /bin/mailx
 DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
 UID_DOMAIN = rcc.local
 PREEN_ARGS = -r
-CONDOR_HOST = midway-login2.rcc.local
+CONDOR_HOST = $HOST_NAME.rcc.local
 CONDOR_IDS = 974760720.974760720
 CREATE_CORE_FILES = False
 GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE = 10
@@ -166,15 +171,16 @@ else
     echo "Bosco already started." 
 fi
 
+REMOTE_HOST="login.ci-connect.uchicago.edu"
+REMOTE_USER=""
+REMOTE_TYPE="condor"
+
 # Connect UChicago Connect cluster
 cluster_set=$(bosco_cluster -l | grep login.ci-connect.uchicago.edu | wc -w)
 if [ $cluster_set -eq 1 ]; then
     # cluster already added
     echo "UChicago Connect cluster already added."
 else 
-    REMOTE_HOST="login.ci-connect.uchicago.edu"
-    REMOTE_USER=""
-    REMOTE_TYPE="condor"
     echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
