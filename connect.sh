@@ -1,8 +1,8 @@
 #!/bin/bash
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
-LOCAL_DIR=$HOME/.bosco
-BOSCO_DIR=$HOME/bosco
+LOCAL_DIR=~/.bosco
+BOSCO_DIR=~/bosco
 
 # Change to have a different log file
 LOG_FILE=$LOCAL_DIR/connect_setup.log
@@ -39,20 +39,25 @@ fix_port () {
   fi
   old_port=$(grep SHARED_PORT_ARGS $factory_config | cut -d ' ' -f 4)
   if [ $old_port -eq $tmp_port ]; then
+      return 0
+  else
       # Replace port number in $factory_config                                 
       sed "s;$old_port;$tmp_port;" < $factory_config > ${factory_config}.new
       mv ${factory_config}.new ${factory_config}
+      return 0
   fi
-  return 0
+  return 1
 }
 
 echo "Connect Setup is starting."
 echo "More information can be found in $LOG_FILE"
 echo
-[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR
+[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR 
 [ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
 [ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
 [ -d $LOCAL_DIR/execute ] || mkdir $LOCAL_DIR/execute
+[ -d $LOCAL_DIR/config ] || mkdir $LOCAL_DIR/config
+[ -d $LOCAL_DIR/.pass ] || mkdir $LOCAL_DIR/.pass
 [ -f $LOG_FILE ] || touch $LOG_FILE
 
 # Check if config files exist
