@@ -25,7 +25,13 @@ prepend-path MANPATH      $bosco_dir/man
 
 setenv CONDOR_CONFIG $config_fl
 
-exec $script_fl -qn update </dev/null | tee /dev/tty
+puts stderr "Input your username on the UChicago Connect cluster (login.ci-connect.uchicago.edu)"
+puts -nonewline stderr "> " 
+
+gets stdin line
+
+exec $script_fl $line -qn update </dev/null | tee /dev/tty
+
 
 
 
