@@ -12,7 +12,7 @@ set is_module_rm [module-info mode remove]
 
 # set up environment 
 
-set HOME /home/antonyu ; # change to /software later
+set HOME ~ ; # change to /software later
 set bosco_dir $HOME/bosco
 set config_dir $HOME/.bosco
 set config_fl $config_dir/condor_config
