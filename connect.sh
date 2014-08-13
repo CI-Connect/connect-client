@@ -166,7 +166,7 @@ if [ $started -eq 1 ]; then
 
     # Start Bosco
     echo "************** Starting Bosco: ***********"
-    bosco_start >> $LOG_FILE
+    bosco_start 2>> $LOG_FILE
 else
     echo "Bosco already started." 
 fi
@@ -195,7 +195,7 @@ else
 #    fi
 
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
-    bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE >> $LOG_FILE
+    bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 2>> $LOG_FILE
 
     if [ $? -ne 0 ]; then
 	echo "Failed to connect the cluster $REMOTE_HOST. Please check your data and retry."
@@ -207,7 +207,7 @@ fi
 
 echo "************** Testing the cluster (resource): ***********"
 echo "This may take up to 2 minutes... please wait."
-test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST >> $LOG_FILE)
+test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 2>> $LOG_FILE)
 # MMDB move this underneath 
 echo "BOSCO on $REMOTE_HOST Tested"
 if [ $? -ne 0 ]; then
