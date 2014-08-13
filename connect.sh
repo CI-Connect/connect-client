@@ -29,21 +29,27 @@ fix_port () {
   done
   if [ $tmp_port -eq $start_port ]; then
       # Initial port is available
-      echo "Still using port $tmp_port" >> $LOG_FILE
-      return 0
+      echo "Port $tmp_port available." >> $LOG_FILE
   elif [ $tmp_port -le $tmp_max ]; then
 	  # Found a free port in the range	 
-	  echo "Port $start_port is busy. Replacing $start_port with $tmp_port. Before:" >> $LOG_FILE
-	  grep $start_port $factory_config >> $LOG_FILE
-	  sed "s;$start_port;$tmp_port;" < $factory_config > ${factory_config}.new
-	  mv ${factory_config}.new ${factory_config}
-	  echo "After replacement:" >> $LOG_FILE
-	  grep $tmp_port $factory_config >> $LOG_FILE
-	  return 0
+          echo "Found available port $tmp_port." >> $LOG_FILE
   else 
       echo "No free port in range $start_port to $tmp_port" >> $LOG_FILE
       return 1
   fi
+  old_port=$(grep SHARED_PORT_ARGS $factory_config | cut -d ' ' -f 4)
+  if [ $old_port -eq $tmp_port ]; then
+      echo "Still using $tmp_port." >> $LOG_FILE
+  else
+      echo "Port $old_port is busy. Replacing $old_port with $tmp_port. Before:" >> $LOG_FILE
+      grep $old_port $factory_config >> $LOG_FILE
+      sed "s;$old_port;$tmp_port;" < $factory_config > ${factory_config}.new
+      mv ${factory_config}.new ${factory_config}
+      echo "After replacement:" >> $LOG_FILE
+      grep $tmp_port $factory_config >> $LOG_FILE
+      return 0
+  fi
+  return 1
 }
 
 echo "Connect Setup is starting."
