@@ -75,6 +75,7 @@ use SECURITY: HOST_BASED
 EOF
 
 HOST_NAME=$(hostname)
+LOCK=$(whoami)
 
 [ -f $LOCAL_CONFIG ] || cat > $LOCAL_CONFIG <<EOF
 RELEASE_DIR = $BOSCO_DIR
@@ -82,7 +83,7 @@ LOCAL_DIR = $LOCAL_DIR
 COLLECTOR_NAME = Personal Condor at $HOST_NAME.rcc.local
 FILESYSTEM_DOMAIN = rcc.local
 GANGLIAD_METRICS_CONFIG_DIR = $BOSCO_DIR/etc/condor/ganglia.d
-LOCK = /tmp/condor-lock.0.616903333532722
+LOCK = /tmp/condor-lock.$LOCK
 NETWORK_INTERFACE = 127.0.0.1
 IS_BOSCO = True
 MAIL = /bin/mailx
