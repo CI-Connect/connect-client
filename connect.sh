@@ -29,24 +29,21 @@ fix_port () {
   done
   if [ $tmp_port -eq $start_port ]; then
       # Initial port is available
-      echo "Using port $tmp_port" >> $LOG_FILE
+      echo "Still using port $tmp_port" >> $LOG_FILE
+      return 0
   elif [ $tmp_port -le $tmp_max ]; then
 	  # Found a free port in the range	 
-	  echo "Using port $tmp_port" >> $LOG_FILE
+	  echo "Port $start_port is busy. Replacing $start_port with $tmp_port. Before:" >> $LOG_FILE
+	  grep $start_port $factory_config >> $LOG_FILE
+	  sed "s;$start_port;$tmp_port;" < $factory_config > ${factory_config}.new
+	  mv ${factory_config}.new ${factory_config}
+	  echo "After replacement:" >> $LOG_FILE
+	  grep $tmp_port $factory_config >> $LOG_FILE
+	  return 0
   else 
       echo "No free port in range $start_port to $tmp_port" >> $LOG_FILE
       return 1
   fi
-  old_port=$(grep SHARED_PORT_ARGS $factory_config | cut -d ' ' -f 4)
-  if [ $old_port -eq $tmp_port ]; then
-      return 0
-  else
-      # Replace port number in $factory_config                                 
-      sed "s;$old_port;$tmp_port;" < $factory_config > ${factory_config}.new
-      mv ${factory_config}.new ${factory_config}
-      return 0
-  fi
-  return 1
 }
 
 echo "Connect Setup is starting."
@@ -57,7 +54,6 @@ echo
 [ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
 [ -d $LOCAL_DIR/execute ] || mkdir $LOCAL_DIR/execute
 [ -d $LOCAL_DIR/config ] || mkdir $LOCAL_DIR/config
-[ -d $LOCAL_DIR/.pass ] || mkdir $LOCAL_DIR/.pass
 [ -f $LOG_FILE ] || touch $LOG_FILE
 
 # Check if config files exist
@@ -177,7 +173,8 @@ else
 fi
 
 REMOTE_HOST="login.ci-connect.uchicago.edu"
-REMOTE_USER=""
+REMOTE_USER=$1
+#REMOTE_USER=""
 REMOTE_TYPE="condor"
 
 # Connect UChicago Connect cluster
@@ -190,13 +187,13 @@ else
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
 
-    q_tmp=""
-    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp
-    if [ "x$q_tmp" = "x" ]; then 
-	REMOTE_USER=$USER
-    else
-	REMOTE_USER=$q_tmp
-    fi
+#    q_tmp=""
+#    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp
+#    if [ "x$q_tmp" = "x" ]; then 
+#	REMOTE_USER=$USER
+#    else
+#	REMOTE_USER=$q_tmp
+#    fi
 
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
     bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 
