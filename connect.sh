@@ -49,12 +49,11 @@ fix_port () {
 echo "Connect Setup is starting."
 echo "More information can be found in $LOG_FILE"
 echo
-[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR 
+[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local Bosco files can be found in $LOCAL_DIR" >> $LOG_FILE
 [ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
 [ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
 [ -d $LOCAL_DIR/execute ] || mkdir $LOCAL_DIR/execute
 [ -d $LOCAL_DIR/config ] || mkdir $LOCAL_DIR/config
-[ -f $LOG_FILE ] || touch $LOG_FILE
 
 # Check if config files exist
 
@@ -167,7 +166,7 @@ if [ $started -eq 1 ]; then
 
     # Start Bosco
     echo "************** Starting Bosco: ***********"
-    bosco_start
+    bosco_start >> $LOG_FILE
 else
     echo "Bosco already started." 
 fi
@@ -196,7 +195,7 @@ else
 #    fi
 
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
-    bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 
+    bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE >> $LOG_FILE
 
     if [ $? -ne 0 ]; then
 	echo "Failed to connect the cluster $REMOTE_HOST. Please check your data and retry."
@@ -208,7 +207,7 @@ fi
 
 echo "************** Testing the cluster (resource): ***********"
 echo "This may take up to 2 minutes... please wait."
-test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST)
+test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST >> $LOG_FILE)
 # MMDB move this underneath 
 echo "BOSCO on $REMOTE_HOST Tested"
 if [ $? -ne 0 ]; then
