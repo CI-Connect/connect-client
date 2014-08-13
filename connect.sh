@@ -75,7 +75,7 @@ use SECURITY: HOST_BASED
 EOF
 
 HOST_NAME=$(hostname)
-LOCK=$`whoami`
+LOCK=$(whoami)
 
 [ -f $LOCAL_CONFIG ] || cat > $LOCAL_CONFIG <<EOF
 RELEASE_DIR = $BOSCO_DIR
