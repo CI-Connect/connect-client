@@ -166,21 +166,24 @@ SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD' > $factory_config
 
 # Check if Bosco is already started
 started=$(ps ux | grep condor_master | wc -l)
-if [ $started -eq 1 ]; then
-    # set and check user-specific port 
-    ID=`expr $(id -u) % 64511`
-    PORT=`expr $ID + 1024`
-    fix_port $PORT
+while [ $started -gt 1 ]
+do
+    echo "Bosco already started. Stopping Bosco."
+    bosco_stop --force
+    started=$(ps ux | grep condor_master | wc -l)
+done
 
-    # Start Bosco
-    echo "************** Starting Bosco: ***********"
-    bosco_start 2>> $LOG_FILE
-else
-    echo "Bosco already started." 
-fi
+# set and check user-specific port 
+ID=`expr $(id -u) % 64511`
+PORT=`expr $ID + 1024`
+fix_port $PORT
+
+# Start Bosco
+echo "************** Starting Bosco: ***********"
+bosco_start 2>> $LOG_FILE
 
 REMOTE_HOST="login.ci-connect.uchicago.edu"
-REMOTE_USER=$1
+REMOTE_USER=$1 #username passed from modulefile
 #REMOTE_USER=""
 REMOTE_TYPE="condor"
 
