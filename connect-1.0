@@ -9,32 +9,35 @@ puts stderr "include paths needed to use BOSCO to submit jobs on OSG Connect."
 }
 
 set is_module_rm [module-info mode remove]
+module-whatis "setup Connect modulefile 1.0"
 
-# set up environment 
+if [ module-info mode load ] {
 
-set HOME ~ ; # change to /software later
-set bosco_dir $HOME/bosco
-set config_dir $HOME/.bosco
-set config_fl $config_dir/condor_config
-set script_fl $bosco_dir/connect.sh
+  # set up environment  
 
-prepend-path PATH       $bosco_dir/sbin
-prepend-path PATH       $bosco_dir/bin
-prepend-path LD_LIBRARY_PATH  $bosco_dir/lib
-prepend-path MANPATH      $bosco_dir/man
+  set HOME ~ ; # change to /software later
+  set bosco_dir $HOME/bosco
+  set config_dir $HOME/.bosco
+  set config_fl $config_dir/condor_config
+  set script_fl $bosco_dir/connect.sh
 
-setenv CONDOR_CONFIG $config_fl
+  prepend-path PATH       $bosco_dir/sbin
+  prepend-path PATH       $bosco_dir/bin
+  prepend-path LD_LIBRARY_PATH  $bosco_dir/lib
+  prepend-path MANPATH      $bosco_dir/man
 
-puts stderr "Input your username on the UChicago Connect cluster (login.ci-connect.uchicago.edu)"
-puts -nonewline stderr "> " 
+  setenv CONDOR_CONFIG $config_fl
 
-gets stdin line
+  puts stderr "Input your username on the UChicago Connect cluster (login.ci-connect.uchicago.edu)"
+  puts -nonewline stderr "> " 
 
-if [catch {exec $script_fl $line -qn update </dev/null | tee /dev/tty} fid] {
-   puts stderr "An error occurred. Please check $config_dir/connect_setup.log for more information."
-   exit 1
+  gets stdin line
+
+  if [catch {exec $script_fl $line -qn update </dev/null | tee /dev/tty} fid] {
+     puts stderr "An error occurred. Please check $config_dir/connect_setup.log for more information."
+     exit 1
+     }
 }
-
 
 
 
