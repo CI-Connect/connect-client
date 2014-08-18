@@ -164,7 +164,8 @@ SEC_DAEMON_INTEGRITY = REQUIRED
 SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
 SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD' > $factory_config
 
-# Check if Bosco is already started
+# Stop Bosco is already started, check just in case 
+bosco_stop --force
 started=$(ps ux | grep condor_master | wc -l)
 if [ $started -eq 1 ]; then
     # set and check user-specific port 
@@ -185,7 +186,7 @@ REMOTE_USER=$1 #username passed from modulefile
 REMOTE_TYPE="condor"
 
 # Connect UChicago Connect cluster
-cluster_set=$(bosco_cluster -l | grep login.ci-connect.uchicago.edu | wc -w)
+cluster_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
 if [ $cluster_set -eq 1 ]; then
     # cluster already added
     echo "UChicago Connect cluster already added."
