@@ -165,7 +165,7 @@ SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
 SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD' > $factory_config
 
 # Stop Bosco is already started, check just in case 
-bosco_stop --force
+bosco_stop --force > /dev/null
 started=$(ps ux | grep condor_master | wc -l)
 if [ $started -eq 1 ]; then
     # set and check user-specific port 
