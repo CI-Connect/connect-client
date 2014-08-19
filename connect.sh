@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
 LOCAL_DIR=$HOME/.bosco
@@ -9,7 +9,7 @@ LOG_FILE=$LOCAL_DIR/connect_setup.log
 # To have no log file use:
 # LOG_FILE=/dev/null
 
-CONDOR_CONFIG=$LOCAL_DIR/condor_config
+CONFIG_FILE=$LOCAL_DIR/condor_config
 LOCAL_CONFIG=$LOCAL_DIR/condor_config.local
 factory_config=$LOCAL_DIR/config/condor_config.factory
 
@@ -68,7 +68,7 @@ echo
 
 # Check if config files exist
 
-[ -f $CONDOR_CONFIG ] || cat > $CONDOR_CONFIG  <<EOF
+[ -f $CONFIG_FILE ] || cat > $CONFIG_FILE  <<EOF
 ##  Where is the machine-specific local config file for each host?            
 LOCAL_CONFIG_FILE = $LOCAL_DIR/condor_config.local
 LOCAL_CONFIG_DIR = $LOCAL_DIR/config
