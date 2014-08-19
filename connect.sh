@@ -58,12 +58,6 @@ echo "Connect Setup is starting."
 echo "More information can be found in $LOG_FILE"
 echo
 
-# Set up environment for Bosco
-export PATH=$BOSCO_DIR/sbin:$BOSCO_DIR/bin:$PATH
-export LD_LIBRARY_PATH=$BOSCO_DIR/lib:$LD_LIBRARY_PATH
-export MANPATH=$BOSCO_DIR/man:$MANPATH
-export CONDOR_CONFIG=$CONDOR_CONFIG
-
 # Check to see if local Bosco directory and all subdirectories exist
 
 [ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local Bosco files can be found in $LOCAL_DIR" >> $LOG_FILE
