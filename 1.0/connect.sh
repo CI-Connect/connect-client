@@ -1,14 +1,16 @@
-#!/bin/bash
+#!/bin/sh
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
-LOCAL_DIR=~/.bosco
-BOSCO_DIR=~/bosco
+LOCAL_DIR=$HOME/.bosco
+BOSCO_DIR=$HOME/bosco # change to /software/bosco later
 
 # Change to have a different log file
 LOG_FILE=$LOCAL_DIR/connect_setup.log
 # To have no log file use:
 # LOG_FILE=/dev/null
 
+CONFIG_FILE=$LOCAL_DIR/condor_config
+LOCAL_CONFIG=$LOCAL_DIR/condor_config.local
 factory_config=$LOCAL_DIR/config/condor_config.factory
 
 fix_port () {
@@ -55,6 +57,9 @@ fix_port () {
 echo "Connect Setup is starting."
 echo "More information can be found in $LOG_FILE"
 echo
+
+# Check to see if local Bosco directory and all subdirectories exist
+
 [ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local Bosco files can be found in $LOCAL_DIR" >> $LOG_FILE
 [ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
 [ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
@@ -63,10 +68,7 @@ echo
 
 # Check if config files exist
 
-CONDOR_CONFIG=$LOCAL_DIR/condor_config
-LOCAL_CONFIG=$LOCAL_DIR/condor_config.local
-
-[ -f $CONDOR_CONFIG ] || cat > $CONDOR_CONFIG  <<EOF
+[ -f $CONFIG_FILE ] || cat > $CONFIG_FILE  <<EOF
 ##  Where is the machine-specific local config file for each host?            
 LOCAL_CONFIG_FILE = $LOCAL_DIR/condor_config.local
 LOCAL_CONFIG_DIR = $LOCAL_DIR/config
@@ -164,8 +166,8 @@ SEC_DAEMON_INTEGRITY = REQUIRED
 SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
 SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD' > $factory_config
 
-# Stop Bosco is already started, check just in case 
-bosco_stop --force > /dev/null
+# Stop Bosco if already started, check just in case 
+# bosco_stop --force > /dev/null (check to see if needed)
 started=$(ps ux | grep condor_master | wc -l)
 if [ $started -eq 1 ]; then
     # set and check user-specific port 
@@ -175,14 +177,13 @@ if [ $started -eq 1 ]; then
     
     # Start Bosco
     echo "************** Starting Bosco: ***********"
-    bosco_start 2>> $LOG_FILE
+    bosco_start 2>> $LOG_FILE 1>/dev/tty
 else
     echo "Bosco already started."
 fi
 
 REMOTE_HOST="login.ci-connect.uchicago.edu"
-REMOTE_USER=$1 #username passed from modulefile
-#REMOTE_USER=""
+REMOTE_USER=""
 REMOTE_TYPE="condor"
 
 # Connect UChicago Connect cluster
@@ -195,13 +196,13 @@ else
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
 
-#    q_tmp=""
-#    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp
-#    if [ "x$q_tmp" = "x" ]; then 
-#	REMOTE_USER=$USER
-#    else
-#	REMOTE_USER=$q_tmp
-#    fi
+    q_tmp=""
+    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp </dev/tty
+    if [ "x$q_tmp" = "x" ]; then 
+	REMOTE_USER=$USER
+    else
+	REMOTE_USER=$q_tmp
+    fi
 
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
     bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 2>> $LOG_FILE
@@ -217,7 +218,6 @@ fi
 echo "************** Testing the cluster (resource): ***********"
 echo "This may take up to 2 minutes... please wait."
 test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 2>> $LOG_FILE)
-# MMDB move this underneath 
 echo "BOSCO on $REMOTE_HOST Tested"
 if [ $? -ne 0 ]; then
   echo "Failed to test the cluster $REMOTE_HOST. Please check your data and retry."
@@ -225,7 +225,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "************** Congratulations, Bosco is now setup to work with $REMOTE_HOST! ***********"
-cat <<EOF
+cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
 Remember to setup the environment all the time you want to use Bosco:
 module load connect

@@ -177,7 +177,7 @@ if [ $started -eq 1 ]; then
     
     # Start Bosco
     echo "************** Starting Bosco: ***********"
-    bosco_start 2>> $LOG_FILE
+    bosco_start 2>> $LOG_FILE 1>/dev/tty
 else
     echo "Bosco already started."
 fi
@@ -225,7 +225,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "************** Congratulations, Bosco is now setup to work with $REMOTE_HOST! ***********"
-cat <<EOF
+cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
 Remember to setup the environment all the time you want to use Bosco:
 module load connect
