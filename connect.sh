@@ -197,7 +197,7 @@ else
     echo 
 
     q_tmp=""
-    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp
+    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp </dev/tty
     if [ "x$q_tmp" = "x" ]; then 
 	REMOTE_USER=$USER
     else
