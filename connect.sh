@@ -223,6 +223,10 @@ if [ $? -ne 0 ]; then
   exit 3
 fi
 
+if [ "x$REMOTE_USER" = "x" ]; then
+    REMOTE_USER="username"
+fi
+
 echo "************** Congratulations, Bosco is now setup to work with $REMOTE_HOST! ***********"
 cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
