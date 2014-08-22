@@ -5,7 +5,7 @@ BOSCO module
 
 connect-1.0 - modulefile for BOSCO
 
-connect.sh - setup script
+setup.sh - setup script
 
 How to test
 -----------
@@ -14,9 +14,12 @@ How to test
 3. module load git
 4. git clone https://github.com/SISC2014/Bosco-Module.git
 5. mv Bosco-Module connect
-6. chmod +x connect/1.0/connect.sh
-7. cp -r connect/1.0 ~/bosco
-8. module load use.own
-9. module load connect
-10. enter your ssh user/password to UChicago Connect when prompted
-11. Bosco should be set up, with the UChicago Connect cluster added 
+6. cp -r connect/1.0 ~/bosco
+7. mkdir -p ~/lib/connect/extensions
+8. cp connect/setup.sh ~/lib/connect/extensions/setup.sh
+9. module load use.own
+10. module load connect
+11. connect setup
+12. enter your ssh user/password to UChicago Connect when prompted
+
+Bosco should be set up, with the UChicago Connect cluster added. Run "condor_submit" to submit jobs (currently supports grid universe only) and "condor_q" to check jobs. 
