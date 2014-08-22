@@ -1,0 +1,391 @@
+#!/usr/bin/python
+
+# /usr/bin/env python is the correct way to invoke a program,
+# but we can't do it because of CERN's terrible habit of mucking
+# up the user's environment - you get a python in $PATH that does
+# not have htcondor installed.
+
+import os
+import sys
+import string
+import ConfigParser
+import StringIO
+
+# Modules to preload into python plugins
+PluginModules = 'os sys getopt'.split()
+
+# Modules to preload into python plugins, importing all symbols
+PluginModulesAll = 'htcondor'.split()
+
+p = os.path.basename(sys.argv[0])
+Libraries = [
+	'/etc/ciconnect',
+	os.path.expanduser('~/lib/' + p),
+	sys.argv[0].replace('/bin/', '/lib/'),
+	os.path.join('/usr/lib', p),
+]
+
+Excludes = [os.path.join(x, 'exclude') for x in Libraries]
+Extensions = [os.path.join(x, 'extensions') for x in Libraries]
+Configs = [os.path.join(x, 'config.ini') for x in Libraries]
+
+class ConnectException(Exception): pass
+
+DefaultConfig = '''
+[connect]
+blacklist = /etc/ciconnect/project_blacklist
+'''
+
+class ConnectConfig(ConfigParser.RawConfigParser):
+	cleantrans = ['_'] * 256
+	for c in string.ascii_letters + string.digits:
+		cleantrans[ord(c)] = c
+	cleantrans = ''.join(cleantrans)
+
+	def _clean(self, s):
+		return s.translate(self.cleantrans)
+
+	def toEnv(self):
+		for section in self.sections():
+			for option in self.options(section):
+				key = self._clean(section) + '_' + self._clean(option)
+				yield((key, self.get(section, option)))
+
+	def toShell(self):
+		for key, val in self.toEnv():
+			val = val.replace('\\', '\\\\').replace("'", "\\'")
+			yield "%s='%s'" % (key, val)
+			yield('export ' + key)
+
+
+class PluginProxy(object):
+	arg0 = os.path.basename(sys.argv[0])
+	agent = ''
+
+	# Local symbols to export to plugins
+	exports = 'error debug info usage sh xsh'.split()
+
+	def error(self, *args):
+		agent = self.agent
+		if agent:
+			agent += ' '
+		print >>sys.stderr, ('%s: %serror:' % (self.arg0, agent)), ' '.join(args)
+
+	def debug(self, *args):
+		agent = self.agent
+		if agent:
+			agent += ' '
+		print >>sys.stdout, ('%s: %sdebug:' % (self.arg0, agent)), ' '.join(args)
+
+	def info(self, *args):
+		agent = self.agent
+		if agent:
+			agent += ' '
+		print >>sys.stdout, ('%s %s:' % (self.arg0, agent)), ' '.join(args)
+
+	def usage(self, *args):
+		print >>sys.stdout, 'usage:', self.arg0, self.agent, ' '.join(args)
+
+	def sh(self, command):
+		fp = os.popen(command, 'r')
+		data = fp.read()
+		fp.close()
+		return data
+
+	def xsh(self, command):
+		fp = os.popen(command, 'r')
+		for line in fp:
+			yield line
+		fp.close()
+
+
+class commandtype(object):
+	def __init__(self, config, name, data):
+		self.name = name
+		self.data = data
+		self.config = config
+		if hasattr(self, '__subinit__'):
+			self.__subinit__()
+
+	@staticmethod
+	def splitpath(*args):
+		if args:
+			return args[0].split(':')
+		elif 'PATH' in os.environ:
+			return os.environ['PATH'].split(':')
+		else:
+			return []
+
+	@classmethod
+	def discover(cls, config, *args, **kwargs):
+		if 'exts' in kwargs:
+			exts = kwargs['exts']
+		else:
+			exts = []
+
+		if 'prefixes' in kwargs:
+			prefixes = kwargs['prefixes']
+		else:
+			prefixes = []
+
+		if 'dirs' in kwargs:
+			dirs = kwargs['dirs']
+		elif 'path' in kwargs:
+			dirs = cls.splitpath(kwargs['path'])
+		else:
+			dirs = cls.splitpath()
+
+		def pfxfilter(file):
+			for prefix in prefixes:
+				if file.startswith(prefix):
+					return True
+			return False
+
+		def extfilter(file):
+			base, ext = os.path.splitext(file)
+			if ext and ext in exts:
+				return True
+			return False
+
+		for dir in dirs:
+			try:
+				files = os.listdir(dir)
+			except OSError:
+				continue
+			if prefixes:
+				files = filter(pfxfilter, files)
+			if exts:
+				files = filter(extfilter, files)
+			for name, path in [(file, os.path.join(dir, file)) for file in files]:
+				yield cls(config, name, path)
+
+
+	def __call__(self, *args, **kwargs):
+		'''dummy'''
+		return False
+
+	def usage(self):
+		yield ''
+
+
+class builtintype(commandtype):
+	@classmethod
+	def discover(cls, config, namespace=globals()):
+		for name in namespace:
+			if name.startswith('builtin_'):
+				yield cls(config, name[8:], namespace[name])
+
+	def __call__(self, *args, **kwargs):
+		handler = self.data
+		return handler(*args, **kwargs)
+
+
+class condortype(commandtype):
+	@classmethod
+	def discover(cls, config, *args, **kwargs):
+		for cmd in commandtype.discover(config, *args, **kwargs):
+			yield cls(config, cmd.name[7:], cmd.data)
+
+	def __call__(self, *args, **kwargs):
+		try:
+			os.execv(self.data, [self.data] + list(args))
+		except OSError, e:
+			raise ConnectException, 'cannot run %s: %s' % (self.data, str(e.errno))
+
+
+class pyexttype(commandtype):
+	@classmethod
+	def discover(cls, config, *args, **kwargs):
+		kwargs['exts'] = ['.py']
+		for cmd in commandtype.discover(config, *args, **kwargs):
+			dir, modname = os.path.dirname(cmd.data), os.path.basename(cmd.data)
+			if modname.endswith('.py'):
+				modname = modname[:-3]
+			yield cls(config, modname, dir)
+
+	def __subinit__(self):
+		saved = sys.path
+		sys.path = [self.data] + list(sys.path)
+		self.mod = __import__(self.name)
+		sys.path = saved
+
+		self.mod.agent = self.name
+		self.mod.proxy = PluginProxy()
+		self.mod.proxy.agent = self.mod.agent
+		self.mod.config = self.config
+
+		if hasattr(self.mod, 'usage'):
+			self.usage = self.mod.usage
+
+		for name in self.mod.proxy.exports:
+			try:
+				setattr(self.mod, name, getattr(self.mod.proxy, name))
+			except ImportError, e:
+				pass
+
+		for name in PluginModules:
+			try:
+				setattr(self.mod, name, __import__(name))
+			except ImportError, e:
+				pass
+
+		for name in PluginModulesAll:
+			try:
+				tmp = __import__(name)
+				setattr(self.mod, name, tmp)
+				for name in tmp.__dict__:
+					setattr(self.mod, name, getattr(tmp, name))
+			except:
+				pass
+
+		if hasattr(self.mod, 'setup'):
+			self.mod.setup()
+
+
+	def __call__(self, *args, **kwargs):
+		# in a python extension, module.run must be a callable
+		return self.mod.run(*args, **kwargs)
+
+
+class shexttype(commandtype):
+	@classmethod
+	def discover(cls, config, *args, **kwargs):
+		kwargs['exts'] = ['.sh']
+		for cmd in commandtype.discover(config, *args, **kwargs):
+			modname = cmd.name
+			if modname.endswith('.sh'):
+				modname = modname[:-3]
+			yield cls(config, modname, cmd.data)
+
+	def __call__(self, *args, **kwargs):
+		# in a shell extension, the module should run under /bin/sh
+		# and directly produce intended results
+		cmd = ' '.join(['/bin/sh', '-s', '-'] + list(args))
+		sh = os.popen(cmd, 'w')
+		for line in self.config.toShell():
+			sh.write(line + '\n')
+		fp = open(self.data, 'r')
+		for line in fp:
+			sh.write(line)
+		fp.close()
+		rc = sh.close()
+		if rc is None:
+			rc = 0
+		else:
+			rc = os.WEXITSTATUS(rc)
+		sys.exit(rc)
+		#os.execv('/bin/sh', [self.name, self.data] + list(args))
+
+class Main(object):
+	def __init__(self):
+		self.arg0 = os.path.basename(sys.argv[0])
+
+	def error(self, *args):
+		print >>sys.stderr, self.arg0 + ': ' + ' '.join(args)
+
+	def usage(self):
+		print >>sys.stderr, 'usage: %s <subcommand> [args]' % self.arg0
+
+		for cmd in [x for x in self.cmds if not x.name.startswith('.')]:
+			for usage in cmd.usage():
+				print >>sys.stderr, '       %s %s %s' % (self.arg0, cmd.name, usage)
+
+		return 2
+
+	def builtin_shell(self, *args, **kwargs):
+		self.error('shell is not yet implemented')
+		return 10
+
+	def builtin_config(self, *args, **kwargs):
+		self.config.write(sys.stdout)
+		return 10
+
+	def builtin_shconfig(self, *args, **kwargs):
+		for line in self.config.toShell():
+			print line
+		return 10
+
+	def builtin_debug(self, *args, **kwargs):
+		try:
+			from IPython import embed
+			return embed()
+		except ImportError:
+			pass
+
+		try:
+			from IPython.Shell import IPShellEmbed as embed
+			return embed()()
+		except ImportError:
+			pass
+
+		self.error('install IPython to use debug')
+		return 10
+
+	def __call__(self, args):
+		self.cmds = []
+		self.cmddict = {}
+
+		self.config = ConnectConfig()
+		fp = StringIO.StringIO(DefaultConfig)
+		self.config.readfp(fp)
+		fp.close()
+		for path in Configs:
+			self.config.read(path)
+
+		# build filter
+		# XXX TODO needs to use Matcher().  And use it on both name and
+		# path (data).  This way we can exclude whole dirs from consideration.
+		excludes = []
+		for exclfile in Excludes:
+			try:
+				fp = open(exclfile, 'r')
+			except IOError:
+				continue
+
+			def lines(fp):
+				for line in fp:
+					line = line.strip()
+					if line == '' or line.startswith('#'):
+						continue
+					yield line
+
+			excludes.extend(lines(fp))
+			fp.close()
+
+		builtin_ns = dict([(k, getattr(self, k)) for k in dir(self)])
+		generators = [
+			# once we have Matcher(), we should discard path=
+			pyexttype.discover(self.config, dirs=Extensions),
+			shexttype.discover(self.config, dirs=Extensions),
+			condortype.discover(self.config, prefixes=['condor_'], path='/usr/bin:/usr/local/bin'),
+			# builtins come last so that extensions can supersede
+			builtintype.discover(self.config, namespace=builtin_ns),
+		]
+
+		for generator in generators:
+			for cmd in generator:
+				if cmd.name not in self.cmddict:
+					if cmd.name in excludes:
+						continue
+					self.cmds.append(cmd)
+					self.cmddict[cmd.name] = cmd
+
+		self.cmds.sort(lambda a, b: cmp(a.name, b.name))
+
+		if not args:
+			return self.usage()
+
+		subcmd = args.pop(0)
+		if subcmd not in self.cmddict:
+			self.error('unknown command: %s' % subcmd)
+			return 2
+
+		return self.cmddict[subcmd](*args)
+
+
+if __name__ == '__main__':
+	try:
+		main = Main()
+		sys.exit(main(sys.argv[1:]))
+	except KeyboardInterrupt:
+		print >>sys.stderr, '\ninterrupt'
