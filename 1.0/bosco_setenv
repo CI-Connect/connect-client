@@ -1,2 +1,0 @@
-# Shell-independent setup
-source $HOME/bosco/bosco.`$HOME/bosco/libexec/shellselector -q`
