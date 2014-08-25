@@ -88,7 +88,7 @@ GANGLIAD_METRICS_CONFIG_DIR = $BOSCO_DIR/etc/condor/ganglia.d
 LOCK = /tmp/condor-lock.$LOCK
 IS_BOSCO = True
 MAIL = /bin/mailx
-DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD
 PREEN_ARGS = -r
 CONDOR_HOST = $HOST_NAME
 CONDOR_IDS = $CONDOR_ID.$CONDOR_ID
@@ -179,7 +179,7 @@ else
     echo "Bosco already started."
 fi
 
-REMOTE_HOST="login.ci-connect.uchicago.edu"
+REMOTE_HOST="login.ci-connect.uchicago.edu" 
 REMOTE_USER=""
 REMOTE_TYPE="condor"
 
