@@ -1,7 +1,7 @@
 BOSCO module
 ============
 
-1.0 - directory containing installed BOSCO files 
+bosco - directory containing installed BOSCO files 
 
 connect-1.0 - modulefile for BOSCO
 
@@ -14,7 +14,7 @@ How to test
 3. module load git
 4. git clone https://github.com/SISC2014/Bosco-Module.git
 5. mv Bosco-Module connect
-6. cp -r connect/1.0 ~/bosco
+6. cp -r connect/bosco ~/bosco
 7. mkdir -p ~/lib/connect/extensions
 8. cp connect/setup.sh ~/lib/connect/extensions/setup.sh
 9. module load use.own
