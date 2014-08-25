@@ -1,34 +1,129 @@
-#%Module1.0######################################################################
+#%Module1.0#####################################################################
 #
-# Connect modulefile
+# this module file tries to figure out as much as possible so it can just be
+# copied to right filename and work
 #
+# modules should be structured like this:
+# modulename/version
+# or with a specific compiler
+# modulename/version+compilermodulename-version
+#
+# Only a single / and a single + can be in the module path, so the compiler
+# should be given as the module name with a - instead of / to separate 
+# the name and version
+#
+#
+# It will check for bin, lib, and man directories in the usual spots and
+# set PATH, LD_LIBRARY_PATH and MANPATH if appropriate
+#
+# It will load the compiler module if one was specified
+# 
+#
+
+# the next line will be replaced with the conflicts for this module
+
+
+set modulename [string map {/ -} [module-info name]]
+
+set mname [lindex [split [module-info name] "/"] 0]
+
+set compiler ""
+
+set mversiontmp [lindex [split [module-info name] "/"] end]
+if { [string match "*+*" $mversiontmp ] } {
+   set mversion [lindex [split $mversiontmp "+"] 0]
+   set compiler [join [lrange [split $mversiontmp "+"] 1 end] "+"]
+   set compileroutput "compiled with $compiler"
+} else {
+   set mversion $mversiontmp
+   set compileroutput "compiled with the system compiler"
+}
 
 proc ModulesHelp { } {
-puts stderr "This modulefile defines the library paths and"
-puts stderr "include paths needed to access the OSG Connect suite of tools."
+   global version
+   puts stderr "\tThis module sets up the environment for $mname $mversion $compileroutput."
 }
 
-set is_module_rm [module-info mode remove]
-module-whatis "setup Connect modulefile 1.0"
+module-whatis	"setup $mname $mversion $compileroutput"
+conflict "$mname"
+
+#set sys [uname sysname]
+#set os [uname release]
+#set arch [uname machine]
+
+set SOFTPATH ~/bosco
+#eval set  [ array get env SOFTPATH ]
+eval set  [ array get env DISTARCH ]
+eval set  [ array get env ARCH ]
+eval set  [ array get env DIST ]
+
+# the next line will be replaced with the proper suffix for this software
+set suffix "$DISTARCH"
 
 if [ module-info mode load ] {
-
-  # set up environment  
-
-  set HOME ~ ; # change to /software later
-  set bosco_dir $HOME/bosco
-  set config_dir $HOME/.bosco
-  set config_fl $config_dir/condor_config
-  set script_fl $bosco_dir/connect.sh
-
-  prepend-path PATH       $bosco_dir/sbin
-  prepend-path PATH       $bosco_dir/bin
-  prepend-path LD_LIBRARY_PATH  $bosco_dir/lib
-  prepend-path MANPATH      $bosco_dir/man
-
-  prepend-path PATH	    $HOME/privatemodules/connect
-
-  setenv CONDOR_CONFIG $config_fl
-
+   if { [string compare $compiler ""] != 0 } {
+      #set compilermodulename [string map {- /} $compiler]
+      if { [string match "*-*" $compiler] } {
+         set i [string first "-" $compiler]
+         set compilermodulename [string replace $compiler $i $i "/"]
+      } else {
+         set compilermodulename $compiler
+      }
+      module load $compilermodulename
+      if { [is-loaded $compilermodulename] == 0 } {
+         puts stderr "WARNING: Unable to load compiler module '$compilermodulename'"
+         puts stderr "WARNING: Module '[module-info name]' may not work but loading anyway"
+      }
+   }
+}
+#set	appdir   $SOFTPATH/$mname-$mversion-$suffix
+set appdir $SOFTPATH
+if { [string compare $compiler ""] != 0 } {
+      set    appdir   $appdir+$compiler
 }
 
+# the next line will be replaced with module dependencies if necessary
+
+if { [ file isdirectory $appdir/bin  ] } {
+    prepend-path    PATH             $appdir/bin
+}
+if { [ file isdirectory $appdir/sbin  ] } {
+   prepend-path	    PATH 	     $appdir/sbin
+}
+if { [ file isdirectory $appdir/lib  ] } {
+    prepend-path    LD_LIBRARY_PATH         $appdir/lib
+# the next line will be replaced with LD_RUN_PATH if MODULELDRUNPATH option is set
+#_MODULELDRUNPATH_
+    prepend-path    LIBRARY_PATH            $appdir/lib
+    if { [ file isdirectory $appdir/lib/pkgconfig  ] } {
+        prepend-path    PKG_CONFIG_PATH         $appdir/lib/pkgconfig
+    }
+}
+
+# On x86_64, check if $appdir/lib64 exists and isn't a symlink to $appdir/lib
+# use exec readlink -f to canonicalize the name because the tcl readlink returns an
+# error if it isn't really a symlink 
+# this avoids the problem of a relative vs.  absolute symlink path
+if {[ string compare $ARCH "x86_64" ] == 0 
+    && [ file isdirectory $appdir/lib64  ]
+    && [ string compare [ exec readlink -f $appdir/lib64 ] "$appdir/lib" ] != 0 } {
+    prepend-path    LD_LIBRARY_PATH         $appdir/lib64
+# the next line will be replaced with LD_RUN_PATH if MODULELDRUNPATH option is set
+#_MODULELDRUNPATH64_
+    prepend-path    LIBRARY_PATH            $appdir/lib64
+    if { [ file isdirectory $appdir/lib64/pkgconfig  ] } {
+        prepend-path    PKG_CONFIG_PATH         $appdir/lib64/pkgconfig
+    }
+}
+if { [ file isdirectory $appdir/include ] } {
+   prepend-path CPATH $appdir/include
+}
+if { [ file isdirectory $appdir/share/man  ] } {
+    prepend-path    MANPATH         $appdir/share/man
+}
+if { [ file isdirectory $appdir/man  ] } {
+    prepend-path    MANPATH         $appdir/man
+}
+
+setenv CONDOR_CONFIG ~/.bosco/condor_config
+prepend-path PATH ~/privatemodules/connect
