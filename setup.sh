@@ -183,13 +183,13 @@ REMOTE_HOST="login.ci-connect.uchicago.edu"
 REMOTE_USER=""
 REMOTE_TYPE="condor"
 
-# Connect UChicago Connect cluster
+# Connect UChicago RCC Connect cluster
 cluster_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
 if [ $cluster_set -eq 1 ]; then
     # cluster already added
-    echo "UChicago Connect cluster already added."
+    echo "UChicago RCC Connect cluster already added."
 else 
-    echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
+    echo "************** Connecting UChicago RCC Connect cluster to BOSCO: ***********"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
 
