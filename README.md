@@ -1,5 +1,6 @@
 BOSCO module
 ============
+This repository contains the following files: 
 
 bosco - directory containing installed BOSCO files 
 
@@ -27,3 +28,39 @@ How to test
 12. enter your ssh user/password to UChicago Connect when prompted
 
 Bosco should be set up, with the UChicago Connect cluster added. Run "condor_submit" to submit jobs (currently supports grid universe only) and "condor_q" to check jobs. 
+
+User Guide 
+----------
+###Login to Midway
+
+To begin, log in to the Research Computing Center's Midway cluster. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. Using the BOSCO module also requires an account on [RCC Connect](http://ci-connect.uchicago.edu/).
+
+```
+$ ssh username@midway.rcc.uchicago.edu
+```
+
+###Set up Connect and BOSCO
+
+Once logged in to Midway, set up the Connect program with the following step:
+
+```
+$ module load connect
+```
+
+Now you will have access to all of the Connect program extensions. For a list of available extensions, enter the following command:
+
+```
+$ connect available
+```
+
+To run any of these extensions, just enter "connect <extension name>". For example, enter the command below to set up BOSCO: 
+
+```
+$ connect setup
+```
+
+The command will start BOSCO and ask for a username and password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
+
+###Tutorial jobs 
+
+TODO: Look at OSG Connect Quickstart tutorial
