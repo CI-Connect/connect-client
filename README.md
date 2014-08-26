@@ -33,7 +33,7 @@ User Guide
 ----------
 ###Login to Midway
 
-To begin, log in to the Research Computing Center's Midway cluster. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. Using the BOSCO module also requires an account on [RCC Connect](http://ci-connect.uchicago.edu/).
+To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. Using the BOSCO module also requires an account on [RCC Connect](http://ci-connect.uchicago.edu/).
 
 ```
 $ ssh username@midway.rcc.uchicago.edu
