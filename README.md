@@ -5,7 +5,11 @@ bosco - directory containing installed BOSCO files
 
 connect-1.0 - modulefile for BOSCO
 
-setup.sh - setup script
+connect - Connect program
+
+setup.sh - Connect extension that sets up BOSCO for the user
+
+addsite.sh - Connect extension that adds another cluster to BOSCO for the user 
 
 How to test
 -----------
