@@ -33,7 +33,7 @@ User Guide
 ----------
 ####Login to Midway
 
-To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. Using the BOSCO module also requires an account on [RCC Connect](http://ci-connect.uchicago.edu/).
+To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. If you don't already have an account on RCC Connect, please also register on the [RCC Connect website](http://ci-connect.uchicago.edu/).
 
 ```
 $ ssh username@midway.rcc.uchicago.edu
@@ -53,7 +53,7 @@ Now you will have access to all of the Connect program extensions. For a list of
 $ connect
 ```
 
-To run any of these extensions, just enter "connect <extension name>". For example, enter the command below to set up BOSCO: 
+To run any of these extensions, just enter "connect [extension name]". For example, enter the command below to set up BOSCO: 
 
 ```
 $ connect setup
@@ -61,7 +61,7 @@ $ connect setup
 
 The command will start BOSCO and ask for a username and password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
 
-####Tutorial jobs 
+####Example job 
 
 Now let's create a test script to execute as your job submission to RCC Connect. Create the following script, titled short.sh: 
 
@@ -89,7 +89,7 @@ $ chmod +x short.sh
 
 #####Run the job locally
 
-When setting up a new job type, it's important to test your job outside of Condor before submitting into the grid.
+When setting up a new job type, it's important to test your job locally before submitting it into the grid.
 ````bash
 $ ./short.sh
 Start time: Mon Aug 25 10:21:35 CDT 2014
@@ -108,10 +108,10 @@ Now, let's create a simple (if verbose) HTCondor submit file, called tutorial.su
 $ nano tutorial.submit
 ````
 
-The submit file should contain the following. Replace "username" in the *grid_resource* line with your account name on RCC Connect.
+The submit file should contain the following. Replace "username" in the **grid_resource** line with your account name on RCC Connect.
 ````
 # The UNIVERSE defines an execution environment. 
-Universe = grid
+universe = grid
 grid_resource = batch condor username@login.ci-connect.uchicago.edu
 
 # EXECUTABLE is the program your job will run. It's often useful
@@ -134,7 +134,7 @@ Queue 1
 
 #####Submit the job
 
-Submit the job using *condor_submit*.
+Submit the job using **condor_submit**.
 ````
 $ condor_submit tutorial.submit
 Submitting job(s).
@@ -142,7 +142,7 @@ Submitting job(s).
 ````
 
 #####Check job status
-The *condor_q* command tells the status of currently running jobs.
+The **condor_q** command tells the status of currently running jobs.
 
 ````
 $ condor_q
@@ -153,7 +153,7 @@ $ condor_q
 1 jobs; 0 completed, 0 removed, 0 idle, 1 running, 0 held, 0 suspended
 ````
 
-Let's wait for your job to finish - that is, for condor_q not to show the job in its output. A useful Connect extension for this is *watch* - it runs a program repeatedly, letting you see how the output differs at fixed five-second intervals.
+Let's wait for your job to finish - that is, for condor_q not to show the job in its output. A useful Connect extension for this is **watch** - it runs a program repeatedly, letting you see how the output differs at fixed five-second intervals.
 
 ````
 $ condor_submit tutorial.submit
@@ -165,11 +165,11 @@ $ connect watch
 
 When your job has completed, it will disappear from the list.
 
-Note: To close *watch*, hold down *Ctrl* and press *C*.
+Note: To close **watch**, hold down *Ctrl* and press *C*.
 
 #####Job history
 
-Once your job has finished, you can get information about its execution from the *condor_history* command:
+Once your job has finished, you can get information about its execution from the **condor_history** command:
 
 ````
 $ condor_history 1
