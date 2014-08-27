@@ -36,7 +36,7 @@ User Guide
 To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. If you don't already have an account on RCC Connect, please also register on the [RCC Connect website](http://ci-connect.uchicago.edu/).
 
 ```
-$ ssh username@midway.rcc.uchicago.edu
+$ ssh username@midway-login1.rcc.uchicago.edu
 ```
 
 ####Set up Connect and BOSCO
