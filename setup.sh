@@ -109,8 +109,7 @@ use SECURITY : HOST_BASED
 ##  To expand your condor pool beyond a single host, set ALLOW_WRITE to match all of the hosts
 #ALLOW_WRITE = *.cs.wisc.edu' >> $CONFIG_FILE
 
-HOST_NAME=$(hostname) | cut -d'.' -f1
-HOST=midway-login1.rcc.uchicago.edu
+HOST_NAME=$(hostname
 NEW_LOCK=$(whoami)
 CONDOR_ID=$(id -u)
 
@@ -126,7 +125,7 @@ RELEASE_DIR = $BOSCO_DIR
 
 LOCAL_DIR = $LOCAL_DIR
 
-COLLECTOR_NAME = Personal Condor at midway-login1.rcc.local
+COLLECTOR_NAME = Personal Condor at $HOST_NAME
 
 LOCK = /tmp/condor-lock.$NEW_LOCK
 
@@ -142,7 +141,7 @@ DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
 
 PREEN_ARGS = -r
 
-CONDOR_HOST = midway-login1.rcc.local
+CONDOR_HOST = $HOST_NAME
 
 CONDOR_IDS = $CONDOR_ID.$CONDOR_ID
 
