@@ -67,33 +67,91 @@ echo
 [ -d $LOCAL_DIR/config ] || mkdir $LOCAL_DIR/config
 
 # Check if config files exist
+exists=1
+[ -f $CONFIG_FILE ] || exists=0
+[ $exists -eq 0 ] && cat > $CONFIG_FILE <<EOF
+######################################################################
+##
+##  condor_config
+##
+##  This is the global configuration file for condor. This is where
+##  you define where the local config file is. Any settings
+##  made here may potentially be overridden in the local configuration
+##  file.  KEEP THAT IN MIND!  To double-check that a variable is
+##  getting set from the configuration file that you expect, use
+##  condor_config_val -v <variable name>
+##
+##  condor_config.annotated is a more detailed sample config file
+##
+##  Unless otherwise specified, settings that are commented out show
+##  the defaults that are used if you do not define a value.  Settings
+##  that are defined here MUST BE DEFINED since they have no default
+##  value.
+##
+######################################################################
 
-[ -f $CONFIG_FILE ] || cat > $CONFIG_FILE  <<EOF
-##  Where is the machine-specific local config file for each host?            
+##  Where have you installed the bin, sbin and lib condor directories?   
+RELEASE_DIR = /usr/local/condor
+
+##  Where is the machine-specific local config file for each host?
 LOCAL_CONFIG_FILE = $LOCAL_DIR/condor_config.local
-LOCAL_CONFIG_DIR = $LOCAL_DIR/config
-## Use a host-based security policy. By default CONDOR_HOST and the local machine will be allowed
-use SECURITY: HOST_BASED
+
 EOF
 
-HOST_NAME=$(hostname)
-LOCK=$(whoami)
+[ $exists -eq 0 ] && echo '##  The normal way to do configuration with RPMs is to read all of the
+##  files in a given directory that do not match a regex as configuration files.
+##  Config files are read in lexicographic order.
+LOCAL_CONFIG_DIR = $(LOCAL_DIR)/config
+#LOCAL_CONFIG_DIR_EXCLUDE_REGEXP = ^((\..*)|(.*~)|(#.*)|(.*\.rpmsave)|(.*\.rpmnew))$
+
+##  Use a host-based security policy. By default CONDOR_HOST and the local machine will be allowed
+use SECURITY : HOST_BASED
+##  To expand your condor pool beyond a single host, set ALLOW_WRITE to match all of the hosts
+#ALLOW_WRITE = *.cs.wisc.edu' >> $CONFIG_FILE
+
+HOST_NAME=$(hostname) | cut -d'.' -f1
+HOST=midway-login1.rcc.uchicago.edu
+NEW_LOCK=$(whoami)
 CONDOR_ID=$(id -u)
 
 [ -f $LOCAL_CONFIG ] || cat > $LOCAL_CONFIG <<EOF
+
+##  Where have you installed the bin, sbin and lib condor directories?   
+
 RELEASE_DIR = $BOSCO_DIR
+
+##  Where is the local condor directory for each host?  This is where the local config file(s), logs and
+##  spool/execute directories are located. this is the default for Linux and Unix systems.
+##  this is the default on Windows sytems
+
 LOCAL_DIR = $LOCAL_DIR
-COLLECTOR_NAME = Personal Condor at $HOST_NAME
-GANGLIAD_METRICS_CONFIG_DIR = $BOSCO_DIR/etc/condor/ganglia.d
-LOCK = /tmp/condor-lock.$LOCK
+
+COLLECTOR_NAME = Personal Condor at midway-login1.rcc.local
+
+LOCK = /tmp/condor-lock.$NEW_LOCK
+
 IS_BOSCO = True
+
+CONDOR_ADMIN =  
+
 MAIL = /bin/mailx
-DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD
+
+GANGLIAD_METRICS_CONFIG_DIR = $BOSCO_DIR/etc/condor/ganglia.d
+
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
+
 PREEN_ARGS = -r
-CONDOR_HOST = $HOST_NAME
+
+CONDOR_HOST = midway-login1.rcc.local
+
 CONDOR_IDS = $CONDOR_ID.$CONDOR_ID
+
 CREATE_CORE_FILES = False
-GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE = 10
+
+GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE=10
+
+GRIDMANAGER_DEBUG = D_FULLDEBUG
+
 EOF
 
 [ -f $factory_config ] || echo '#
@@ -123,7 +181,7 @@ CAMPUSFACTORY_ENVIRONMENT = "PYTHONPATH=$(LIBEXEC)/campus_factory/python-lib CAM
 
 # Enabled Shared Port
 USE_SHARED_PORT = True
-SHARED_PORT_ARGS = -p 11000     
+SHARED_PORT_ARGS = -p 11000
 
 # What daemons should I run?
 DAEMON_LIST = COLLECTOR, SCHEDD, NEGOTIATOR, MASTER, SHARED_PORT, CAMPUSFACTORY
@@ -143,6 +201,7 @@ SEC_READ_INTEGRITY = OPTIONAL
 
 ALLOW_ADMINISTRATOR = $(FULL_HOSTNAME) $(IP_ADDRESS)
 
+
 SEC_PASSWORD_FILE = $(LOCAL_DIR)/passwdfile
 
 # Daemons have their own passwdfile, always owned by the daemon user
@@ -161,7 +220,12 @@ ALLOW_DAEMON = $(ALLOW_DAEMON) condor_pool@*/* $(FULL_HOSTNAME) $(IP_ADDRESS)
 SEC_DAEMON_AUTHENTICATION = REQUIRED
 SEC_DAEMON_INTEGRITY = REQUIRED
 SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
-SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD' > $factory_config
+SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD
+
+
+
+
+' > $factory_config
 
 # Stop Bosco if already started, check just in case 
 # bosco_stop --force > /dev/null (check to see if needed)
@@ -179,17 +243,17 @@ else
     echo "Bosco already started."
 fi
 
-REMOTE_HOST="login.ci-connect.uchicago.edu" 
+REMOTE_HOST="login.ci-connect.uchicago.edu"
 REMOTE_USER=""
 REMOTE_TYPE="condor"
 
-# Connect UChicago RCC Connect cluster
+# Connect UChicago Connect cluster
 cluster_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
 if [ $cluster_set -eq 1 ]; then
     # cluster already added
-    echo "UChicago RCC Connect cluster already added."
+    echo "UChicago Connect cluster already added."
 else 
-    echo "************** Connecting UChicago RCC Connect cluster to BOSCO: ***********"
+    echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
 
