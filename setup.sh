@@ -54,9 +54,15 @@ fix_port () {
   return 1
 }
 
-echo "Connect Setup is starting."
-echo "More information can be found in $LOG_FILE"
-echo
+HOST_NAME=$(hostname)
+if [ "$HOST_NAME" == "midway-login1" ]; then
+    echo "Connect Setup is starting."
+    echo "More information can be found in $LOG_FILE"
+    echo
+else 
+    echo "You are logged in on $HOST_NAME. Please log in on midway-login1.rcc.uchicago.edu to access the Connect module."
+    exit 1
+fi 
 
 # Check to see if local Bosco directory and all subdirectories exist
 
@@ -109,7 +115,6 @@ use SECURITY : HOST_BASED
 ##  To expand your condor pool beyond a single host, set ALLOW_WRITE to match all of the hosts
 #ALLOW_WRITE = *.cs.wisc.edu' >> $CONFIG_FILE
 
-HOST_NAME=$(hostname
 NEW_LOCK=$(whoami)
 CONDOR_ID=$(id -u)
 
