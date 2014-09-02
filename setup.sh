@@ -2,7 +2,7 @@
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
 LOCAL_DIR=$HOME/.bosco
-BOSCO_DIR=$HOME/bosco # change to /software/bosco later
+BOSCO_DIR=/software/connect-1.0-el6-x86_64
 
 # Change to have a different log file
 LOG_FILE=$LOCAL_DIR/connect_setup.log

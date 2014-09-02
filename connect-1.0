@@ -51,8 +51,7 @@ conflict "$mname"
 #set os [uname release]
 #set arch [uname machine]
 
-set SOFTPATH ~/bosco
-#eval set  [ array get env SOFTPATH ]
+eval set  [ array get env SOFTPATH ]
 eval set  [ array get env DISTARCH ]
 eval set  [ array get env ARCH ]
 eval set  [ array get env DIST ]
@@ -76,8 +75,7 @@ if [ module-info mode load ] {
       }
    }
 }
-#set	appdir   $SOFTPATH/$mname-$mversion-$suffix
-set appdir $SOFTPATH
+set	appdir   $SOFTPATH/$mname-$mversion-$suffix
 if { [string compare $compiler ""] != 0 } {
       set    appdir   $appdir+$compiler
 }
@@ -126,4 +124,4 @@ if { [ file isdirectory $appdir/man  ] } {
 }
 
 setenv CONDOR_CONFIG ~/.bosco/condor_config
-prepend-path PATH ~/privatemodules/connect
+prepend-path PATH $appdir
