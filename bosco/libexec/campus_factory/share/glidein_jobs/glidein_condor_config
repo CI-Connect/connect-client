@@ -8,17 +8,18 @@
 #GLIDEIN_Site = "Firefly - HCC Campus Grid"
 
 
-# Thinks you can edit:
+# Things you can edit:
 
 # Which hosts would you like be able to shutdown/run this glidein.  Default is usually ok.
 ALLOW_ADMINISTRATOR = $(HOSTNAME), $(GLIDEIN_HOST)
 
 # How long should the glidein run if it's not running any jobs.  In seconds.
-STARTD_NOCLAIM_SHUTDOWN=1200
+STARTD_NOCLAIM_SHUTDOWN = 300
 
 # Retirement time - 72000 = 20 hours
-SHUTDOWN_GRACEFUL_TIMEOUT = 72000
-MAXJOBRETIREMENTTIME = 34800
+SHUTDOWN_GRACEFUL_TIMEOUT = 259200
+SHUTDOWN_FAST_TIMEOUT = 259200
+MAXJOBRETIREMENTTIME = 259200
 
 #
 # Things you should probably leave alone

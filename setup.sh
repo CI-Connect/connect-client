@@ -2,7 +2,7 @@
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
 LOCAL_DIR=$HOME/.bosco
-BOSCO_DIR=/software/connect-1.0-el6-x86_64
+BOSCO_DIR=$HOME/bosco # change to /software/bosco later
 
 # Change to have a different log file
 LOG_FILE=$LOCAL_DIR/connect_setup.log
@@ -55,14 +55,15 @@ fix_port () {
 }
 
 HOST_NAME=$(hostname)
-if [ "$HOST_NAME" == "midway-login1" ]; then
+if [ "$HOST_NAME" == "midway-login1" ];then
     echo "Connect Setup is starting."
     echo "More information can be found in $LOG_FILE"
     echo
-else 
-    echo "You are logged in on $HOST_NAME. Please log in on midway-login1.rcc.uchicago.edu to access the Connect module."
+else
+    echo "You are logged in on $HOST_NAME. Please log in on midway-login1.rcc.u
+chicago.edu to access the Connect module."
     exit 1
-fi 
+fi
 
 # Check to see if local Bosco directory and all subdirectories exist
 
@@ -115,6 +116,7 @@ use SECURITY : HOST_BASED
 ##  To expand your condor pool beyond a single host, set ALLOW_WRITE to match all of the hosts
 #ALLOW_WRITE = *.cs.wisc.edu' >> $CONFIG_FILE
 
+HOST=midway-login1.rcc.uchicago.edu
 NEW_LOCK=$(whoami)
 CONDOR_ID=$(id -u)
 
@@ -130,7 +132,15 @@ RELEASE_DIR = $BOSCO_DIR
 
 LOCAL_DIR = $LOCAL_DIR
 
-COLLECTOR_NAME = Personal Condor at $HOST_NAME
+COLLECTOR_NAME = Personal Condor at $HOST
+
+NETWORK_INTERFACE = 128.135.112.71
+
+MY_FULL_HOSTNAME = $HOST
+
+FILESYSTEM_DOMAIN = $HOST
+
+UID_DOMAIN = $HOST
 
 LOCK = /tmp/condor-lock.$NEW_LOCK
 
@@ -146,7 +156,7 @@ DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
 
 PREEN_ARGS = -r
 
-CONDOR_HOST = $HOST_NAME
+CONDOR_HOST = $HOST
 
 CONDOR_IDS = $CONDOR_ID.$CONDOR_ID
 
@@ -154,7 +164,7 @@ CREATE_CORE_FILES = False
 
 GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE=10
 
-GRIDMANAGER_DEBUG = D_FULLDEBUG
+MASTER_DEBUG = True
 
 EOF
 
@@ -163,11 +173,11 @@ EOF
 #
 
 ##  What machine is your central manager?
-CONDOR_HOST = $(FULL_HOSTNAME)
-COLLECTOR_HOST = $(CONDOR_HOST):11000?sock=collector
+CONDOR_HOST = $(MY_FULL_HOSTNAME)
+COLLECTOR_HOST = $(MY_FULL_HOSTNAME):11000?sock=collector
 
 ##  This macro is used to specify a short description of your pool. 
-COLLECTOR_NAME      = $(CONDOR_HOST)
+COLLECTOR_NAME      = $(MY_FULL_HOSTNAME)
 
 # What hosts can run jobs to this cluster.
 FLOCK_FROM = 
@@ -203,8 +213,16 @@ SEC_DEFAULT_INTEGRITY = REQUIRED
 # To allow status read
 SEC_READ_INTEGRITY = OPTIONAL
 
-ALLOW_ADMINISTRATOR = $(FULL_HOSTNAME) $(IP_ADDRESS)
+ALLOW_ADMINISTRATOR = $(MY_FULL_HOSTNAME) $(IP_ADDRESS) $(FULL_HOSTNAME)
 
+ALLOW_NEGOTIATOR = $(ALLOW_NEGOTIATOR) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
+ALLOW_NEGOTIATOR_SCHEDD = $(ALLOW_NEGOTIATOR_SCHEDD) $(MY_FULL_HOSTNAME)  $(FULL_HOSTNAME)
+ALLOW_OWNER = $(ALLOW_OWNER) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
+ALLOW_READ_COLLECTOR = $(ALLOW_READ_COLLECTOR) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
+ALLOW_READ_STARTD = $(ALLOW_READ_STARTD) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
+ALLOW_WRITE = $(ALLOW_WRITE) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
+ALLOW_WRITE_COLLECTOR = $(ALLOW_WRITE_COLLECTOR) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
+ALLOW_WRITE_STARTD = $(ALLOW_WRITE_STARTD) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
 
 SEC_PASSWORD_FILE = $(LOCAL_DIR)/passwdfile
 
@@ -219,7 +237,7 @@ SEC_ADVERTISE_STARTD_AUTHENTICATION_METHODS = PASSWORD
 SEC_CLIENT_AUTHENTICATION_METHODS = FS, PASSWORD
 
 ALLOW_ADVERTISE_STARTD = condor_pool@*/*
-ALLOW_DAEMON = $(ALLOW_DAEMON) condor_pool@*/* $(FULL_HOSTNAME) $(IP_ADDRESS)
+ALLOW_DAEMON = $(ALLOW_DAEMON) condor_pool@*/* $(MY_FULL_HOSTNAME) $(IP_ADDRESS) $(FULL_HOSTNAME)
 
 SEC_DAEMON_AUTHENTICATION = REQUIRED
 SEC_DAEMON_INTEGRITY = REQUIRED

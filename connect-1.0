@@ -75,7 +75,8 @@ if [ module-info mode load ] {
       }
    }
 }
-set	appdir   $SOFTPATH/$mname-$mversion-$suffix
+set appdir ~/bosco
+#set	appdir   $SOFTPATH/$mname-$mversion-$suffix
 if { [string compare $compiler ""] != 0 } {
       set    appdir   $appdir+$compiler
 }
@@ -124,4 +125,5 @@ if { [ file isdirectory $appdir/man  ] } {
 }
 
 setenv CONDOR_CONFIG ~/.bosco/condor_config
-prepend-path PATH $appdir
+#prepend-path PATH $appdir
+prepend-path PATH ~/privatemodules/connect

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 if [ "$_condor_LOCAL_DIR" = "." ]; then
   export _condor_LOCAL_DIR=$(pwd)
@@ -8,6 +8,9 @@ fi
 if [ "$_condor_GSI_DAEMON_PROXY" = "" ] && [ -a "$X509_USER_PROXY" ]; then
   export _condor_GSI_DAEMON_PROXY="$X509_USER_PROXY"
 fi
+
+echo $_condor_SBIN
+echo $_condor_LOCAL_DIR
 
 exec ${_condor_SBIN}/condor_master "$@"
 
