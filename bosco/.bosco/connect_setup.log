@@ -1,0 +1,9 @@
+Local Bosco files can be found in /home/lincolnb/.bosco
+Port 27495 available.
+Port 11000 is busy. Replacing 11000 with 27495. Before:
+COLLECTOR_HOST = $(MY_FULL_HOSTNAME):11000?sock=collector
+SHARED_PORT_ARGS = -p 11000
+After replacement:
+COLLECTOR_HOST = $(MY_FULL_HOSTNAME):27495?sock=collector
+SHARED_PORT_ARGS = -p 27495
+ControlSocket /tmp/bosco_ssh_control.lincolnb@login.ci-connect.uchicago.edu:22 already exists, disabling multiplexing

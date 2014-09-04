@@ -1,0 +1,2 @@
+grid_resource = batch condor lincolnb@login.ci-connect.uchicago.edu
+SUBMIT_EXPRS = grid_resource

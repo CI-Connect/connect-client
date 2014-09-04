@@ -1,0 +1,45 @@
+
+##  Where have you installed the bin, sbin and lib condor directories?   
+
+RELEASE_DIR = /home/lincolnb/bosco
+
+##  Where is the local condor directory for each host?  This is where the local config file(s), logs and
+##  spool/execute directories are located. this is the default for Linux and Unix systems.
+##  this is the default on Windows sytems
+
+LOCAL_DIR = /home/lincolnb/.bosco
+
+COLLECTOR_NAME = Personal Condor at midway-login1.rcc.uchicago.edu
+
+NETWORK_INTERFACE = 128.135.112.71
+
+MY_FULL_HOSTNAME = midway-login1.rcc.uchicago.edu
+
+FILESYSTEM_DOMAIN = midway-login1.rcc.uchicago.edu
+
+UID_DOMAIN = midway-login1.rcc.uchicago.edu
+
+LOCK = /tmp/condor-lock.lincolnb
+
+IS_BOSCO = True
+
+CONDOR_ADMIN =  
+
+MAIL = /bin/mailx
+
+GANGLIAD_METRICS_CONFIG_DIR = /home/lincolnb/bosco/etc/condor/ganglia.d
+
+DAEMON_LIST = COLLECTOR, MASTER, NEGOTIATOR, SCHEDD, STARTD
+
+PREEN_ARGS = -r
+
+CONDOR_HOST = midway-login1.rcc.uchicago.edu
+
+CONDOR_IDS = 414703179.414703179
+
+CREATE_CORE_FILES = False
+
+
+MASTER_DEBUG = True
+
+GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE=10
