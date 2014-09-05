@@ -24,8 +24,8 @@ How to test
 8. cp connect/setup.sh ~/lib/connect/extensions/setup.sh
 9. module load use.own
 10. module load connect
-11. connect setup
-12. enter your ssh user/password to UChicago Connect when prompted
+11. connect setup <username on UChicago Connect>
+12. enter your ssh password to UChicago Connect when prompted
 
 Bosco should be set up, with the UChicago Connect cluster added. Run "condor_submit" to submit jobs (currently supports grid universe only) and "condor_q" to check jobs. 
 
@@ -59,7 +59,7 @@ To run any of these extensions, just enter "connect [extension name]". The setup
 $ connect setup [UChicago Connect username]
 ```
 
-The command will start BOSCO and ask for a username and password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
+The command will start BOSCO and ask for your ssh password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
 
 ####Example job 
 
