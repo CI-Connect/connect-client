@@ -93,7 +93,7 @@ When setting up a new job type, it's important to test your job locally before s
 ````bash
 $ ./short.sh
 Start time: Mon Aug 25 10:21:35 CDT 2014
-Job is running on node: midway-login2
+Job is running on node: midway-login1
 Job running as user: uid=54161(netid) gid=1000(users) groups=1000(users),10008(rcc)
 Job is running in directory: /home/netid
 Working hard...
@@ -146,7 +146,7 @@ The **condor_q** command tells the status of currently running jobs.
 
 ````
 $ condor_q
--- Submitter: midway-login2.rcc.local : <128.135.112.72:65045?sock=7603_c271_4> : midway-login2.rcc.local
+-- Submitter: midway-login2.rcc.local : <128.135.112.72:65045?sock=7603_c271_4> : midway-login1.rcc.local
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD               
    1.0   username         8/25 10:06   0+00:00:06 R  0   0.0  short.sh         
 
