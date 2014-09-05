@@ -54,6 +54,11 @@ fix_port () {
   return 1
 }
 
+if [ "$#" -ne 1 ]
+    then echo "Usage: connect setup [UChicago Connect username]"
+    exit
+fi
+
 HOST_NAME=$(hostname)
 if [ "$HOST_NAME" == "midway-login1" ];then
     echo "Connect Setup is starting."
@@ -62,7 +67,7 @@ if [ "$HOST_NAME" == "midway-login1" ];then
 else
     echo "You are logged in on $HOST_NAME. Please log in on midway-login1.rcc.u
 chicago.edu to access the Connect module."
-    exit 1
+    exit
 fi
 
 # Check to see if local Bosco directory and all subdirectories exist
@@ -174,7 +179,7 @@ EOF
 
 ##  What machine is your central manager?
 CONDOR_HOST = $(MY_FULL_HOSTNAME)
-COLLECTOR_HOST = $(MY_FULL_HOSTNAME):11000?sock=collector
+COLLECTOR_HOST = $(FULL_HOSTNAME):11000?sock=collector
 
 ##  This macro is used to specify a short description of your pool. 
 COLLECTOR_NAME      = $(MY_FULL_HOSTNAME)
@@ -216,7 +221,7 @@ SEC_READ_INTEGRITY = OPTIONAL
 ALLOW_ADMINISTRATOR = $(MY_FULL_HOSTNAME) $(IP_ADDRESS) $(FULL_HOSTNAME)
 
 ALLOW_NEGOTIATOR = $(ALLOW_NEGOTIATOR) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
-ALLOW_NEGOTIATOR_SCHEDD = $(ALLOW_NEGOTIATOR_SCHEDD) $(MY_FULL_HOSTNAME)  $(FULL_HOSTNAME)
+ALLOW_NEGOTIATOR_SCHEDD = $(ALLOW_NEGOTIATOR_SCHEDD) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
 ALLOW_OWNER = $(ALLOW_OWNER) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
 ALLOW_READ_COLLECTOR = $(ALLOW_READ_COLLECTOR) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
 ALLOW_READ_STARTD = $(ALLOW_READ_STARTD) $(MY_FULL_HOSTNAME) $(FULL_HOSTNAME)
@@ -257,7 +262,7 @@ if [ $started -eq 1 ]; then
     ID=`expr $(id -u) % 64511`
     PORT=`expr $ID + 1024`
     fix_port $PORT
-    
+
     # Start Bosco
     echo "************** Starting Bosco: ***********"
     bosco_start 2>> $LOG_FILE 1>/dev/tty
@@ -266,8 +271,8 @@ else
 fi
 
 REMOTE_HOST="login.ci-connect.uchicago.edu"
-REMOTE_USER=""
 REMOTE_TYPE="condor"
+REMOTE_USER=$1
 
 # Connect UChicago Connect cluster
 cluster_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
@@ -278,14 +283,6 @@ else
     echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
-
-    q_tmp=""
-    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp </dev/tty
-    if [ "x$q_tmp" = "x" ]; then 
-	REMOTE_USER=$USER
-    else
-	REMOTE_USER=$q_tmp
-    fi
 
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
     bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 2>> $LOG_FILE

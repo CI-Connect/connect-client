@@ -53,10 +53,10 @@ Now you will have access to all of the Connect program extensions. For a list of
 $ connect
 ```
 
-To run any of these extensions, just enter "connect [extension name]". For example, enter the command below to set up BOSCO: 
+To run any of these extensions, just enter "connect [extension name]". The setup extension also requires one more argument: your username on UChicago Connect. For example, enter the command below to set up BOSCO, substituting your own username instead: 
 
 ```
-$ connect setup
+$ connect setup [UChicago Connect username]
 ```
 
 The command will start BOSCO and ask for a username and password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
