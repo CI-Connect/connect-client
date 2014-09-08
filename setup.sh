@@ -171,6 +171,8 @@ GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE=10
 
 MASTER_DEBUG = True
 
+USER = $NEW_LOCK
+
 EOF
 
 [ -f $factory_config ] || echo '#
@@ -181,8 +183,10 @@ EOF
 CONDOR_HOST = $(MY_FULL_HOSTNAME)
 COLLECTOR_HOST = $(FULL_HOSTNAME):11000?sock=collector
 
-##  This macro is used to specify a short description of your pool. 
-COLLECTOR_NAME      = $(MY_FULL_HOSTNAME)
+NEW_HOST=$(CONDOR_HOST):11000?sock=collector
+custom_condor_submit = GLIDEIN_HOST==$(NEW_HOST)
+
+COLLECTOR_NAME = $(MY_FULL_HOSTNAME)
 
 # What hosts can run jobs to this cluster.
 FLOCK_FROM = 
@@ -271,8 +275,8 @@ else
 fi
 
 REMOTE_HOST="login.ci-connect.uchicago.edu"
+REMOTE_USER=""
 REMOTE_TYPE="condor"
-REMOTE_USER=$1
 
 # Connect UChicago Connect cluster
 cluster_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
@@ -283,6 +287,8 @@ else
     echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
+
+    REMOTE_USER=$1
 
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
     bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 2>> $LOG_FILE
@@ -311,18 +317,14 @@ fi
 echo "************** Congratulations, Bosco is now setup to work with $REMOTE_HOST! ***********"
 cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
-Remember to setup the environment all the time you want to use Bosco:
+Remember to setup the environment each time you log in again and want to use Bosco:
 module load connect
 
 Here is a quickstart guide about BOSCO:
 https://twiki.grid.iu.edu/bin/view/CampusGrids/BoscoQuickStart
 
-To remove Bosco you can run:
-module load connect; bosco_uninstall --all
-
 Here is a submit file example (supposing you want to run "myjob.sh"):
-universe = grid
-grid_resource = batch condor $REMOTE_USER@$REMOTE_HOST
+universe = vanilla
 Executable = myjob.sh
 arguments = 
 output = myjob.output.txt

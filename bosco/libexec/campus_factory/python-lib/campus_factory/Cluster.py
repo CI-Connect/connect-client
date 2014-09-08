@@ -154,7 +154,7 @@ class Cluster:
         if (custom_options_raw is not None):
             split_options = custom_options_raw.split(";")
             for option in split_options:
-                (lside, rside) = option.split("=")
+                (lside, rside) = option.split("==")
                 custom_options[lside.strip()] = rside.strip()
                 
         

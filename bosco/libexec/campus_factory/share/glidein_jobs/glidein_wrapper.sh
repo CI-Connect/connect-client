@@ -27,21 +27,6 @@ cp ${starting_dir}/exec_wrapper.sh          ${local_dir}
 # Untar the executables into the sandbox                                        
 tar --extract --gzip --directory=${local_dir} --file=${starting_dir}/glideinExec.tar.gz
 
-f_echo $?
-f_echo "untarred"
-
-f_echo "pwd:"
-pwd
-
-f_echo "ls:"
-ls 
-
-f_echo "ls glideinExec:"
-ls ${local_dir}/glideinExec
-
-f_echo "ps ux:"
-ps ux
-
 # All late-binding configurations                                               
 export CONDOR_CONFIG=${starting_dir}/glidein_condor_config
 export _condor_LOCAL_DIR=${local_dir}
@@ -81,7 +66,6 @@ export _condor_MimSlotLife=$((${_MinSlotLife}*60))
 # -r   Retire the daemons when the slot life has only the minimum job start time remaining in minutes                                                           
 # -f   Do not fork the daemons                                                  
 # -dyn ??                                                                       
-
 if [ "$_condor_LOCAL_DIR" = "." ]; then
   export _condor_LOCAL_DIR=$(pwd)
 fi
@@ -91,21 +75,8 @@ if [ "$_condor_GSI_DAEMON_PROXY" = "" ] && [ -a "$X509_USER_PROXY" ]; then
   export _condor_GSI_DAEMON_PROXY="$X509_USER_PROXY"
 fi
 
-env 
-
-f_echo "Right before glidein_startup"
-#exec ${_condor_SBIN}/condor_master -dyn -f -r 1200 
-
-${_condor_LOCAL_DIR}/glideinExec/glidein_startup -dyn -f -r ${_DaemonTTL} 
+exec ${_condor_SBIN}/condor_master -dyn -f -r 1200 
 
 ######################################################################################   
-
-f_echo $?
-f_echo "After glidein_startup:"
-f_echo "ls:"
-ls
-
-f_echo "ps ux:"
-ps ux
 
 rm -rf ${local_dir}
