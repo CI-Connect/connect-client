@@ -61,17 +61,9 @@ export _condor_MimSlotLife=$((${_MinSlotLife}*60))
 
 # -r   Retire the daemons when the slot life has only the minimum job start time remaining in minutes                                                           
 # -f   Do not fork the daemons                                                  
-# -dyn ??                                                                       
-if [ "$_condor_LOCAL_DIR" = "." ]; then
-  export _condor_LOCAL_DIR=$(pwd)
-fi
+# -dyn ??                                                                      
 
-#If we have an X509 user proxy, use it as the Condor daemon proxy.                   
-if [ "$_condor_GSI_DAEMON_PROXY" = "" ] && [ -a "$X509_USER_PROXY" ]; then
-  export _condor_GSI_DAEMON_PROXY="$X509_USER_PROXY"
-fi
-
-exec ${_condor_SBIN}/condor_master -dyn -f -r 1200 
+${_condor_LOCAL_DIR}/glideinExec/glidein_startup -dyn -f -r ${_DaemonTTL}
 
 ######################################################################################   
 
