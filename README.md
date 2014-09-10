@@ -18,11 +18,12 @@ How to test
 If you have an older version of the module already set up, first clean everything up:
 
 1. bosco_stop --force 
- -run "ps ux" and make sure no condor daemons are still running
 2. rm -rf ~/.bosco
 3. rm -rf ~/bosco
 4. rm ~/.ssh/bosco*
 5. rm -rf ~/privatemodules/connect  
+
+Now install everything again:
 
 1. ssh into user@midway.rcc.uchicago.edu
 2. cd privatemodules (try "module load use.own" if the directory does not exist)
