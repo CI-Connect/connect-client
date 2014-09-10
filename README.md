@@ -14,18 +14,28 @@ addsite.sh - Connect extension that adds another cluster to BOSCO for the user
 
 How to test
 -----------
+
+If you have an older version of the module already set up, first clean everything up:
+1. bosco_stop --force 
+ - run "ps ux" and make sure no condor daemons are still running
+2. rm -rf ~/.bosco
+3. rm -rf ~/bosco
+4. rm ~/.ssh/bosco*
+5. rm -rf ~/privatemodules/connect  
+
 1. ssh into user@midway.rcc.uchicago.edu
 2. cd privatemodules (try "module load use.own" if the directory does not exist)
 3. module load git
 4. git clone https://github.com/SISC2014/Bosco-Module.git
 5. mv Bosco-Module connect
-6. cp -r connect/bosco ~/bosco
-7. mkdir -p ~/lib/connect/extensions
-8. cp connect/setup.sh ~/lib/connect/extensions/setup.sh
-9. module load use.own
-10. module load connect
-11. connect setup <username on UChicago Connect>
-12. enter your ssh password to UChicago Connect when prompted
+6. mkdir ~/software
+7. cp -r connect/bosco ~/software/bosco
+8. mkdir -p ~/lib/connect/extensions
+9. cp connect/setup.sh ~/lib/connect/extensions/setup.sh
+10. module load use.own
+11. module load connect
+12. connect setup <username on UChicago Connect>
+13. enter your ssh password to UChicago Connect when prompted
 
 Bosco should be set up, with the UChicago Connect cluster added. Run "condor_submit" to submit jobs (currently supports grid universe only) and "condor_q" to check jobs. 
 
