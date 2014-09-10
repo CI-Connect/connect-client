@@ -147,6 +147,8 @@ FILESYSTEM_DOMAIN = $HOST
 
 UID_DOMAIN = $HOST
 
+COLLECTOR_ARGS = -sock collector
+
 LOCK = /tmp/condor-lock.$NEW_LOCK
 
 IS_BOSCO = True
@@ -169,9 +171,11 @@ CREATE_CORE_FILES = False
 
 GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE=10
 
-MASTER_DEBUG = True
-
-USER = $NEW_LOCK
+SHADOW_DEBUG = D_FULLDEBUG
+MASTER_DEBUG = D_FULLDEBUG
+SCHEDD_DEBUG = D_FULLDEBUG
+NEGOTIATOR_DEBUG = D_FULLDEBUG
+COLLECTOR_DEBUG = D_FULLDEBUG
 
 EOF
 
@@ -181,10 +185,7 @@ EOF
 
 ##  What machine is your central manager?
 CONDOR_HOST = $(MY_FULL_HOSTNAME)
-COLLECTOR_HOST = $(FULL_HOSTNAME):11000?sock=collector
-
-NEW_HOST=$(CONDOR_HOST):11000?sock=collector
-custom_condor_submit = GLIDEIN_HOST==$(NEW_HOST)
+COLLECTOR_HOST = $(CONDOR_HOST):11000?sock=collector
 
 COLLECTOR_NAME = $(MY_FULL_HOSTNAME)
 
@@ -274,8 +275,32 @@ else
     echo "Bosco already started."
 fi
 
+
+: '
+# Correct permissions on ~/.ssh to allow key-based authentication
+chmod -R g-w ~/.ssh
+
+# Connect Midway cluster
+midway_set=$(bosco_cluster -l | grep midway | wc -w)
+if [ $midway_set -eq 1 ]; then
+    echo "Midway cluster already added."
+else
+    echo "************** Connecting Midway cluster to BOSCO: ***********"
+    echo "At any time hit [CTRL+C] to interrupt."
+    echo
+    bosco_cluster --add $NEW_LOCK@midway-login1.rcc.uchicago.edu PBS 2>> $LOG_FILE
+
+    if [ $? -ne 0 ]; then
+        echo "Failed to connect the Midway cluster. Please check $LOG_FILE for more information."
+	exit
+    fi
+
+    echo "Midway cluster connected"
+fi
+'
+
 REMOTE_HOST="login.ci-connect.uchicago.edu"
-REMOTE_USER=""
+REMOTE_USER=$1
 REMOTE_TYPE="condor"
 
 # Connect UChicago Connect cluster
@@ -287,8 +312,6 @@ else
     echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
-
-    REMOTE_USER=$1
 
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
     bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 2>> $LOG_FILE
