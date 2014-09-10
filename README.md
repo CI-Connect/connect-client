@@ -16,8 +16,9 @@ How to test
 -----------
 
 If you have an older version of the module already set up, first clean everything up:
+
 1. bosco_stop --force 
- - run "ps ux" and make sure no condor daemons are still running
+ -run "ps ux" and make sure no condor daemons are still running
 2. rm -rf ~/.bosco
 3. rm -rf ~/bosco
 4. rm ~/.ssh/bosco*
