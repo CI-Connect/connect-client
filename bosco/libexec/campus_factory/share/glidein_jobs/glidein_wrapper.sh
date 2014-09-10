@@ -13,16 +13,12 @@ eval campus_factory_dir=$_campusfactory_CAMPUSFACTORY_LOCATION
 # Make certain the root of all job sandboxes exists and if not create it        
 [[ ! -d ${_campusfactory_wntmp} ]] && mkdir -p ${_campusfactory_wntmp}
 
-# Load up some useful functions                                                 
-source ${starting_dir}/functions.sh
-
 # Create this job's local sandbox                                               
 local_dir=`mktemp -d -p ${_campusfactory_wntmp} rcc.XXXXXXXXXX`
 
 # Copy the files we need into the job sandbox                                   
 cp ${starting_dir}/passwdfile               ${local_dir}
 cp ${starting_dir}/user_job_wrapper.sh      ${local_dir}
-cp ${starting_dir}/exec_wrapper.sh          ${local_dir}
  
 # Untar the executables into the sandbox                                        
 tar --extract --gzip --directory=${local_dir} --file=${starting_dir}/glideinExec.tar.gz
