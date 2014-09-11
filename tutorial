@@ -41,23 +41,7 @@ def get_tutorials():
         for repo in repos:
             if repo[0].startswith('tutorial-'):
                 tutorials[repo[0]] = {'description': repo[1],
-                                      'url' : repo[2]}
-    if branding != 'osg' and branding is not None:
-        if os.path.exists('/stash'):
-            tutorial_path = '/stash/connectbook/tutorials'
-        else:
-            tutorial_path = '/usr/local/connectbook/tutorials'
-        tutorial_path = os.path.join(tutorial_path, branding)
-        for name in os.listdir(tutorial_path):
-            print tutorial_path
-            print name
-            tut_location = os.path.join(tutorial_path, name)
-            if not os.path.isdir(tut_location):
-                continue
-            info = open(os.path.join(tut_location, '.info'), 'r').read()
-            tutorials[name] = {'description': info,
-                               'url': "file://{0}".format(tut_location)}
-        
+                                      'url' : repo[2]}        
     return tutorials
 
 def connect_info():
@@ -101,7 +85,7 @@ def main():
         sys.stdout.write("Currently available tutorials: \n")
         for tutorial in tutorials:
             description = tutorials[tutorial]['description']
-            sys.stdout.write("%s - %s\n" % (tutorial, description))
+            sys.stdout.write("%s - %s\n" % (tutorial[9:], description))
         sys.exit(0)
     # provide info on a given tutorial
     elif (args.cmd != [] and args.cmd[0] == 'info') or args.info:
@@ -123,7 +107,7 @@ def main():
     # install tutorial
     elif (args.cmd != []) or args.install:
         if args.cmd != []:
-            tutorial = args.cmd[0] 
+            tutorial = "tutorial-" + args.cmd[0] 
         elif args.install != []:
             tutorial = args.install[0]
         tutorials = get_tutorials()
