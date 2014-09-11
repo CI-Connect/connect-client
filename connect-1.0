@@ -128,3 +128,6 @@ setenv CONDOR_CONFIG ~/.bosco/condor_config
 #prepend-path PATH $appdir
 prepend-path PATH ~/privatemodules/connect
 prepend-path PATH ~/privatemodules/tutorial
+
+# Load python for "tutorial" command
+module load python
