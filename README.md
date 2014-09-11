@@ -36,10 +36,10 @@ Now install everything again:
 9. cp connect/setup.sh ~/lib/connect/extensions/setup.sh
 10. module load use.own
 11. module load connect
-12. connect setup <username on UChicago Connect>
-13. enter your ssh password to UChicago Connect when prompted
+12. connect setup <username on RCC Connect>
+13. enter your ssh password to RCC Connect when prompted
 
-Bosco should be set up, with the UChicago Connect cluster added. Run "condor_submit" to submit jobs (currently supports grid universe only) and "condor_q" to check jobs. 
+Bosco should be set up, with the RCC Connect cluster added. Run "condor_submit" to submit jobs (currently supports grid universe only) and "condor_q" to check jobs. 
 
 User Guide 
 ----------
@@ -68,7 +68,7 @@ $ connect
 To run any of these extensions, just enter "connect [extension name]". The setup extension also requires one more argument: your username on UChicago Connect. For example, enter the command below to set up BOSCO, substituting your own username instead: 
 
 ```
-$ connect setup [UChicago Connect username]
+$ connect setup [RCC Connect username]
 ```
 
 The command will start BOSCO and ask for your ssh password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
@@ -158,7 +158,7 @@ The **condor_q** command tells the status of currently running jobs.
 
 ````
 $ condor_q
--- Submitter: midway-login2.rcc.local : <128.135.112.72:65045?sock=7603_c271_4> : midway-login1.rcc.local
+-- Submitter: midway-login1.rcc.local : <128.135.112.71:65045?sock=7603_c271_4> : midway-login1.rcc.local
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD               
    1.0   username         8/25 10:06   0+00:00:06 R  0   0.0  short.sh         
 

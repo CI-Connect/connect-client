@@ -54,11 +54,7 @@ fix_port () {
   return 1
 }
 
-if [ "$#" -ne 1 ]
-    then echo "Usage: connect setup [UChicago Connect username]"
-    exit
-fi
-
+# User must log in on midway-login1 node.  
 HOST_NAME=$(hostname)
 if [ "$HOST_NAME" == "midway-login1" ];then
     echo "Connect Setup is starting."
@@ -67,10 +63,17 @@ if [ "$HOST_NAME" == "midway-login1" ];then
 else
     echo "You are logged in on $HOST_NAME. Please log in on midway-login1.rcc.u
 chicago.edu to access the Connect module."
+    echo "To do this, type 'logout' and then 'ssh <username>@midway-login1.rcc.uchicago.edu' to log in to midway-login1."
     exit
 fi
 
-# Check to see if local Bosco directory and all subdirectories exist
+if [ "$#" -ne 1 ]
+    then echo "Usage: connect setup <RCC Connect username>"
+    exit
+fi
+
+# Check to see if local Bosco directory and all subdirectories exist.
+# If not, create them.
 
 [ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local Bosco files can be found in $LOCAL_DIR" >> $LOG_FILE
 [ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
@@ -78,7 +81,7 @@ fi
 [ -d $LOCAL_DIR/execute ] || mkdir $LOCAL_DIR/execute
 [ -d $LOCAL_DIR/config ] || mkdir $LOCAL_DIR/config
 
-# Check if config files exist
+# Check if config files exist.
 exists=1
 [ -f $CONFIG_FILE ] || exists=0
 [ $exists -eq 0 ] && cat > $CONFIG_FILE <<EOF
@@ -122,7 +125,7 @@ use SECURITY : HOST_BASED
 #ALLOW_WRITE = *.cs.wisc.edu' >> $CONFIG_FILE
 
 HOST=midway-login1.rcc.uchicago.edu
-NEW_LOCK=$(whoami)
+USER=$(whoami)
 CONDOR_ID=$(id -u)
 
 [ -f $LOCAL_CONFIG ] || cat > $LOCAL_CONFIG <<EOF
@@ -149,7 +152,7 @@ UID_DOMAIN = $HOST
 
 COLLECTOR_ARGS = -sock collector
 
-LOCK = /tmp/condor-lock.$NEW_LOCK
+LOCK = /tmp/condor-lock.$USER
 
 IS_BOSCO = True
 
@@ -254,13 +257,12 @@ SEC_DAEMON_INTEGRITY = REQUIRED
 SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
 SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD
 
-
-
-
 ' > $factory_config
 
-# Stop Bosco if already started, check just in case 
-# bosco_stop --force > /dev/null (check to see if needed)
+# Stop Bosco if already started (commented out as may be necessary in the future)
+# bosco_stop --force > /dev/null
+
+# Start Bosco if not started
 started=$(ps ux | grep condor_master | wc -l)
 if [ $started -eq 1 ]; then
     # set and check user-specific port 
@@ -275,44 +277,58 @@ else
     echo "Bosco already started."
 fi
 
-
-: '
-# Correct permissions on ~/.ssh to allow key-based authentication
-chmod -R g-w ~/.ssh
-
-# Connect Midway cluster
-midway_set=$(bosco_cluster -l | grep midway | wc -w)
-if [ $midway_set -eq 1 ]; then
-    echo "Midway cluster already added."
-else
-    echo "************** Connecting Midway cluster to BOSCO: ***********"
-    echo "At any time hit [CTRL+C] to interrupt."
-    echo
-    bosco_cluster --add $NEW_LOCK@midway-login1.rcc.uchicago.edu PBS 2>> $LOG_FILE
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to connect the Midway cluster. Please check $LOG_FILE for more information."
-	exit
-    fi
-
-    echo "Midway cluster connected"
-fi
-'
-
 REMOTE_HOST="login.ci-connect.uchicago.edu"
 REMOTE_USER=$1
 REMOTE_TYPE="condor"
 
-# Connect UChicago Connect cluster
-cluster_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
-if [ $cluster_set -eq 1 ]; then
-    # cluster already added
-    echo "UChicago Connect cluster already added."
-else 
-    echo "************** Connecting UChicago Connect cluster to BOSCO: ***********"
+# function for adding Midway cluster 
+add_midway () {
+
+    # Correct permissions on ~/.ssh to allow key-based authentication
+    chmod -R g-w ~/.ssh
+
+    # Check if the cluster is already added
+    midway_set=$(bosco_cluster -l | grep midway-login1 | wc -w)
+    if [ $midway_set -eq 1 ]; then
+	echo "Midway cluster already added."
+    else
+	# Connect Midway cluster
+	echo "************** Connecting local Midway cluster to BOSCO: ***********"
+	echo "At any time hit [CTRL+C] to interrupt."
+	echo
+	bosco_cluster --add $USER@$HOST PBS 2>> $LOG_FILE
+    
+	if [ $? -ne 0 ]; then
+            echo "Failed to connect the Midway cluster. Please check $LOG_FILE for more information."
+	    exit
+	fi
+	
+	echo
+	echo "Midway cluster connected"
+
+	# Test the cluster using bosco_cluster --test
+	echo 
+	echo "************** Testing the cluster (resource): ***********"
+	echo "This may take up to 2 minutes... please wait."
+	test=$(bosco_cluster --test $USER@$HOST 2>> $LOG_FILE)
+	echo "BOSCO on midway-login1.rcc.uchicago.edu tested"
+	if [ $? -ne 0 ]; then
+	    echo "Failed to test the cluster midway-login1.rcc.uchicago.edu. Please check your data and retry."
+	    exit 3
+	fi
+
+	echo
+	echo "Congratulations, Bosco is now setup to work with midway-login1.rcc.uchicago.edu!"
+	
+    fi
+}
+
+# function for adding RCC Connect cluster 
+add_connect () {
+    echo "************** Connecting RCC Connect cluster to BOSCO: ***********"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
-
+    
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
     bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 2>> $LOG_FILE
 
@@ -320,31 +336,43 @@ else
 	echo "Failed to connect the cluster $REMOTE_HOST. Please check your data and retry."
 	exit 2
     fi
-
+    
+    echo
     echo "$REMOTE_HOST connected"
-fi
+    
+    # Test the cluster with bosco_cluster --test
+    echo 
+    echo "************** Testing the cluster (resource): ***********"
+    echo "This may take up to 2 minutes... please wait."
+    test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 2>> $LOG_FILE)
+    echo "BOSCO on $REMOTE_HOST tested"
+    if [ $? -ne 0 ]; then
+	echo "Failed to test the cluster $REMOTE_HOST. Please check your data and retry."
+	exit 3
+    fi
 
-echo "************** Testing the cluster (resource): ***********"
-echo "This may take up to 2 minutes... please wait."
-test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 2>> $LOG_FILE)
-echo "BOSCO on $REMOTE_HOST Tested"
-if [ $? -ne 0 ]; then
-  echo "Failed to test the cluster $REMOTE_HOST. Please check your data and retry."
-  exit 3
-fi
+    echo
+    echo "Congratulations, Bosco is now setup to work with $REMOTE_HOST!" 
+    echo
+}
 
-if [ "x$REMOTE_USER" = "x" ]; then
-    REMOTE_USER="username"
-fi
+# Check if the RCC Connect cluster is already added. 
+# If not, add the cluster, then check the Midway cluster. 
 
-echo "************** Congratulations, Bosco is now setup to work with $REMOTE_HOST! ***********"
+RCC_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
+[ $RCC_set -eq 1 ] && echo "RCC Connect cluster already added." && add_midway
+[ $RCC_set -eq 0 ] && add_connect && add_midway
+
 cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
-Remember to setup the environment each time you log in again and want to use Bosco:
+Remember to set up the environment each time you want to use Bosco:
 module load connect
 
 Here is a quickstart guide about BOSCO:
 https://twiki.grid.iu.edu/bin/view/CampusGrids/BoscoQuickStart
+
+For more help, here is the RCC Connect Handbook:
+https://ci-connect.atlassian.net/wiki/display/UCHI/Home
 
 Here is a submit file example (supposing you want to run "myjob.sh"):
 universe = vanilla
