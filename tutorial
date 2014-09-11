@@ -91,14 +91,14 @@ def main():
     elif (args.cmd != [] and args.cmd[0] == 'info') or args.info:
         tutorials = get_tutorials()
         if len(args.cmd) > 1:
-            tutorial = args.cmd[1]
+            tutorial = "tutorial-" + args.cmd[1]
         else:
-            tutorial = args.info[0]
+            tutorial = "tutorial-" + args.info[0]
         if tutorial not in tutorials:
             sys.stderr.write("Tutorial %s not found, available tutorials "
                              "are:\n" % tutorial)
             for key in tutorials:
-                sys.stderr.write("%s\n" % key)
+                sys.stderr.write("%s\n" % key[9:])
             sys.exit(1)
         else:
             sys.stdout.write("%s - %s\n" % (tutorial, 
@@ -109,13 +109,13 @@ def main():
         if args.cmd != []:
             tutorial = "tutorial-" + args.cmd[0] 
         elif args.install != []:
-            tutorial = args.install[0]
+            tutorial = "tutorial-" + args.install[0]
         tutorials = get_tutorials()
         if tutorial not in tutorials:
             sys.stderr.write("Tutorial %s not found, available tutorials "
                              "are:\n" % tutorial)
             for key in tutorials:
-                sys.stderr.write("%s\n" % key)
+                sys.stderr.write("%s\n" % key[9:])
             sys.exit(1)
         tutorial_dir = get_tutorial_dir(tutorial)
         if os.path.exists(os.path.join(".", tutorial)):
