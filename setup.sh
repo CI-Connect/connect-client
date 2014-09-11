@@ -174,12 +174,6 @@ CREATE_CORE_FILES = False
 
 GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE=10
 
-SHADOW_DEBUG = D_FULLDEBUG
-MASTER_DEBUG = D_FULLDEBUG
-SCHEDD_DEBUG = D_FULLDEBUG
-NEGOTIATOR_DEBUG = D_FULLDEBUG
-COLLECTOR_DEBUG = D_FULLDEBUG
-
 EOF
 
 [ -f $factory_config ] || echo '#
@@ -360,8 +354,8 @@ add_connect () {
 # If not, add the cluster, then check the Midway cluster. 
 
 RCC_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
-[ $RCC_set -eq 1 ] && echo "RCC Connect cluster already added." && add_midway
-[ $RCC_set -eq 0 ] && add_connect && add_midway
+[ $RCC_set -eq 1 ] && echo "RCC Connect cluster already added." # && add_midway
+[ $RCC_set -eq 0 ] && add_connect # && add_midway
 
 cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
