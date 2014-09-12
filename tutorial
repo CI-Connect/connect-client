@@ -37,7 +37,7 @@ def get_tutorials():
         # not suppressing OSG tutorials so we'll get it from github
         github_page = urllib2.urlopen("https://api.github.com/orgs/osgconnect/repos")
         repo_data = json.load(github_page)
-        repos = [ (x['name'], x['description'], x['git_url']) for x in repo_data ]
+        repos = [ (x['name'], x['description'], x['git_url']) for x in repo_data  if x['name'] == 'tutorial-scaling' or x['name'] == 'tutorial-R' or x['name'] == 'tutorial-photodemo' or x['name'] == 'tutorial-quickstart' or x['name'] == 'tutorial-namd' or x['name'] == 'tutorial-htcondor_transfer'] 
         for repo in repos:
             if repo[0].startswith('tutorial-'):
                 tutorials[repo[0]] = {'description': repo[1],
