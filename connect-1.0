@@ -84,6 +84,10 @@ if { [string compare $compiler ""] != 0 } {
 # the next line will be replaced with module dependencies if necessary
 module load python
 
+if { [ file isdirectory $appdir ] } {
+   prepend-path PATH $appdir
+}
+
 if { [ file isdirectory $appdir/bin  ] } {
     prepend-path    PATH             $appdir/bin
 }
@@ -126,6 +130,6 @@ if { [ file isdirectory $appdir/man  ] } {
 }
 
 setenv CONDOR_CONFIG ~/.bosco/condor_config
-#prepend-path PATH $appdir
+
 prepend-path PATH ~/privatemodules/connect
 prepend-path PATH ~/privatemodules/tutorial
