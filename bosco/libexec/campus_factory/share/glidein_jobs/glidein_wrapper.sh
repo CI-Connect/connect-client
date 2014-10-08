@@ -1,70 +1,63 @@
-#!/bin/sh -x 
+#!/bin/sh
 
-env 
+starting_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # BLAHP does weird things with home directory
 unset HOME
 export HOME
 
-# These must come after we fix HOME from BLAHP so ~ translates properly         
-starting_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 eval campus_factory_dir=$_campusfactory_CAMPUSFACTORY_LOCATION
 
-# Make certain the root of all job sandboxes exists and if not create it        
-[[ ! -d ${_campusfactory_wntmp} ]] && mkdir -p ${_campusfactory_wntmp}
+# Make the temporary directory
+if [ ! -d $_campusfactory_wntmp ]
+then
+  # See if we can make the designated directory
+  mkdir -p $_campusfactory_wntmp
+fi
+local_dir=`mktemp -d -t -p $_campusfactory_wntmp`
+cd $local_dir
 
-# Create this job's local sandbox                                               
-local_dir=`mktemp -d -p ${_campusfactory_wntmp} rcc.XXXXXXXXXX`
+# Copy the exec tar file
+cp $starting_dir/glideinExec.tar.gz $local_dir
+cp $starting_dir/passwdfile $local_dir
 
-# Copy the files we need into the job sandbox                                   
-cp ${starting_dir}/passwdfile               ${local_dir}
-cp ${starting_dir}/user_job_wrapper.sh      ${local_dir}
- 
-# Untar the executables into the sandbox                                        
-tar --extract --gzip --directory=${local_dir} --file=${starting_dir}/glideinExec.tar.gz
+# Untar the executables
+tar xzf $local_dir/glideinExec.tar.gz
 
-# All late-binding configurations                                               
-export CONDOR_CONFIG=${starting_dir}/glidein_condor_config
-export _condor_LOCAL_DIR=${local_dir}
-export _condor_START_DIR=${starting_dir}
-export _condor_SBIN=${local_dir}/glideinExec
-export _condor_LIB=${local_dir}/glideinExec
-export _condor_USER_JOB_WRAPPER=${local_dir}/user_job_wrapper.sh
+# All late-binding configurations
+export CONDOR_CONFIG=$starting_dir/glidein_condor_config
+export _condor_LOCAL_DIR=$local_dir
+export _condor_SBIN=$local_dir/glideinExec
+export _condor_LIB=$local_dir/glideinExec
+
 export LD_LIBRARY_PATH=$_condor_LIB
 
-################################################################################
-######                                                                          
+# Copy the user job wrapper
+if [ -e $starting_dir/user_job_wrapper.sh ]
+then
+cp $starting_dir/user_job_wrapper.sh `pwd`
+fi
 
-# HTCondor Daemon Startup                                                       
-# What are the current Maximum and Minimums specified for the slot life in minutes                                                                              
-_MaxSlotLife=$((24*60))
-_MinSlotLife=0
+if [ -e `pwd`/user_job_wrapper.sh ]
+then
+export _condor_USER_JOB_WRAPPER=`pwd`/user_job_wrapper.sh
+fi
 
-# The smallest slot life should be 30/15 minutes                                
-[[ ${_MaxSlotLife} -lt 30 ]] && _MaxSlotLife=30
-[[ ${_MinSlotLife} -lt 15 ]] && _MinSlotLife=15
+# Run on top of another glidein for condor-condor-condor action
+unset _CONDOR_JOB_PIDS
+unset _CONDOR_ANCESTOR_6635
+unset _CONDOR_ANCESTOR_1130
+unset _CONDOR_SCRATCH_DIR
+unset _CONDOR_ANCESTOR_1092
+unset _CONDOR_CHIRP_CONFIG
+unset _CONDOR_ANCESTOR_1095
+unset _CONDOR_WRAPPER_ERROR_FILE
+unset _CONDOR_SLOT
+unset _CONDOR_EXECUTE
+unset _CONDOR_MACHINE_AD
+unset _CONDOR_JOB_AD
+unset _CONDOR_JOB_IWD
 
-# If the Mininum is greater than the Maximum, reset to only half of the Maximium
-[[ ${_MinSlotLife} -ge ${_MaxSlotLife} ]] && _MinSlotLife=$((${_MaxSlotLife}/2))
+./glideinExec/glidein_startup -dyn -f -r 1200
 
-# Compute the life of the daemons we will be starting in minutes                
-# We terminate the Condor Daemons with 5 minutes remaining in the slot life 
-# so that we can cleanup the job sandbox and avoid lengthly cleanups later.     
-_DaemonTTL=$((${_MaxSlotLife} - ${_MinSlotLife} - 5))
-
-# Save the daemon start time (now) along with the Maximum and Mininum of the slot life in seconds                                                               
-export _condor_DaemonStartTime=$(date +%s)
-export _condor_DaemonTTL=$((${_DaemonTTL}*60))
-export _condor_DaemonRetireTime=$((${_condor_DaemonStartTime}+${_DaemonTTL}))
-export _condor_MaxSlotLife=$((${_MaxSlotLife}*60))
-export _condor_MimSlotLife=$((${_MinSlotLife}*60))
-
-# -r   Retire the daemons when the slot life has only the minimum job start time remaining in minutes                                                           
-# -f   Do not fork the daemons                                                  
-# -dyn ??                                                                      
-
-${_condor_LOCAL_DIR}/glideinExec/glidein_startup -dyn -f -r ${_DaemonTTL}
-
-######################################################################################   
-
-rm -rf ${local_dir}
+rm -rf $local_dir
