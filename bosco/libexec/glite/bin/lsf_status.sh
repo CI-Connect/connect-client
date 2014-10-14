@@ -225,11 +225,11 @@ END {
 	if [ "$cliretcode" == "1" -o "x$lsf_BLParser" != "xyes" ] ; then
 		result=""
 		usedBLParser="no"
-		datefile=blahdate_$RANDOM$RANDOM$RANDOM
+		datefile=/tmp/blahdate_$RANDOM$RANDOM$RANDOM
 		touch $datefile;chmod 600 $datefile
 
 		if [ $? -ne 0 ]; then
-   			echo 'Error creating temporary file'
+   			echo '1ERROR: Could not create temporary file'
    			datefile=""
 			echo "1ERROR: Job not found"
 			break

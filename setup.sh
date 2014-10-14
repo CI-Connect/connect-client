@@ -181,10 +181,9 @@ EOF
 #
 
 ##  What machine is your central manager?
-CONDOR_HOST = $(MY_FULL_HOSTNAME)
-COLLECTOR_HOST = $(CONDOR_HOST):11000?sock=collector
-
-COLLECTOR_NAME = $(MY_FULL_HOSTNAME)
+NETWORK_HOSTNAME = midway-login1.rcc.uchicago.edu
+CONDOR_HOST = $(NETWORK_HOSTNAME)
+COLLECTOR_HOST = $(NETWORK_HOSTNAME):11000?sock=collector
 
 # What hosts can run jobs to this cluster.
 FLOCK_FROM = 
