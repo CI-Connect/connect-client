@@ -27,7 +27,7 @@ sed -e "s!@CONNECTDIR@!$base!g" \
 	<"$from/modules/connect.in" >"$modlib/connect/connect"
 
 status Installing the Connect client
-rsync -a bosco "$base/connect-client"
+rsync -a bosco/. "$base/connect-client/."
 
 status Installing Connect user commands
 rsync -a connect/. "$base/."

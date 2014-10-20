@@ -84,8 +84,8 @@ if { [string compare $compiler ""] != 0 } {
 # the next line will be replaced with module dependencies if necessary
 module load python
 
-if { [ file isdirectory $appdir ] } {
-   prepend-path PATH $appdir
+if { [ file isdirectory @CONNECTDIR@/bin ] } {
+   prepend-path PATH @CONNECTDIR@/bin
 }
 
 if { [ file isdirectory $appdir/bin  ] } {
