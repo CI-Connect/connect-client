@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Need to adopt Suchandra's idea for installing - perhaps this variation:
+# - find . -name install.sub -print
+# - source each of these in turn in a subshell (to inherit install.sh's
+#   context but insulate the install.sub from one another)
+
 from=$(dirname "$0")
 base="$1"
 modlib="$2"
