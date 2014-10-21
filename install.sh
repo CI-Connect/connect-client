@@ -14,12 +14,24 @@ if [ -z "$base" -o -z "$modlib" -o "$base" = "-h" -o "$base" = "--help" ]; then
 	exit 2
 fi
 
+copyfiles () {
+	rsync -a --exclude install.sub "$@"
+}
+
+cd $(dirname "$0")
 mkdir -p "$base" 2>/dev/null
 mkdir -p "$base/bin" 2>/dev/null
 mkdir -p "$modlib/connect" 2>/dev/null
 
 status () {
-	echo "$@" ...
+	echo "[install]" "$@"
+}
+
+subinstall () {
+	(
+		cd "$1" &&
+		. ./install.sub
+	)
 }
 
 if [ ! -d "$base" ]; then
@@ -27,15 +39,12 @@ if [ ! -d "$base" ]; then
 	exit 10
 fi
 
-status Setting up the Connect module
-sed -e "s!@CONNECTDIR@!$base!g" \
-	<"$from/modules/connect.in" >"$modlib/connect/connect"
-
-status Installing the Connect client
-mkdir -p "$base/connect-client" 2>/dev/null
-rsync -a bosco/. "$base/connect-client/."
+subinstall modules
+subinstall bosco
 
 status Installing Connect user commands
-rsync -a connect/. "$base/."
+subinstall connect
+# tutorial has no install.sub because it's a subrepo
+status ... tutorial command
 cp -p scripts/tutorial/tutorial "$base/bin/"
 

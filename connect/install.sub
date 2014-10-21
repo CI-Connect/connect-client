@@ -1,0 +1,2 @@
+status ... connect command
+copyfiles . "$base/."

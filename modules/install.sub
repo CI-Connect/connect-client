@@ -1,0 +1,3 @@
+status Setting up the Connect module
+sed -e "s!@CONNECTDIR@!$base!g" \
+	<connect.in >"$modlib/connect/connect"
