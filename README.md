@@ -1,6 +1,6 @@
 *** out of date, will update ***
 
-BOSCO module
+Connect module
 ============
 This repository contains the following files: 
 
@@ -30,12 +30,12 @@ Now install everything again:
 1. ssh into user@midway.rcc.uchicago.edu
 2. cd privatemodules (try "module load use.own" if the directory does not exist)
 3. module load git
-4. git clone https://github.com/SISC2014/Bosco-Module.git
-5. mv Bosco-Module connect
+4. git clone https://github.com/CI-Connect/connect-client
+5. mv connect-client connect
 6. mkdir ~/software
 7. cp -r connect/bosco ~/software/bosco
 8. mkdir -p ~/lib/connect/extensions
-9. cp connect/setup.sh ~/lib/connect/extensions/setup.sh
+9. cp connect/setup.sh ~/lib/connect/extensions/install.sh
 10. module load use.own
 11. module load connect
 12. connect setup <username on RCC Connect>
