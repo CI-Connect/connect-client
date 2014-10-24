@@ -18,7 +18,7 @@ Regardless of which installation path you follow, the first step is
 the same:
 
     sh$ ssh midway.rcc.uchicago.edu   # [if needed]
-    sh$ use git
+    sh$ module load git
     sh$ git clone https://github.com/CI-Connect/connect-client
     sh$ cd connect-client
 
