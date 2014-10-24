@@ -55,3 +55,5 @@ subinstall connect
 status ... tutorial command
 copyfiles scripts/tutorial/tutorial "$base/bin/"
 
+# Install switch-module functions
+subinstall switch-module
