@@ -29,9 +29,9 @@ Installation for the individual
 -------------------------------
 
 Choose a directory to install Connect Client into.  A reasonable choice
-is ~/software/connect.  Also choose a directory to install the
+is `~/software/connect`.  Also choose a directory to install the
 software module into.  A reasonable choice for this on RCC is
-~/privatemodules.  Then run ./install.sh with these two directories:
+`~/privatemodules`.  Then run `./install.sh` with these two directories:
 
     sh$ ./install.sh ~/software/connect ~/privatemodules
 
@@ -51,11 +51,12 @@ Installation for the site administrator
 ---------------------------------------
 
 Likewise, choose a directory to install Connect Client into.  A reasonable choice
-is /software/connect.  Also choose a directory to install the
+is `/software/connect`.  Also choose a directory to install the
 software module into.  A reasonable choice for this on RCC is
-/software/modulefiles.  Then run ./install.sh with these two directories:
+`/software/modulefiles`.  Then run `./install.sh` with these two directories:
 
     sh$ ./install.sh /software/connect /software/modulefiles
+
 
 ### Using Connect Client after site installation
 
