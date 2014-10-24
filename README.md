@@ -1,51 +1,88 @@
-*** out of date, will update ***
 
-Connect module
+Installation
 ============
-This repository contains the following files: 
 
-bosco - directory containing installed BOSCO files 
+Connect Client is the set of programs and files for linking a campus
+cluster to a CI Connect instance.  Currently it is developed on and for
+the University of Chicago Research Computing Cluster (RCC) and RCC
+Connect, but the goal is to extend the toolchain to accomodate the
+peculiarities of other sites as well.
 
-connect-1.0 - modulefile for BOSCO
+Connect Client can be installed by an individual user, or sitewide
+by the site administrator.
 
-connect - Connect program
+Obtaining the Connect Client distribution
+-----------------------------------------
 
-setup.sh - Connect extension that sets up BOSCO for the user
+Regardless of which installation path you follow, the first step is
+the same:
 
-addsite.sh - Connect extension that adds another cluster to BOSCO for the user 
+    sh$ ssh midway.rcc.uchicago.edu   # [if needed]
+    sh$ use git
+    sh$ git clone https://github.com/CI-Connect/connect-client
+    sh$ cd connect-client
 
-How to test
------------
+This obtains a copy of the distribution and places your shell into
+that copy.
 
-If you have an older version of the module already set up, first clean everything up:
+Installation for the individual
+-------------------------------
 
-1. bosco_stop --force 
-2. rm -rf ~/.bosco
-3. rm -rf ~/bosco
-4. rm ~/.ssh/bosco*
-5. rm -rf ~/privatemodules/connect  
+Choose a directory to install Connect Client into.  A reasonable choice
+is ~/software/connect.  Also choose a directory to install the
+software module into.  A reasonable choice for this on RCC is
+~/privatemodules.  Then run ./install.sh with these two directories:
 
-Now install everything again:
+    sh$ ./install.sh ~/software/connect ~/privatemodules
 
-1. ssh into user@midway.rcc.uchicago.edu
-2. cd privatemodules (try "module load use.own" if the directory does not exist)
-3. module load git
-4. git clone https://github.com/CI-Connect/connect-client
-5. mv connect-client connect
-6. mkdir ~/software
-7. cp -r connect/bosco ~/software/bosco
-8. mkdir -p ~/lib/connect/extensions
-9. cp connect/setup.sh ~/lib/connect/extensions/install.sh
-10. module load use.own
-11. module load connect
-12. connect setup <username on RCC Connect>
-13. enter your ssh password to RCC Connect when prompted
+### Using Connect Client after individual installation
 
-Bosco should be set up, with the RCC Connect cluster added. Run "condor_submit" to submit jobs (currently supports grid universe only) and "condor_q" to check jobs. 
+To make Connect Client available, use the `module` command as you would
+any other software module on RCC -- with the exception that you will also
+need to load the `use.own` module.
+
+    sh$ module load use.own
+    sh$ module load connect
+
+You should now have access to the Connect commands.
+
+
+Installation for the site administrator
+---------------------------------------
+
+Likewise, choose a directory to install Connect Client into.  A reasonable choice
+is /software/connect.  Also choose a directory to install the
+software module into.  A reasonable choice for this on RCC is
+/software/modulefiles.  Then run ./install.sh with these two directories:
+
+    sh$ ./install.sh /software/connect /software/modulefiles
+
+### Using Connect Client after site installation
+
+This is almost the same as for individual installation, but slightly simpler:
+
+    sh$ module load connect
+
+
+First-time setup
+================
+
+Each user of RCC Connect must perform this setup step once before using RCC
+Connect for the first time.  Before doing so, be sure to load the module
+as described above in "Using Connect Client after installation":
+
+    sh$ module load connect
+    sh$ connect setup <username on RCC Connect>
+    <enter your ssh password to RCC Connect when prompted>
+
+The Connect Client should be set up, with the RCC Connect cluster
+added. Run `condor_submit` to submit jobs, `condor_q` to check jobs. 
+
 
 User Guide 
 ----------
-####Login to Midway
+
+### Login to Midway
 
 To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. If you don't already have an account on RCC Connect, please also register on the [RCC Connect website](http://ci-connect.uchicago.edu/).
 
@@ -53,7 +90,7 @@ To begin, log in to the Research Computing Center's Midway cluster, replacing "u
 $ ssh username@midway-login1.rcc.uchicago.edu
 ```
 
-####Set up Connect and BOSCO
+### Set up Connect and BOSCO
 
 Once logged in to Midway, set up the Connect program with the following step:
 
@@ -75,7 +112,7 @@ $ connect setup [RCC Connect username]
 
 The command will start BOSCO and ask for your ssh password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
 
-####Example job 
+### Example job 
 
 Now let's create a test script to execute as your job submission to RCC Connect. Create the following script, titled short.sh: 
 
@@ -101,7 +138,7 @@ Now, make the script executable.
 $ chmod +x short.sh
 ````
 
-#####Run the job locally
+### Run the job locally
 
 When setting up a new job type, it's important to test your job locally before submitting it into the grid.
 ````bash
@@ -114,7 +151,7 @@ Working hard...
 Science complete!
 ````
 
-#####Create an HTCondor submit file
+### Create an HTCondor submit file
 
 Now, let's create a simple (if verbose) HTCondor submit file, called tutorial.submit
 
@@ -146,7 +183,7 @@ Log = job.log
 Queue 1
 ````
 
-#####Submit the job
+### Submit the job
 
 Submit the job using **condor_submit**.
 ````
@@ -155,7 +192,7 @@ Submitting job(s).
 1 job(s) submitted to cluster 1.
 ````
 
-#####Check job status
+### Check job status
 The **condor_q** command tells the status of currently running jobs.
 
 ````
@@ -181,7 +218,7 @@ When your job has completed, it will disappear from the list.
 
 Note: To close **watch**, hold down *Ctrl* and press *C*.
 
-#####Job history
+### Job history
 
 Once your job has finished, you can get information about its execution from the **condor_history** command:
 
@@ -193,7 +230,7 @@ $ condor_history 1
 
 Note: You can see much more information about your job's final status using the -long option (e.g. "condor_history -long 1").
 
-#####Check the job output
+### Check the job output
 
 Once your job has finished, you can look at the files that HTCondor has returned to the working directory. If everything was successful, it should have returned:
 
@@ -212,3 +249,17 @@ Job is running in directory: /var/lib/condor/execute/dir_2120
 Working hard ...
 Science complete!
 ````
+
+Appendices
+==========
+
+Removal of older versions of the module
+---------------------------------------
+
+If you have an older version of the module already set up, first clean everything up:
+
+1. bosco_stop --force 
+2. rm -rf ~/.bosco
+3. rm -rf ~/bosco
+4. rm ~/.ssh/bosco*
+5. rm -rf ~/privatemodules/connect  
