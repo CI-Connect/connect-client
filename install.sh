@@ -1,10 +1,5 @@
 #!/bin/sh
 
-if [ -z "$base" -o -z "$modlib" -o "$base" = "-h" -o "$base" = "--help" ]; then
-	echo >&2 "usage: $0 software-install-directory modulefiles-directory"
-	exit 2
-fi
-
 ## Setup stuff.
 ## Actual installation steps are below.
 ## All these variables and functions are exposed to install.sub files.
@@ -12,6 +7,11 @@ fi
 from=$(dirname "$0")
 base="$1"
 modlib="$2"
+
+if [ -z "$base" -o -z "$modlib" -o "$base" = "-h" -o "$base" = "--help" ]; then
+	echo >&2 "usage: $0 software-install-directory modulefiles-directory"
+	exit 2
+fi
 
 copyfiles () {
 	rsync -a --exclude install.sub "$@"
