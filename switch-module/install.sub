@@ -1,7 +1,7 @@
 status Setting up the switch-module scripts
 mkdir ${base}/switch
-cp switch-module.sh ${base}/switch
-cp switch-module.ksh ${base}/switch
-cp switch-module.csh ${base}/switch
-cp setup-switch-command ${base}/switch
-ln -s ${base}/switch/setup-switch-command /etc/profile.d/zzz-ci-connect.sh
+cp switch-modules.sh ${base}/switch
+cp switch-modules.ksh ${base}/switch
+#missing#cp switch-modules.csh ${base}/switch
+#missing#cp setup-switch-command ${base}/switch
+#missing#ln -s ${base}/switch/setup-switch-command /etc/profile.d/zzz-ci-connect.sh
