@@ -4,4 +4,5 @@ cp switch-modules.sh ${base}/switch
 cp switch-modules.ksh ${base}/switch
 cp switch-modules.csh ${base}/switch
 cp setup-switch-command.csh ${base}/switch
-#missing#ln -s ${base}/switch/setup-switch-command /etc/profile.d/zzz-ci-connect.sh
+ln -s ${base}/switch/setup-switch-command.csh /etc/profile.d/zzz-ci-connect.csh
+ln -s ${base}/switch/switch-modules.sh /etc/profile.d/zzz-ci-connect.sh
