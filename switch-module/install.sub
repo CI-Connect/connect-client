@@ -1,4 +1,5 @@
 status Setting up the switch-module scripts
+sed -e "s!BASE!$base!g" -i '' setup-switch-command.csh
 mkdir ${base}/switch
 cp switch-modules.sh ${base}/switch
 cp switch-modules.ksh ${base}/switch
