@@ -81,8 +81,9 @@ if { [string compare $compiler ""] != 0 } {
       set    appdir   $appdir+$compiler
 }
 
-# the next line will be replaced with module dependencies if necessary
+# module dependencies
 module load python
+module load git
 
 if { [ file isdirectory @CONNECTDIR@/bin ] } {
    prepend-path PATH @CONNECTDIR@/bin
