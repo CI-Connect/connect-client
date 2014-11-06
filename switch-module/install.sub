@@ -1,5 +1,5 @@
 status Setting up the switch-module scripts
-sed -i '' -e "s|BASE|$base|" setup-switch-command.csh
+sed -i -e "s|BASE|$base|" setup-switch-command.csh
 if [ ! -e ${base}/switch ];
 then
   mkdir ${base}/switch
