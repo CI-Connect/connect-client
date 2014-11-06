@@ -4,4 +4,4 @@ else
   set modules_shell="csh"
 endif
 
-alias switch_modules 'eval `BASE/switch/switch_modules.csh $modules_shell \!*` '
+alias switch_modules 'eval `BASE/switch/switch-modules.csh $modules_shell \!*` '
