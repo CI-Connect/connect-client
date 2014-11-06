@@ -7,7 +7,7 @@ LOCAL_DIR=$HOME/.bosco
 
 # Infer the bosco directory from our own path.
 BASEDIR=$(dirname ${ARGV0DIR-/})
-BOSCO_DIR=$BASEDIR/software/bosco # change to /software/bosco later
+BOSCO_DIR=$BASEDIR/bosco # change to /software/bosco later
 
 REMOTE_HOST="login.ci-connect.uchicago.edu"
 REMOTE_USER=$1
