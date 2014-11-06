@@ -9,7 +9,10 @@ base="$1"
 modlib="$2"
 
 if [ -z "$base" -o -z "$modlib" -o "$base" = "-h" -o "$base" = "--help" ]; then
-	echo >&2 "usage: $0 software-install-directory modulefiles-directory"
+	echo >&2 "usage: $0 software-install-directory [modulefiles-directory]"
+	echo >&2
+	echo >&2 "A software installation directory is required. If no modulefiles library"
+	echo >&2 "is provided, a modulefile will be created in the installation directory."
 	exit 2
 fi
 
@@ -34,14 +37,13 @@ subinstall () {
 cd $(dirname "$0")
 mkdir -p "$base" 2>/dev/null
 mkdir -p "$base/bin" 2>/dev/null
-mkdir -p "$modlib/connect" 2>/dev/null
 
 if [ ! -d "$base" ]; then
 	echo >&2 "Cannot create $base - cannot install."
 	exit 10
 fi
 
-# Install mofulefiles
+# Install modulefiles
 subinstall modules
 
 # Install bosco (connect client)

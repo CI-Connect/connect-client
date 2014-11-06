@@ -1,3 +1,8 @@
 status Setting up the Connect module
+[ -n "$modlib" ] && mkdir -p "$modlib/connect" 2>/dev/null
+[ -n "$modlib" ] && dst="$modlib/connect" || dst="$base"
+
 sed -e "s!@CONNECTDIR@!$base!g" \
-	<connect.in >"$modlib/connect/connect"
+	<connect.in >"$dst/connect"
+
+echo "Connect modulefile is in $dst/connect"
