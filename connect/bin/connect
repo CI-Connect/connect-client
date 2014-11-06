@@ -104,6 +104,7 @@ class commandtype(object):
 		self.name = name
 		self.data = data
 		self.config = config
+		self.secret = False
 		if hasattr(self, '__subinit__'):
 			self.__subinit__()
 
@@ -177,7 +178,9 @@ class builtintype(commandtype):
 	def discover(cls, config, namespace=globals()):
 		for name in namespace:
 			if name.startswith('builtin_'):
-				yield cls(config, name[8:], namespace[name])
+				cmd = cls(config, name[8:], namespace[name])
+				cmd.secret = True
+				yield cmd
 
 	def __call__(self, *args, **kwargs):
 		handler = self.data
@@ -221,6 +224,9 @@ class pyexttype(commandtype):
 		if hasattr(self.mod, 'usage'):
 			self.usage = self.mod.usage
 
+		if hasattr(self.mod, 'secret'):
+			self.secret = self.mod.secret
+
 		for name in self.mod.proxy.exports:
 			try:
 				setattr(self.mod, name, getattr(self.mod.proxy, name))
@@ -255,11 +261,15 @@ class pyexttype(commandtype):
 class shexttype(commandtype):
 	@classmethod
 	def discover(cls, config, *args, **kwargs):
-		kwargs['exts'] = ['.sh']
+		kwargs['exts'] = ['.sh', 'shh']
 		for cmd in commandtype.discover(config, *args, **kwargs):
 			modname = cmd.name
 			if modname.endswith('.sh'):
 				modname = modname[:-3]
+				cmd.secret = False
+			if modname.endswith('.shh'):
+				modname = modname[:-4]
+				cmd.secret = True
 			yield cls(config, modname, cmd.data)
 
 	def __call__(self, *args, **kwargs):
@@ -293,6 +303,8 @@ class Main(object):
 		print >>sys.stderr, 'usage: %s <subcommand> [args]' % self.arg0
 
 		for cmd in [x for x in self.cmds if not x.name.startswith('.')]:
+			if cmd.secret:
+				continue
 			for usage in cmd.usage():
 				print >>sys.stderr, '       %s %s %s' % (self.arg0, cmd.name, usage)
 
