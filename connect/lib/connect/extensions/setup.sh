@@ -303,9 +303,23 @@ else
     echo "$PROD already started."
 fi
 
+test_cluster () {
+	user="$1"
+	host="$2"
+	echo 
+	banner "Testing the cluster (resource):"
+	echo "This may take up to 2 minutes... please wait."
+	test=$(bosco_cluster --test $user@$host 2>> $LOG_FILE)
+	echo "$PROD on $host tested"
+	if [ $? -ne 0 ]; then
+    	echo "Failed to test the $host cluster. Please check your data and retry."
+    	return 3
+	fi
+	return 0
+}
+
 # function for adding Midway cluster 
 add_midway () {
-
     # Correct permissions on ~/.ssh to allow key-based authentication
     chmod -R g-w ~/.ssh
 
@@ -330,15 +344,7 @@ add_midway () {
 
 	# Test the cluster using bosco_cluster --test
 	if false; then
-		echo 
-		banner "Testing the cluster (resource):"
-		echo "This may take up to 2 minutes... please wait."
-		test=$(bosco_cluster --test $USER@$HOST 2>> $LOG_FILE)
-		echo "BOSCO on $CANONICAL_HOST_LONG tested"
-		if [ $? -ne 0 ]; then
-	    	echo "Failed to test the cluster $CANONICAL_HOST_LONG. Please check your data and retry."
-	    	exit 3
-		fi
+		test_cluster $USER $HOST || exit 3
 	fi
 
 	echo
@@ -360,20 +366,14 @@ add_connect () {
 	echo "Failed to connect the cluster $REMOTE_HOST. Please check your data and retry."
 	exit 2
     fi
-    
+
     echo
     echo "$REMOTE_HOST connected"
-    
-    # Test the cluster with bosco_cluster --test
-    echo 
-    banner "Testing the cluster (resource):"
-    echo "This may take up to 2 minutes... please wait."
-    test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 2>> $LOG_FILE)
-    echo "BOSCO on $REMOTE_HOST tested"
-    if [ $? -ne 0 ]; then
-	echo "Failed to test the cluster $REMOTE_HOST. Please check your data and retry."
-	exit 3
-    fi
+
+	# Test the cluster using bosco_cluster --test
+	if false; then
+		test_cluster $REMOTE_USER $REMOTE_HOST || exit 3
+	fi
 
     echo
     echo "Congratulations, $PROD is now setup to work with $REMOTE_HOST!" 
