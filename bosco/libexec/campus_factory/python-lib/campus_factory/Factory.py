@@ -86,8 +86,12 @@ class Factory:
                 self.cluster_list = [ Cluster(get_option("CONDOR_HOST"), useOffline = self.UseOffline) ]
         
         # Tar up the executables
-        wrangler = DaemonWrangler()
-        wrangler.Package()
+        # N.B. This is not generally needed, and causes failures
+        # when BOSCO is shared among multiple uids.
+        # - dgc@uchicago.edu
+        if false:
+            wrangler = DaemonWrangler()
+            wrangler.Package()
             
 
     def _DropPriv(self):
