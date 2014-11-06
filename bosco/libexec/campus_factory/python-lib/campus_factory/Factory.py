@@ -89,7 +89,7 @@ class Factory:
         # N.B. This is not generally needed, and causes failures
         # when BOSCO is shared among multiple uids.
         # - dgc@uchicago.edu
-        if false:
+        if False:
             wrangler = DaemonWrangler()
             wrangler.Package()
             
