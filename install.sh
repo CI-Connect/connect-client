@@ -60,7 +60,9 @@ subinstall connect
 
 # tutorial has no install.sub because it's a subrepo
 status ... tutorial command
-sh scripts/tutorial/bundle-prereqs "$base" 2>&1 | sed -e 's/^/ | /'
+# turns out this isn't useful because once python has the git module,
+# it just runs git in a subprocess.
+#sh scripts/tutorial/bundle-prereqs "$base" 2>&1 | sed -e 's/^/ | /'
 copyfiles scripts/tutorial/tutorial "$base/bin/"
 
 # Install switch-module functions
