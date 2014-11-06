@@ -261,16 +261,18 @@ class pyexttype(commandtype):
 class shexttype(commandtype):
 	@classmethod
 	def discover(cls, config, *args, **kwargs):
-		kwargs['exts'] = ['.sh', 'shh']
+		kwargs['exts'] = ['.sh', '.shh']
 		for cmd in commandtype.discover(config, *args, **kwargs):
 			modname = cmd.name
+			secret = False
 			if modname.endswith('.sh'):
 				modname = modname[:-3]
-				cmd.secret = False
 			if modname.endswith('.shh'):
 				modname = modname[:-4]
-				cmd.secret = True
-			yield cls(config, modname, cmd.data)
+				secret = True
+			_ = cls(config, modname, cmd.data)
+			_.secret = secret
+			yield _
 
 	def __call__(self, *args, **kwargs):
 		os.environ['AGENT'] = self.data
