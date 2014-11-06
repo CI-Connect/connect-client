@@ -24,6 +24,7 @@ Libraries = [
 	os.path.expanduser('~/lib/' + p),
 	d.replace('/bin/', '/lib/'),
 	d.replace('/bin/', '/etc/'),
+	sys.argv[0].replace('/bin/', '/lib/'),
 	os.path.join('/usr/lib', p),
 ]
 
