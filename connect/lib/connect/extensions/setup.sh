@@ -209,12 +209,13 @@ GRIDMANAGER_MAX_SUBMITTED_JOBS_PER_RESOURCE=10
 
 EOF
 
-[ -f $factory_config ] || echo '#
+[ -f $factory_config ] ||
+sed -e "s/@HOSTNAME@/$CANONICAL_HOST_LONG/g" <<'EOF' >$factory_config
 # Things you have to edit
 #
 
 ##  What machine is your central manager?
-NETWORK_HOSTNAME = $CANONICAL_HOST_LONG
+NETWORK_HOSTNAME = @HOSTNAME@
 CONDOR_HOST = $(NETWORK_HOSTNAME)
 COLLECTOR_HOST = $(NETWORK_HOSTNAME):11000?sock=collector
 
@@ -282,8 +283,7 @@ SEC_DAEMON_AUTHENTICATION = REQUIRED
 SEC_DAEMON_INTEGRITY = REQUIRED
 SEC_DAEMON_AUTHENTICATION_METHODS = FS,PASSWORD
 SEC_WRITE_AUTHENTICATION_METHODS = FS,PASSWORD
-
-' > $factory_config
+EOF
 
 # Stop Bosco if already started (commented out as may be necessary in the future)
 # bosco_stop --force > /dev/null
