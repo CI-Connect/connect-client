@@ -4,6 +4,11 @@
 ## Actual installation steps are below.
 ## All these variables and functions are exposed to install.sub files.
 
+# The Connect module loads python.  We install some python modules
+# during build/installation, so we need to load python first to match
+# python versions.
+module load python
+
 from=$(dirname "$0")
 base="$1"
 modlib="$2"
