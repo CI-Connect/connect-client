@@ -1,9 +1,13 @@
 #!/bin/sh
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
+# All these configs should ultimately move to the ciconnect/config.ini
 #PROD="Bosco"
-PROD="Connect Client"
+#PROD="Connect Client"
+SERVICE="UChicago Connect"
 LOCAL_DIR=$HOME/.bosco
+DOCURL="http://ci-connect.uchicago.edu/docs"
+SUPPORT="support@ci-connect.uchicago.edu"
 
 # Infer the bosco directory from our own path.
 BASEDIR=$(dirname ${ARGV0DIR-/})
@@ -26,7 +30,7 @@ LOCAL_CONFIG=$LOCAL_DIR/condor_config.local
 factory_config=$LOCAL_DIR/config/condor_config.factory
 
 banner () {
-	echo "******** $@ ********"
+	echo "**** $@ ****"
 }
 
 fix_port () {
@@ -108,7 +112,7 @@ echo
 # Check to see if local Bosco directory and all subdirectories exist.
 # If not, create them.
 
-[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local $PROD files can be found in $LOCAL_DIR" >> $LOG_FILE
+[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local $SERVICE files can be found in $LOCAL_DIR" >> $LOG_FILE
 [ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
 [ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
 [ -d $LOCAL_DIR/execute ] || mkdir $LOCAL_DIR/execute
@@ -297,10 +301,10 @@ if [ $started -eq 1 ]; then
     fix_port $PORT
 
     # Start Bosco
-    banner "Starting $PROD:"
+    banner "Starting $SERVICE:"
     bosco_start 2>> $LOG_FILE 1>/dev/tty
 else
-    echo "$PROD already started."
+    echo "$SERVICE already started."
 fi
 
 test_cluster () {
@@ -310,7 +314,7 @@ test_cluster () {
 	banner "Testing the cluster (resource):"
 	echo "This may take up to 2 minutes... please wait."
 	test=$(bosco_cluster --test $user@$host 2>> $LOG_FILE)
-	echo "$PROD on $host tested"
+	echo "$SERVICE on $host tested"
 	if [ $? -ne 0 ]; then
     	echo "Failed to test the $host cluster. Please check your data and retry."
     	return 3
@@ -329,7 +333,7 @@ add_midway () {
 	echo "Midway cluster already added."
     else
 	# Connect Midway cluster
-	banner "Connecting local Midway cluster to BOSCO:"
+	banner "Connecting your cluster to Midway:"
 	echo "At any time hit [CTRL+C] to interrupt."
 	echo
 	bosco_cluster --add $USER@$HOST PBS 2>> $LOG_FILE
@@ -348,15 +352,15 @@ add_midway () {
 	fi
 
 	echo
-	echo "Congratulations, $PROD is now setup to work with $CANONICAL_HOST_LONG!"
+	echo "Congratulations, $SERVICE is now setup to work with $CANONICAL_HOST_LONG!"
 	
     fi
 }
 
 # function for adding RCC Connect cluster 
 add_connect () {
-    banner "Connecting RCC Connect cluster to BOSCO:"
-    echo "At any time hit [CTRL+C] to interrupt."
+    banner "Connecting your cluster to $SERVICE:"
+    #echo "At any time hit [CTRL+C] to interrupt."
     echo 
     
     echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
@@ -376,7 +380,7 @@ add_connect () {
 	fi
 
     echo
-    echo "Congratulations, $PROD is now setup to work with $REMOTE_HOST!" 
+    echo "Congratulations, $SERVICE is now setup to work with $REMOTE_HOST!" 
     echo
 }
 
@@ -389,24 +393,23 @@ RCC_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
 
 cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
-Remember to set up the environment each time you want to use $PROD:
-module load connect
+Remember to set up the environment each time you want to use $SERVICE:
+    module load connect
 
-Here is a quickstart guide about BOSCO:
-https://twiki.grid.iu.edu/bin/view/CampusGrids/BoscoQuickStart
-
-For more help, here is the RCC Connect Handbook:
-https://ci-connect.atlassian.net/wiki/display/UCHI/Home
-
-Here is a submit file example (supposing you want to run "myjob.sh"):
-universe = vanilla
-Executable = myjob.sh
-arguments = 
-output = myjob.output.txt
-error = myjob.error.txt
-log = myjob.log
-transfer_output_files = 
-should_transfer_files = YES
-when_to_transfer_output = ON_EXIT
-queue 1
+For assistance, see the $SERVICE Handbook:
+    $DOCURL
+or write to us: $SUPPORT
 EOF
+
+#Here is a submit file example (supposing you want to run "myjob.sh"):
+#universe = vanilla
+#Executable = myjob.sh
+#arguments = 
+#output = myjob.output.txt
+#error = myjob.error.txt
+#log = myjob.log
+#transfer_output_files = 
+#should_transfer_files = YES
+#when_to_transfer_output = ON_EXIT
+#queue 1
+#EOF
