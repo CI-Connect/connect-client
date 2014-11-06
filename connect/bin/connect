@@ -18,10 +18,12 @@ PluginModules = 'os sys getopt'.split()
 PluginModulesAll = 'htcondor'.split()
 
 p = os.path.basename(sys.argv[0])
+d = os.path.dirname(sys.argv[0]) + '/'
 Libraries = [
 	'/etc/ciconnect',
 	os.path.expanduser('~/lib/' + p),
-	sys.argv[0].replace('/bin/', '/lib/'),
+	d.replace('/bin/', '/lib/'),
+	d.replace('/bin/', '/etc/'),
 	os.path.join('/usr/lib', p),
 ]
 
