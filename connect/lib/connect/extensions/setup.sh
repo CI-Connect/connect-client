@@ -80,7 +80,22 @@ fi
 
 if [ "$#" -ne 1 ]; then
     echo "Usage: connect setup <RCC Connect username>"
+    echo "       connect setup -uninstall"
     exit
+fi
+
+if [ "$(echo $1 | tr -d -)" = "uninstall" ]; then
+	echo "Uninstalling Connect Client configuration."
+	(
+		bosco_stop
+		killall condor_master
+		rm -rf $HOME/.bosco
+		cd $HOME/.ssh
+		for file in bosco*; do
+			mv "$file" "$file.old"
+		done
+	) 2>/dev/null
+	exit $?
 fi
 
 echo "Connect Setup is starting."
