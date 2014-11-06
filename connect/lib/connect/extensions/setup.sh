@@ -1,8 +1,17 @@
 #!/bin/sh
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
+#PROD="Bosco"
+PROD="Connect Client"
 LOCAL_DIR=$HOME/.bosco
 BOSCO_DIR=$HOME/software/bosco # change to /software/bosco later
+
+REMOTE_HOST="login.ci-connect.uchicago.edu"
+REMOTE_USER=$1
+REMOTE_TYPE="condor"
+
+CANONICAL_HOST="midway-login1"
+CANONICAL_HOST_LONG="midway-login1.rcc.uchicago.edu"
 
 # Change to have a different log file
 LOG_FILE=$LOCAL_DIR/connect_setup.log
@@ -12,6 +21,10 @@ LOG_FILE=$LOCAL_DIR/connect_setup.log
 CONFIG_FILE=$LOCAL_DIR/condor_config
 LOCAL_CONFIG=$LOCAL_DIR/condor_config.local
 factory_config=$LOCAL_DIR/config/condor_config.factory
+
+banner () {
+	echo "******** $@ ********"
+}
 
 fix_port () {
   # Checks if the port is available
@@ -54,28 +67,30 @@ fix_port () {
   return 1
 }
 
-# User must log in on midway-login1 node.  
+# User must log in on $CANONICAL_HOST node.  
 HOST_NAME=$(hostname)
-if [ "$HOST_NAME" == "midway-login1" ];then
-    echo "Connect Setup is starting."
-    echo "More information can be found in $LOG_FILE"
-    echo
-else
-    echo "You are logged in on $HOST_NAME. Please log in on midway-login1.rcc.u
-chicago.edu to access the Connect module."
-    echo "To do this, type 'logout' and then 'ssh <username>@midway-login1.rcc.uchicago.edu' to log in to midway-login1."
+if [ "$HOST_NAME" != "$CANONICAL_HOST" ];then
+	user=$(whoami)
+	fmt -w75 <<EOF
+You are logged in on $HOST_NAME. Please log in on $CANONICAL_HOST_LONG to access the Connect module.
+To do this, type 'logout' and then 'ssh $user@$CANONICAL_HOST_LONG' to log in to $CANONICAL_HOST.
+EOF
     exit
 fi
 
-if [ "$#" -ne 1 ]
-    then echo "Usage: connect setup <RCC Connect username>"
+if [ "$#" -ne 1 ]; then
+    echo "Usage: connect setup <RCC Connect username>"
     exit
 fi
+
+echo "Connect Setup is starting."
+echo "More information can be found in $LOG_FILE"
+echo
 
 # Check to see if local Bosco directory and all subdirectories exist.
 # If not, create them.
 
-[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local Bosco files can be found in $LOCAL_DIR" >> $LOG_FILE
+[ -d $LOCAL_DIR ] || mkdir $LOCAL_DIR && echo "Local $PROD files can be found in $LOCAL_DIR" >> $LOG_FILE
 [ -d $LOCAL_DIR/log ] || mkdir $LOCAL_DIR/log && touch $LOCAL_DIR/log/MasterLog
 [ -d $LOCAL_DIR/spool ] || mkdir $LOCAL_DIR/spool
 [ -d $LOCAL_DIR/execute ] || mkdir $LOCAL_DIR/execute
@@ -124,7 +139,7 @@ use SECURITY : HOST_BASED
 ##  To expand your condor pool beyond a single host, set ALLOW_WRITE to match all of the hosts
 #ALLOW_WRITE = *.cs.wisc.edu' >> $CONFIG_FILE
 
-HOST=midway-login1.rcc.uchicago.edu
+HOST=$CANONICAL_HOST_LONG
 USER=$(whoami)
 CONDOR_ID=$(id -u)
 
@@ -181,7 +196,7 @@ EOF
 #
 
 ##  What machine is your central manager?
-NETWORK_HOSTNAME = midway-login1.rcc.uchicago.edu
+NETWORK_HOSTNAME = $CANONICAL_HOST_LONG
 CONDOR_HOST = $(NETWORK_HOSTNAME)
 COLLECTOR_HOST = $(NETWORK_HOSTNAME):11000?sock=collector
 
@@ -264,15 +279,11 @@ if [ $started -eq 1 ]; then
     fix_port $PORT
 
     # Start Bosco
-    echo "************** Starting Bosco: ***********"
+    banner "Starting $PROD:"
     bosco_start 2>> $LOG_FILE 1>/dev/tty
 else
-    echo "Bosco already started."
+    echo "$PROD already started."
 fi
-
-REMOTE_HOST="login.ci-connect.uchicago.edu"
-REMOTE_USER=$1
-REMOTE_TYPE="condor"
 
 # function for adding Midway cluster 
 add_midway () {
@@ -281,12 +292,12 @@ add_midway () {
     chmod -R g-w ~/.ssh
 
     # Check if the cluster is already added
-    midway_set=$(bosco_cluster -l | grep midway-login1 | wc -w)
+    midway_set=$(bosco_cluster -l | grep $CANONICAL_HOST | wc -w)
     if [ $midway_set -eq 1 ]; then
 	echo "Midway cluster already added."
     else
 	# Connect Midway cluster
-	echo "************** Connecting local Midway cluster to BOSCO: ***********"
+	banner "Connecting local Midway cluster to BOSCO:"
 	echo "At any time hit [CTRL+C] to interrupt."
 	echo
 	bosco_cluster --add $USER@$HOST PBS 2>> $LOG_FILE
@@ -300,25 +311,27 @@ add_midway () {
 	echo "Midway cluster connected"
 
 	# Test the cluster using bosco_cluster --test
-	echo 
-	echo "************** Testing the cluster (resource): ***********"
-	echo "This may take up to 2 minutes... please wait."
-	test=$(bosco_cluster --test $USER@$HOST 2>> $LOG_FILE)
-	echo "BOSCO on midway-login1.rcc.uchicago.edu tested"
-	if [ $? -ne 0 ]; then
-	    echo "Failed to test the cluster midway-login1.rcc.uchicago.edu. Please check your data and retry."
-	    exit 3
+	if false; then
+		echo 
+		banner "Testing the cluster (resource):"
+		echo "This may take up to 2 minutes... please wait."
+		test=$(bosco_cluster --test $USER@$HOST 2>> $LOG_FILE)
+		echo "BOSCO on $CANONICAL_HOST_LONG tested"
+		if [ $? -ne 0 ]; then
+	    	echo "Failed to test the cluster $CANONICAL_HOST_LONG. Please check your data and retry."
+	    	exit 3
+		fi
 	fi
 
 	echo
-	echo "Congratulations, Bosco is now setup to work with midway-login1.rcc.uchicago.edu!"
+	echo "Congratulations, $PROD is now setup to work with $CANONICAL_HOST_LONG!"
 	
     fi
 }
 
 # function for adding RCC Connect cluster 
 add_connect () {
-    echo "************** Connecting RCC Connect cluster to BOSCO: ***********"
+    banner "Connecting RCC Connect cluster to BOSCO:"
     echo "At any time hit [CTRL+C] to interrupt."
     echo 
     
@@ -335,7 +348,7 @@ add_connect () {
     
     # Test the cluster with bosco_cluster --test
     echo 
-    echo "************** Testing the cluster (resource): ***********"
+    banner "Testing the cluster (resource):"
     echo "This may take up to 2 minutes... please wait."
     test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 2>> $LOG_FILE)
     echo "BOSCO on $REMOTE_HOST tested"
@@ -345,7 +358,7 @@ add_connect () {
     fi
 
     echo
-    echo "Congratulations, Bosco is now setup to work with $REMOTE_HOST!" 
+    echo "Congratulations, $PROD is now setup to work with $REMOTE_HOST!" 
     echo
 }
 
@@ -358,7 +371,7 @@ RCC_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
 
 cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
-Remember to set up the environment each time you want to use Bosco:
+Remember to set up the environment each time you want to use $PROD:
 module load connect
 
 Here is a quickstart guide about BOSCO:
