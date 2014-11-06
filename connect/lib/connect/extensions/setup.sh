@@ -4,7 +4,10 @@
 #PROD="Bosco"
 PROD="Connect Client"
 LOCAL_DIR=$HOME/.bosco
-BOSCO_DIR=$HOME/software/bosco # change to /software/bosco later
+
+# Infer the bosco directory from our own path.
+BASEDIR=$(dirname ${ARGV0DIR-/})
+BOSCO_DIR=$BASEDIR/software/bosco # change to /software/bosco later
 
 REMOTE_HOST="login.ci-connect.uchicago.edu"
 REMOTE_USER=$1

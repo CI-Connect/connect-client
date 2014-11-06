@@ -107,6 +107,10 @@ class commandtype(object):
 		if hasattr(self, '__subinit__'):
 			self.__subinit__()
 
+		os.environ['ARGV0'] = sys.argv[0]
+		os.environ['ARGV0DIR'] = os.path.dirname(sys.argv[0])
+		os.environ['ARGV0BASE'] = os.path.basename(sys.argv[0])
+
 	@staticmethod
 	def splitpath(*args):
 		if args:
@@ -244,6 +248,7 @@ class pyexttype(commandtype):
 
 	def __call__(self, *args, **kwargs):
 		# in a python extension, module.run must be a callable
+		os.environ['AGENT'] = self.mod.__file__
 		return self.mod.run(*args, **kwargs)
 
 
@@ -258,6 +263,7 @@ class shexttype(commandtype):
 			yield cls(config, modname, cmd.data)
 
 	def __call__(self, *args, **kwargs):
+		os.environ['AGENT'] = self.data
 		# in a shell extension, the module should run under /bin/sh
 		# and directly produce intended results
 		cmd = ' '.join(['/bin/sh', '-s', '-'] + list(args))
