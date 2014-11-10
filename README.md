@@ -68,15 +68,15 @@ This is almost the same as for individual installation, but slightly simpler:
 First-time setup
 ================
 
-Each user of RCC Connect must perform this setup step once before using RCC
+Each user of UChicago Connect must perform this setup step once before using RCC
 Connect for the first time.  Before doing so, be sure to load the module
 as described above in "Using Connect Client after installation":
 
     sh$ module load connect
-    sh$ connect setup <username on RCC Connect>
-    <enter your ssh password to RCC Connect when prompted>
+    sh$ connect setup <username on UChicago Connect>
+    <enter your ssh password to UChicago Connect when prompted>
 
-The Connect Client should be set up, with the RCC Connect cluster
+The Connect Client should be set up, with the UChicago Connect cluster
 added. Run `condor_submit` to submit jobs, `condor_q` to check jobs. 
 
 
@@ -85,7 +85,7 @@ User Guide
 
 ### Login to Midway
 
-To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. If you don't already have an account on RCC Connect, please also register on the [RCC Connect website](http://ci-connect.uchicago.edu/).
+To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. If you don't already have an account on UChicago Connect, please also register on the [UChicago Connect website](http://ci-connect.uchicago.edu/).
 
 ```
 $ ssh username@midway-login1.rcc.uchicago.edu
@@ -108,14 +108,14 @@ $ connect
 To run any of these extensions, just enter "connect [extension name]". The setup extension also requires one more argument: your username on UChicago Connect. For example, enter the command below to set up BOSCO, substituting your own username instead: 
 
 ```
-$ connect setup [RCC Connect username]
+$ connect setup [UChicago Connect username]
 ```
 
-The command will start BOSCO and ask for your ssh password to access RCC Connect. Once the setup is over, you will be able to submit jobs via BOSCO to RCC Connect. 
+The command will start BOSCO and ask for your ssh password to access UChicago Connect. Once the setup is over, you will be able to submit jobs via BOSCO to UChicago Connect. 
 
 ### Example job 
 
-Now let's create a test script to execute as your job submission to RCC Connect. Create the following script, titled short.sh: 
+Now let's create a test script to execute as your job submission to UChicago Connect. Create the following script, titled short.sh: 
 
 ````
 $ nano short.sh
@@ -160,7 +160,7 @@ Now, let's create a simple (if verbose) HTCondor submit file, called tutorial.su
 $ nano tutorial.submit
 ````
 
-The submit file should contain the following. Replace "username" in the **grid_resource** line with your account name on RCC Connect.
+The submit file should contain the following. Replace "username" in the **grid_resource** line with your account name on UChicago Connect.
 ````
 # The UNIVERSE defines an execution environment. 
 universe = grid
