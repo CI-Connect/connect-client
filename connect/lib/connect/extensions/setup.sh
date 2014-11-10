@@ -86,7 +86,7 @@ EOF
 fi
 
 if [ "$#" -ne 1 ]; then
-    echo "Usage: connect setup <RCC Connect username>"
+    echo "Usage: connect setup <UChicago Connect username>"
     echo "       connect setup -uninstall"
     exit
 fi
@@ -357,7 +357,7 @@ add_midway () {
     fi
 }
 
-# function for adding RCC Connect cluster 
+# function for adding UChicago Connect cluster 
 add_connect () {
     banner "Connecting your cluster to $SERVICE:"
     #echo "At any time hit [CTRL+C] to interrupt."
@@ -384,11 +384,11 @@ add_connect () {
     echo
 }
 
-# Check if the RCC Connect cluster is already added. 
+# Check if the UChicago Connect cluster is already added. 
 # If not, add the cluster, then check the Midway cluster. 
 
 RCC_set=$(bosco_cluster -l | grep $REMOTE_HOST | wc -w)
-[ $RCC_set -eq 1 ] && echo "RCC Connect cluster already added." # && add_midway
+[ $RCC_set -eq 1 ] && echo "UChicago Connect cluster already added." # && add_midway
 [ $RCC_set -eq 0 ] && add_connect # && add_midway
 
 cat >/dev/tty <<EOF
