@@ -17,6 +17,8 @@ REMOTE_HOST="login.ci-connect.uchicago.edu"
 REMOTE_USER=$1
 REMOTE_TYPE="condor"
 
+# Let's make this more configurable.  This is the only place where a hostname
+# dependency is used, as far as I can tell.
 CANONICAL_HOST="midway-login1"
 CANONICAL_HOST_LONG="midway-login1.rcc.uchicago.edu"
 
