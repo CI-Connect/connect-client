@@ -1,5 +1,6 @@
 #!/bin/sh
 
+NAME="UChicago CI Connect"
 LOCAL_DIR=$HOME/.bosco
 
 # Change to have a different log file
@@ -10,73 +11,60 @@ LOG_FILE=$LOCAL_DIR/connect_addsite.log
 # Check if Bosco has been started
 started=$(ps ux | grep condor_master | wc -l)
 if [ $started -eq 1 ]; then
-    echo "Bosco not started. Please run 'connect setup' first and try again."
+    echo "$NAME not started. Please run 'connect setup' first and try again."
 fi
 
 REMOTE_HOST="" 
 REMOTE_USER=""
 REMOTE_TYPE="condor"
 
-# Connect cluster
+usage ()  {
+	echo >&2 "usage: connect addsite user@hostname sched-type"
+	echo >&2 "       'sched-type' is a word denoting the type of scheduler"
+	echo >&2 "       running at hostname.  It should be 'slurm', 'pbs',"
+	echo >&2 "       'condor', 'lsf', or 'sge'."
+}
 
-    q_tmp=""
-    read -p "Type the site you would like to submit jobs to and press [ENTER]: " q_tmp </dev/tty
-    REMOTE_HOST=$q_tmp
-
-    q_tmp=""
-    read -p "Type your username on $REMOTE_HOST (default $USER) and press [ENTER]: " q_tmp </dev/tty
-    if [ "x$q_tmp" = "x" ]; then 
-	REMOTE_USER=$USER
-    else
-	REMOTE_USER=$q_tmp
-    fi
-
-    echo "Connecting $REMOTE_HOST, user: $REMOTE_USER, queue manager: $REMOTE_TYPE"
-    bosco_cluster --add $REMOTE_USER@$REMOTE_HOST $REMOTE_TYPE 2>> $LOG_FILE
-
-    if [ $? -ne 0 ]; then
-	echo "Failed to connect the cluster $REMOTE_HOST. Please check your data and retry."
+if [ $# -ne 2 ]; then
+	usage
 	exit 2
-    fi
-
-    echo "$REMOTE_HOST connected"
 fi
 
-echo "************** Testing the cluster (resource): ***********"
-echo "This may take up to 2 minutes... please wait."
-test=$(bosco_cluster --test $REMOTE_USER@$REMOTE_HOST 2>> $LOG_FILE)
-echo "BOSCO on $REMOTE_HOST Tested"
+target=$1
+type=$(echo $2 | tr '[A-Z]' '[a-z]')
+
+case $type in
+	slurm)	type=pbs;;
+	pbs)	: ;;
+	sge)	: ;;
+	condor)	: ;;
+	lsf)	: ;;
+	*)		usage; exit 10;;
+esac
+
+echo "Connecting to a $type scheduler at $target..."
+bosco_cluster --add $target $type 2>> $LOG_FILE
+
 if [ $? -ne 0 ]; then
-  echo "Failed to test the cluster $REMOTE_HOST. Please check your data and retry."
-  exit 3
+	echo "Failed to connect to $target. Please check your information and retry."
+	exit 20
 fi
 
-if [ "x$REMOTE_USER" = "x" ]; then
-    REMOTE_USER="username"
+echo "$target is connected."
+
+
+echo "**** Testing the cluster (resource): ****"
+echo "This may take up to 2 minutes... please wait."
+test=$(bosco_cluster --test $target 2>> $LOG_FILE)
+echo "$NAME on $target Tested"
+if [ $? -ne 0 ]; then
+  echo "Failed to test the cluster $target. Please check your information and retry."
+  exit 30
 fi
 
-echo "************** Congratulations, Bosco is now setup to work with $REMOTE_HOST! ***********"
+echo **** Congratulations, $NAME is now setup to work with $REMOTE_HOST! ****"
 cat >/dev/tty <<EOF
 You are ready to submit jobs with the "condor_submit" command.
-Remember to setup the environment all the time you want to use Bosco:
+Remember to setup the environment each time you want to use $NAME:
 module load connect
-
-Here is a quickstart guide about BOSCO:
-https://twiki.grid.iu.edu/bin/view/CampusGrids/BoscoQuickStart
-
-To remove Bosco you can run:
-module load connect; bosco_uninstall --all
-
-Here is a submit file example (supposing you want to run "myjob.sh"):
-universe = grid
-grid_resource = batch condor $REMOTE_USER@$REMOTE_HOST
-Executable = myjob.sh
-arguments = 
-output = myjob.output.txt
-error = myjob.error.txt
-log = myjob.log
-transfer_output_files = 
-should_transfer_files = YES
-when_to_transfer_output = ON_EXIT
-queue 1
 EOF
