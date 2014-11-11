@@ -1,6 +1,9 @@
 #!python
 
+# We need to extend this to collect EITHER LastRemoteHost
+# or MATCH_EXP_JOBGLIDEIN_ResourceName and match in the same table.
 DOMAINMAP = '''
+\?{8}                            *       [glidein]
 qgp\d{2}                         *       duke.edu
 lqcd\d{2}                        *       duke.edu
 neutrino-\d{2}                   *       duke.edu
@@ -11,7 +14,8 @@ compute-\d{2}-\d{2}\.local\d     *       uconn.edu
 compute-\d-\d{2}.nysu\d          *       uconn.edu
 nodo\d{2}                        *       cinvestav.mx
 compute-\d-\d.local              atlas   swt2.org
-compute-\d-\d.local              *       vt.edu
+compute-\d+-\d+.local            *       vt.edu
+computer?-\d+n?-\d+.tier2        *       compute-*.tier2
 node\d{3}.local                  atlas   swt2.org
 node\d{3}.local                  *       unesp.br
 compute-\d-\d{2}.nys1            *       swt2.org
@@ -22,12 +26,22 @@ taub\d{3}                        *       mwt2.org
 iu.edu                           *       mwt2.org
 midway\d{3}                      *       rcc.uchicago.edu
 midway-\d{3}-\d{2}               *       rcc.uchicago.edu
+uc3-.*.mwt2.org                  *       uc3
+.*-its-.*-nfs-\d{8}              *       orangegrid
+r\w+-s\d+.ufhpc                  *       ufhpc                # e.g. r18a-s31.ufhpc
+
+# This one is the wildcard catchall for domains: *.dom.ain -> dom.ain
+.*\.([^.]*\.[^.]*)$              *       \\1
 '''
 
 import re
 
 domainmap = []
 for line in DOMAINMAP.strip().split('\n'):
+	if '#' in line:
+		line = line[:line.find('#')]
+	if line == '':
+		continue
 	rx, site, mapto = [x.strip() for x in line.split()]
 	rx = re.compile(rx, re.I)
 	domainmap.append((rx, site, mapto))
@@ -57,9 +71,7 @@ def whoami():
 	return pw.pw_name
 
 def mapdomain(domain, site):
-	for rx, mapsite, mapto in domainmap:
-		if mapsite.lower() != site.lower() and mapsite != '*':
-			continue
+	for rx, site, mapto in domainmap:
 		m = rx.match(domain)
 		if m:
 			return rx.sub(mapto, domain)
@@ -67,54 +79,72 @@ def mapdomain(domain, site):
 
 def last_cluster(user):
 	# XXX wish I could do this via bindings
+	iter = xsh('condor_history %s' % user)
+	junk = iter.next()
 	try:
-		iter = xsh('condor_history %s' % user)
-		junk = iter.next()
 		line = iter.next()
-		iter.close()
 	except StopIteration:
+		# no history
 		return None
 	w = line.split()
 	return w[0].split('.')[0]
 
+def usage():
+	p = os.path.basename(sys.argv[0])
+	print "usage: %s histogram [-l | --last] [user]" % p
+	return 2
+
 def run(*args):
-	LAST = False
-
 	try:
-		opts, args = getopt.getopt(args, 'lh', ['last', 'help'])
+		opts, args = getopt.getopt(args, 'l', ['last'])
 	except getopt.GetoptError, e:
-		error(str(e))
-		return 2
+		print >>sys.stderr, str(e)
+		return usage()
 
+	lastjob = False
 	for opt, arg in opts:
 		if opt in ('-l', '--last'):
-			LAST = true
-		if opt in ('-h', '--help'):
-			usage('[-l | --last] {user | jobid}')
-			return 2
-
-	args = list(args)	# tuple to list
+			lastjob = True
 
 	if args:
-		query = args.pop(0)
+		user = args[0]
 	else:
-		query = whoami()
-		LAST = True
+		user = whoami()
 
-	if LAST:
-		query = last_cluster(query)
 
-	if query == None:
-		print >>sys.stderr, 'No historical jobs to analyze.'
-		return 1
+	if lastjob:
+		cluster = last_cluster(user)
+		if cluster is None:
+			print 'No recent jobs to report on.'
+			return 10
+		def source():
+			cmd = "condor_history -format '%s\\n' LastRemoteHost " + str(cluster)
+			for line in xsh(cmd):
+				resource = line.split()[-1]
+				yield resource
 
+	else:
+		def source():
+			cmd = 'condor_q -run %s' % user
+			for line in xsh(cmd):
+				line = line.strip()
+				if 'ID' in line:
+					continue
+				if 'Submitter' in line:
+					continue
+				if line == '':
+					continue
+				resource = line.split()[-1]
+				yield resource
+
+	brand = config.get('connect', 'brand')
 	distr = os.popen('distribution --color --char=pb', 'w')
-
-	cmd = "condor_history -format '%s\\n' LastRemoteHost " + str(query)
-	for line in xsh(cmd):
-		slot, host = line.strip().rsplit('@', 1)
-		parts = host.split('.')
-		domain = '.'.join(parts[-2:])
-		domain = mapdomain(domain, config.get('connect', 'brand'))
+	for resource in source():
+		try:
+			slot, host = resource.strip().rsplit('@', 1)
+		except:
+			print resource
+			raise
+		domain = mapdomain(host, brand)
 		distr.write(domain + '\n')
 	distr.close()
