@@ -43,6 +43,8 @@ then
 export _condor_USER_JOB_WRAPPER=`pwd`/user_job_wrapper.sh
 fi
 
+export OSG_MODULES=/cvmfs/oasis.opensciencegrid.org/osg/modules/lmod/5.6.2/init/bash
+
 # Run on top of another glidein for condor-condor-condor action
 unset _CONDOR_JOB_PIDS
 unset _CONDOR_ANCESTOR_6635
