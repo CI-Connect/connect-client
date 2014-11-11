@@ -3,9 +3,11 @@ switch_modules () {
   shell=`basename \`ps -p $$ -ocomm=\``
   case $1 in 
   oasis) 
+    unload_modules
     . /cvmfs/oasis.opensciencegrid.org/osg/modules/lmod/5.6.2/init/$shell
     ;;
   local)
+    unload_modules
      . /srv/adm/modules/init/$shell
     ;;
   esac
