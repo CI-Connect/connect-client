@@ -3,7 +3,7 @@
 # We need to extend this to collect EITHER LastRemoteHost
 # or MATCH_EXP_JOBGLIDEIN_ResourceName and match in the same table.
 DOMAINMAP = '''
-\?{8}                            *       [glidein]
+.*\?{8}                          *       [glidein]
 qgp\d{2}                         *       duke.edu
 lqcd\d{2}                        *       duke.edu
 neutrino-\d{2}                   *       duke.edu
@@ -140,11 +140,11 @@ def run(*args):
 	brand = config.get('connect', 'brand')
 	distr = os.popen('distribution --color --char=pb', 'w')
 	for resource in source():
-		try:
+		if '@' in resource:
 			slot, host = resource.strip().rsplit('@', 1)
-		except:
-			print resource
-			raise
+		else:
+			slot = ''
+			host = resource
 		domain = mapdomain(host, brand)
 		distr.write(domain + '\n')
 	distr.close()
