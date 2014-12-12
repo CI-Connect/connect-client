@@ -91,8 +91,7 @@ def last_cluster(user):
 
 def usage():
 	p = os.path.basename(sys.argv[0])
-	print "usage: %s histogram [-l | --last] [user]" % p
-	return 2
+	yield "usage: %s histogram [-l | --last] [user]" % p
 
 def run(*args):
 	try:
