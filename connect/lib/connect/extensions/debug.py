@@ -1,4 +1,7 @@
 
+def usage():
+	yield ''
+
 def run(opts, args, **kwargs):
 	from IPython.Shell import IPShellEmbed as embed
 	if htcondor:

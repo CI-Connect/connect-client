@@ -9,6 +9,9 @@ import curses
 import curses.panel
 import getopt
 
+def usage():
+	yield ''
+
 # TODO: need a help keystroke
 
 class Menu(list):

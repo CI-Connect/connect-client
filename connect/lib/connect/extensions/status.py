@@ -1,5 +1,8 @@
 import getopt
 
+def usage():
+	yield '[-f | --full]'
+
 def status(pool):
 	if pool:
 		cmd = 'condor_status -pool ' + pool
