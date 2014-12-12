@@ -16,6 +16,8 @@ findhost
 gather_info
 history
 hold
+job_distribution 
+job_router_tool 
 ping
 plot
 power
