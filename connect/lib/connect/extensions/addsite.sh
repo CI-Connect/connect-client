@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# @usage user@hostname sched-type
+#
 
 NAME="UChicago CI Connect"
 LOCAL_DIR=$HOME/.bosco

@@ -1,6 +1,8 @@
 #
 # Create a debug archive
 #
+# @usage
+#
 
 cd "$HOME"
 tmpdir=".tmp.$$"

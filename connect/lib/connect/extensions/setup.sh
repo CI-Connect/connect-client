@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# @usage
+#
 # based on bosco_quickstart, first version 5/2/2013, by Marco Mambelli
 
 # All these configs should ultimately move to the ciconnect/config.ini

@@ -1,6 +1,8 @@
 #
 # connect client log
 #
+# @usage 
+#
 
 logfile="$HOME/.bosco/log/MasterLog"
 

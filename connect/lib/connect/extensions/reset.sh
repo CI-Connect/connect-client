@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# @usage 
 
 RETRY=3 
 SLEEP=3

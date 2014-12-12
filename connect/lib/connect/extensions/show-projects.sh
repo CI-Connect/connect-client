@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# @usage [-u username] [projectname]
+# 
 #Marco Mambelli 130820 marco@hep.uchicago.edu
 #Lincoln Bryant (lincolnb@hep.uchicago.edu) 
 # all Projects have corresponding UNIX groups starting with "@"
