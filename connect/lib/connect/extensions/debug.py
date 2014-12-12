@@ -1,9 +1,8 @@
-import htcondor
-import classad
-
 
 def run(opts, args, **kwargs):
 	from IPython.Shell import IPShellEmbed as embed
+	if htcondor:
+		import classad
 
 	schedd = htcondor.Schedd()
 	r = schedd.query()
