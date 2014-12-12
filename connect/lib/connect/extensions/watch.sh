@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# @usage [seconds [user]]
+#
 
 if [ $# -gt 0 ]; then
 	sec=$1; shift
