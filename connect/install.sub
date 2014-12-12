@@ -1,2 +1,5 @@
+# used by connect-client, a repo that includes connect-command
+# as a submodule.
+
 status ... connect command
 copyfiles . "$base/."
