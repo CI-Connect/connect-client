@@ -51,9 +51,6 @@ fi
 # Install modulefiles
 subinstall modules
 
-# Install bosco (connect client)
-subinstall bosco
-
 # Install connect scripts
 status Installing Connect user commands
 subinstall connect

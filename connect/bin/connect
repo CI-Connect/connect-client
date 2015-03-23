@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 # /usr/bin/env python is the correct way to invoke a program,
 # but we can't do it because of CERN's terrible habit of mucking
@@ -87,7 +87,7 @@ class PluginProxy(object):
 		print >>sys.stdout, ('%s %s:' % (self.arg0, agent)), ' '.join(args)
 
 	def usage(self, *args):
-		print >>sys.stdout, 'usage:', self.arg0, self.agent, ' '.join(args)
+		yield ' '.join(args)
 
 	def sh(self, command):
 		fp = os.popen(command, 'r')
@@ -240,7 +240,7 @@ class pyexttype(commandtype):
 			try:
 				setattr(self.mod, name, __import__(name))
 			except ImportError, e:
-				pass
+				setattr(self.mod, name, None)
 
 		for name in PluginModulesAll:
 			try:
@@ -249,7 +249,7 @@ class pyexttype(commandtype):
 				for name in tmp.__dict__:
 					setattr(self.mod, name, getattr(tmp, name))
 			except:
-				pass
+				setattr(self.mod, name, None)
 
 		if hasattr(self.mod, 'setup'):
 			self.mod.setup()
@@ -296,6 +296,14 @@ class shexttype(commandtype):
 			rc = os.WEXITSTATUS(rc)
 		sys.exit(rc)
 		#os.execv('/bin/sh', [self.name, self.data] + list(args))
+
+	def usage(self, *args, **kwargs):
+		# self.data contains path
+		fp = open(self.data, 'r')
+		for line in fp:
+			if '@usage' in line:
+				yield line[line.find('@usage')+6:].strip()
+
 
 class Main(object):
 	def __init__(self):

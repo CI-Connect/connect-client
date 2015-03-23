@@ -250,17 +250,3 @@ Job is running in directory: /var/lib/condor/execute/dir_2120
 Working hard ...
 Science complete!
 ````
-
-Appendices
-==========
-
-Removal of older versions of the module
----------------------------------------
-
-If you have an older version of the module already set up, first clean everything up:
-
-1. bosco_stop --force 
-2. rm -rf ~/.bosco
-3. rm -rf ~/bosco
-4. rm ~/.ssh/bosco*
-5. rm -rf ~/privatemodules/connect  
