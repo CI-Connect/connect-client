@@ -1,3 +1,0 @@
-status Installing the Connect client
-mkdir -p "$base/connect-client" 2>/dev/null
-copyfiles . "$base/connect-client/."
