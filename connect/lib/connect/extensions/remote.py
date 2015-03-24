@@ -624,7 +624,7 @@ class main(object):
 		return 0
 
 
-	def c_prototest(self, args):
+	def disabled_c_prototest(self, args):
 		''''''
 
 		session = self.sessionsetup()
