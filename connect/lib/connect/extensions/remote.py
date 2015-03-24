@@ -306,7 +306,7 @@ class main(object):
 			                        debug=self.debug)
 
 			if self.remotedir is None:
-				self.remotedir = os.path.basename(self.getcwd())
+				self.remotedir = os.path.basename(os.getcwd())
 
 			channel = session.rcmd(primaryArgs + args, remotedir=self.remotedir)
 			channel.rio()
@@ -563,6 +563,10 @@ class main(object):
 		channel.send('.\n')
 		channel.rio(stdin=False)
 		channel.close()
+
+		self.notice('Ongoing remote access has been authorized at %s.',
+		            self.server)
+		self.notice('Use "%s test" to verify access.', self.local)
 		return 0
 
 
