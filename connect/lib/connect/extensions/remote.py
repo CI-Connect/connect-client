@@ -1003,7 +1003,12 @@ def run(*args, **kwargs):
 
 
 try:
-	import paramiko
+	# Paramiko may be built using an older libgmp, but we can't
+	# do anything about that.  Suppress this warning.
+	import warnings
+	with warnings.catch_warnings():
+		warnings.simplefilter("ignore")
+		import paramiko
 except ImportError:
 	m = main()
 	p = os.path.basename(sys.argv[0])
