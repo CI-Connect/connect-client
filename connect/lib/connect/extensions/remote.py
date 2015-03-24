@@ -152,7 +152,7 @@ class ClientSession(object):
 		cmd = ' '.join(["'" + x + "'" for x in args])
 
 		if remotedir:
-			cmd = ('cd "%s"; ' % remotedir) + cmd
+			cmd = ('[ -d "%s" ] && cd "%s"; ' % (remotedir, remotedir)) + cmd
 
 		channel = self.transport.open_session()
 		self.debug('remote command: ' + cmd)
