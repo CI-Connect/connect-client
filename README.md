@@ -31,9 +31,10 @@ Installation for the individual
 Choose a directory to install Connect Client into.  A reasonable choice
 is `~/software/connect`.  Also choose a directory to install the
 software module into.  A reasonable choice for this on RCC is
-`~/privatemodules`.  Then run `./install.sh` with these two directories:
+`~/privatemodules`.  Then run `./install.sh` with these two directories
+and a version number:
 
-    sh$ ./install.sh ~/software/connect ~/privatemodules
+    sh$ ./install.sh ~/software/connect-client ~/privatemodules 1.0
 
 ### Using Connect Client after individual installation
 
@@ -42,7 +43,7 @@ any other software module on RCC -- with the exception that you will also
 need to load the `use.own` module.
 
     sh$ module load use.own
-    sh$ module load connect
+    sh$ module load connect-client
 
 You should now have access to the Connect commands.
 
@@ -55,14 +56,14 @@ is `/software/connect`.  Also choose a directory to install the
 software module into.  A reasonable choice for this on RCC is
 `/software/modulefiles`.  Then run `./install.sh` with these two directories:
 
-    sh$ ./install.sh /software/connect /software/modulefiles
+    sh$ ./install.sh /software/connect-client /software/modulefiles
 
 
 ### Using Connect Client after site installation
 
 This is almost the same as for individual installation, but slightly simpler:
 
-    sh$ module load connect
+    sh$ module load connect-client
 
 
 First-time setup
@@ -72,7 +73,7 @@ Each user of UChicago Connect must perform this setup step once before using RCC
 Connect for the first time.  Before doing so, be sure to load the module
 as described above in "Using Connect Client after installation":
 
-    sh$ module load connect
+    sh$ module load connect-client
     sh$ connect setup <username on UChicago Connect>
     <enter your ssh password to UChicago Connect when prompted>
 
@@ -96,7 +97,7 @@ $ ssh username@midway-login1.rcc.uchicago.edu
 Once logged in to Midway, set up the Connect program with the following step:
 
 ```
-$ module load connect
+$ module load connect-client
 ```
 
 Now you will have access to all of the Connect program extensions. For a list of available extensions, enter the following command:
