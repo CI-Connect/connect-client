@@ -731,9 +731,8 @@ class main(object):
 				# request file
 				rfn = os.path.join(self.remotedir, fn)
 				dir = os.path.dirname(fn)
-				print 'ensure', dir, fn
 				self.ensure_dir(dir)
-				self.notice('sending %s as %s...', rfn, fn)
+				self.notice('fetching %s as %s...', rfn, fn)
 				sftp.get(rfn, fn)
 				if 'mtime' in attrs:
 					t = int(attrs['mtime'])
