@@ -1,2 +1,6 @@
 status ... connect command
 copyfiles . "$base/."
+
+status "... paramiko (for connect command)"
+pip install -b /tmp/pip-build-$USER --install-option="--prefix=$base" paramiko
+rm -rf /tmp/pip-build-$USER

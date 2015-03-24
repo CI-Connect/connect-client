@@ -1,8 +1,9 @@
-status Setting up the Connect module
+version=${version-1.0}
+status Setting up the Connect module $version
 [ -n "$modlib" ] && mkdir -p "$modlib/connect" 2>/dev/null
 [ -n "$modlib" ] && dst="$modlib/connect" || dst="$base"
 
 sed -e "s!@CONNECTDIR@!$base!g" \
-	<connect.in >"$dst/connect"
+	<connect.in >"$dst/$version"
 
 echo "Connect modulefile is in $dst/connect"
