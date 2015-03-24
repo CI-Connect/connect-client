@@ -300,13 +300,10 @@ class main(object):
 	@staticmethod
 	def simpleremote(primaryArgs):
 		def _(self, args):
-			try:
-				session = ClientSession(self.server,
-				                        keyfile=self.keyfile(),
-				                        password='nopassword',
-				                        debug=self.debug)
-			except SSHError, e:
-				e.bubble('Did you run "%s setup"?' % self.local)
+			session = ClientSession(self.server,
+			                        keyfile=self.keyfile(),
+			                        password='nopassword',
+			                        debug=self.debug)
 
 			if self.remotedir is None:
 				self.remotedir = os.path.basename(self.getcwd())
@@ -996,7 +993,7 @@ def run(*args, **kwargs):
 		#           e.__class__.__name__, m.local)
 		#for i, arg in enumerate(e.args):
 		#	m.error(arg, indent=(i>0))
-		m.error(e.__class__.__name__ + ': ' + str(e))
+		m.error(e.__class__.__name__ + ': ' + str(e.args[0]))
 		for arg in e.args[1:]:
 			m.error(arg)
 		sys.exit(10)
