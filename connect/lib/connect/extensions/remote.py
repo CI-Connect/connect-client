@@ -33,7 +33,19 @@ import stat
 import signal
 import errno
 
-import paramiko
+# These are simple, transparent commands.  Given 'a': ['b', 'c'],
+# 'connect remote a' is equivalent to 'ssh server b c'.
+SimpleCommandMap = {
+	'q': ['condor_q'],
+	'rm': ['condor_rm'],
+	'history': ['condor_history'],
+	'run': ['condor_run'],
+	'wait': ['condor_wait'],
+
+	# XXX need to store default pool name in local config for status
+	'status': ['condor_status'],
+}
+
 
 class GeneralException(Exception):
 	def __iadd__(self, other):
@@ -77,7 +89,7 @@ def cleanfn(fn):
 
 
 class ClientSession(object):
-	remotecmd = ['bin/remote', '--server-mode']
+	remotecmd = ['connect', 'remote', '--server-mode']
 
 	def __init__(self, hostname, user=None, keyfile=None, password=None, debug=None):
 		self.hostname = hostname
@@ -283,7 +295,7 @@ class ClientSession(object):
 
 class main(object):
 	server = os.environ.get('CONNECT_REMOTE_SERVER', 'login.osgconnect.net')
-	local = 'connect remote'
+	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
 
 	@staticmethod
 	def simpleremote(primaryArgs):
@@ -558,7 +570,7 @@ class main(object):
 
 
 	def s_setup(self, args):
-		'''remote --server-mode setup'''
+		'''--server-mode setup'''
 		self.ensure_dir(self.path('.ssh'))
 		fn = os.path.join('.ssh', 'authorized_keys')
 		if os.path.exists(fn):
@@ -962,16 +974,7 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 
-	# These are simple, transparent commands.  Given 'a': ['b', 'c'],
-	# 'connect remote a' is equivalent to 'ssh server b c'.
-	simple = {
-		'q': ['condor_q'],
-		'rm': ['condor_rm'],
-		'history': ['condor_history'],
-
-		# XXX need to store default pool name in local config for status
-		'status': ['condor_status'],
-	}
+	simple = SimpleCommandMap
 
 
 # consider using rsync implementation by Isis Lovecruft at
@@ -997,6 +1000,17 @@ def run(*args, **kwargs):
 		for arg in e.args[1:]:
 			m.error(arg)
 		sys.exit(10)
+
+
+try:
+	import paramiko
+except ImportError:
+	m = main()
+	p = os.path.basename(sys.argv[0])
+	m.error('%s %s requires the "paramiko" module for python%d.%d',
+	        p, __name__, sys.version_info.major, sys.version_info.minor)
+	m.error('(try "pip install paramiko")')
+	sys.exit(5)
 
 
 if __name__ == '__main__':
