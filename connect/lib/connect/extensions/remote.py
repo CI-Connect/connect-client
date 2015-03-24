@@ -689,13 +689,21 @@ class main(object):
 				if rcode == codes.YES:
 					# send
 					rfn = os.path.join(self.remotedir, fn)
+					# awful recursive mkdir
 					dir = os.path.dirname(rfn)
 					try:
-						sftp.mkdir(dir)
+						rel = '.'
+						for part in dir.split('/'):
+							rel = os.path.join(rel, part)
+							try:
+								rs = sftp.stat(rel)
+							except:
+								sftp.mkdir(rel)
 					except:
-						pass
+						raise
 					self.notice('sending %s as %s...', fn, rfn)
 					sftp.put(fn, rfn)
+					sftp.utime(rfn, (s.st_atime, s.st_mtime))
 					channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
 
 		os.chdir(basedir)
