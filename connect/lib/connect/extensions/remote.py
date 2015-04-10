@@ -96,10 +96,10 @@ class ClientSession(object):
 		self.ssh = None
 		self.version = 0
 		self.transport = None
+		self.channels = []
 		self.user = user
 		self.keyfile = keyfile
 		self.password = password
-		self.channels = []
 
 		if debug:
 			self.debug = debug
@@ -301,6 +301,7 @@ class main(object):
 	def simpleremote(primaryArgs):
 		def _(self, args):
 			session = ClientSession(self.server,
+			                        user=self.user,
 			                        keyfile=self.keyfile(),
 			                        password='nopassword',
 			                        debug=self.debug)
@@ -447,12 +448,17 @@ class main(object):
 
 
 	def usage(self):
-		self.output('usage: %s <subcommand> [args]' % self.local)
+		self.output('usage: %s [opts] <subcommand> [args]' % self.local)
 		for attr in sorted(dir(self)):
 			if attr.startswith('c_'):
 				subcmd = attr[2:]
 				driver = getattr(self, attr)
-				self.output('       %s %s %s' % (self.local, subcmd, driver.__doc__))
+				self.output('       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__))
+		self.output('')
+		self.output('opts:')
+		self.output('    -s|--server hostname       set remote server name')
+		self.output('    -u|--user username         set remote user name')
+		self.output('    -r|--remote directory      set remote directory name')
 
 
 	def __call__(self, args):
@@ -514,7 +520,7 @@ class main(object):
 
 	def sessionsetup(self):
 		try:
-			return ClientSession(self.server, keyfile=self.keyfile(),
+			return ClientSession(self.server, user=self.user, keyfile=self.keyfile(),
 			                     password='nopassword', debug=self.debug)
 		except SSHError, e:
 			e.bubble(
@@ -554,7 +560,7 @@ class main(object):
 
 		# expressly do not use a keyfile (prompt instead)
 		try:
-			session = ClientSession(self.server, keyfile=None, debug=self.debug)
+			session = ClientSession(self.server, user=self.user, keyfile=None, debug=self.debug)
 		except SSHError, e:
 			raise GeneralException, e.args
 
