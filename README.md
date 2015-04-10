@@ -19,7 +19,7 @@ the same:
 
     sh$ ssh midway.rcc.uchicago.edu   # [if needed]
     sh$ module load git
-    sh$ git clone https://github.com/CI-Connect/connect-client
+    sh$ git clone --recursive https://github.com/CI-Connect/connect-client
     sh$ cd connect-client
 
 This obtains a copy of the distribution and places your shell into
@@ -30,7 +30,7 @@ Installation for the individual
 
 Choose a directory to install Connect Client into.  A reasonable choice
 is `~/software/connect`.  Also choose a directory to install the
-software module into.  A reasonable choice for this on RCC is
+software module into.  A reasonable choice for this on RCC/Midway is
 `~/privatemodules`.  Then run `./install.sh` with these two directories
 and a version number:
 
@@ -43,7 +43,7 @@ any other software module on RCC -- with the exception that you will also
 need to load the `use.own` module.
 
     sh$ module load use.own
-    sh$ module load connect-client
+    sh$ module load connect-client/1.0
 
 You should now have access to the Connect commands.
 
@@ -51,34 +51,37 @@ You should now have access to the Connect commands.
 Installation for the site administrator
 ---------------------------------------
 
-Likewise, choose a directory to install Connect Client into.  A reasonable choice
-is `/software/connect`.  Also choose a directory to install the
-software module into.  A reasonable choice for this on RCC is
-`/software/modulefiles`.  Then run `./install.sh` with these two directories:
+Likewise, choose a directory to install Connect Client into.  A
+reasonable choice is `/software/connect`.  Also choose a directory to
+install the software module into.  A reasonable choice for this at RCC
+is `/software/modulefiles`.  Then run `./install.sh` with these two
+directories and a version number:
 
-    sh$ ./install.sh /software/connect-client /software/modulefiles
+    sh$ ./install.sh /software/connect-client /software/modulefiles 1.0
 
 
 ### Using Connect Client after site installation
 
 This is almost the same as for individual installation, but slightly simpler:
 
-    sh$ module load connect-client
+    sh$ module load connect-client/1.0
 
 
 First-time setup
 ================
 
-Each user of UChicago Connect must perform this setup step once before using RCC
-Connect for the first time.  Before doing so, be sure to load the module
-as described above in "Using Connect Client after installation":
+Each user of UChicago Connect must perform this setup step once before
+using RCC Connect for the first time.  Before doing so, be sure to
+load the module as described above in "Using Connect Client after
+installation":
 
     sh$ module load connect-client
-    sh$ connect setup <username on UChicago Connect>
-    <enter your ssh password to UChicago Connect when prompted>
+    sh$ connect remote setup
+    <enter your OSG Connect username and password when prompted>
 
-The Connect Client should be set up, with the UChicago Connect cluster
-added. Run `condor_submit` to submit jobs, `condor_q` to check jobs. 
+The Connect Client should be set up, with the OSG Connect site
+added. Run `connect remote submit` to submit jobs, `connect remote q`
+to check jobs. 
 
 
 User Guide 
@@ -86,7 +89,13 @@ User Guide
 
 ### Login to Midway
 
-To begin, log in to the Research Computing Center's Midway cluster, replacing "username" with your account name on the RCC. If not already registered to Midway, go to the [RCC's website](http://rcc.uchicago.edu/) and sign up for an account there. If you don't already have an account on UChicago Connect, please also register on the [UChicago Connect website](http://ci-connect.uchicago.edu/).
+To begin, log in to the Research Computing Center's Midway
+cluster, replacing "username" with your account name on
+the RCC. If not already registered to Midway, go to the
+[RCC's website](http://rcc.uchicago.edu/) and sign up for
+an account there. If you don't already have an account on
+UChicago Connect, please also register on the [UChicago Connect
+website](http://ci-connect.uchicago.edu/).
 
 ```
 $ ssh username@midway-login1.rcc.uchicago.edu
@@ -109,7 +118,7 @@ $ connect
 To run any of these extensions, just enter "connect [extension name]". The setup extension also requires one more argument: your username on UChicago Connect. For example, enter the command below to set up BOSCO, substituting your own username instead: 
 
 ```
-$ connect setup [UChicago Connect username]
+$ connect remote setup
 ```
 
 The command will start BOSCO and ask for your ssh password to access UChicago Connect. Once the setup is over, you will be able to submit jobs via BOSCO to UChicago Connect. 
