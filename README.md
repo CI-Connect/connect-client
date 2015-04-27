@@ -204,6 +204,18 @@ Submitting job(s).
 1 job(s) submitted to cluster 1.
 ````
 
+**N.B. If your OSG Connect username differs from your local username,
+you will need an additional option for all connect client commands.**
+This will be remedied soon.**
+
+Submit the job using **connect client submit**.
+````
+$ connect client -u <osg-connect-username> submit tutorial.submit
+Submitting job(s).
+1 job(s) submitted to cluster 1.
+````
+
+
 ## Check job status
 The **connect client q** command tells the status of currently running jobs.
 
