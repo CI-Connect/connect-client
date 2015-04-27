@@ -17,26 +17,28 @@ Obtaining the Connect Client distribution
 Regardless of which installation path you follow, the first step is
 the same:
 
-    sh$ ssh midway.rcc.uchicago.edu   # [if needed]
-    sh$ module load git
+    sh$ ssh midway.rcc.uchicago.edu   # [your cluster site here]
+    sh$ module load git               # [if needed]
     sh$ git clone --recursive https://github.com/CI-Connect/connect-client
     sh$ cd connect-client
 
-This obtains a copy of the distribution and places your shell into
-that copy.
+This obtains a copy of the distribution and sets your shell's working
+directory to that copy.
 
 Installation for the individual
 -------------------------------
 
 Choose a directory to install Connect Client into.  A reasonable choice
-is `~/software/connect`.  Also choose a directory to install the
-software module into.  A reasonable choice for this on RCC/Midway is
-`~/privatemodules`.  Then run `./install.sh` with these two directories
-and a version number:
+on RCC/Midway is `~/software/connect`.  Also choose a directory to
+install the software module into.  A reasonable choice for this on
+RCC/Midway is `~/privatemodules`.  Then run `./install.sh` with these
+two directories and a version number:
 
     sh$ ./install.sh ~/software/connect-client ~/privatemodules 1.0
 
 ### Using Connect Client after individual installation
+
+#### Using environment modules
 
 To make Connect Client available, use the `module` command as you would
 any other software module on RCC -- with the exception that you will also
@@ -44,6 +46,13 @@ need to load the `use.own` module.
 
     sh$ module load use.own
     sh$ module load connect-client/1.0
+
+#### Without environment modules
+
+If your site does not have environment modules, you'll need to add the
+software to your $PATH in another way, such as:
+
+	sh$ export PATH=~/software/connect-client/bin:$PATH
 
 You should now have access to the Connect commands.
 
@@ -76,60 +85,53 @@ load the module as described above in "Using Connect Client after
 installation":
 
     sh$ module load connect-client
-    sh$ connect remote setup
+    sh$ connect client setup
     <enter your OSG Connect username and password when prompted>
 
 The Connect Client should be set up, with the OSG Connect site
-added. Run `connect remote submit` to submit jobs, `connect remote q`
+added. Run `connect client submit` to submit jobs, `connect client q`
 to check jobs. 
 
 
 User Guide 
-----------
+==========
 
-### Login to Midway
+## Login to Midway
 
-To begin, log in to the Research Computing Center's Midway
-cluster, replacing "username" with your account name on
-the RCC. If not already registered to Midway, go to the
-[RCC's website](http://rcc.uchicago.edu/) and sign up for
-an account there. If you don't already have an account on
-UChicago Connect, please also register on the [UChicago Connect
-website](http://ci-connect.uchicago.edu/).
+To begin, log in to your cluster's login node.
 
-```
-$ ssh username@midway-login1.rcc.uchicago.edu
-```
+	$ ssh username@midway.rcc.uchicago.edu   # [correct details for your site]
 
-### Set up Connect and BOSCO
+
+## Set up Connect
 
 Once logged in to Midway, set up the Connect program with the following step:
 
-```
-$ module load connect-client
-```
+	$ module load connect-client
 
-Now you will have access to all of the Connect program extensions. For a list of available extensions, enter the following command:
+If your site doesn't use environment modules, you may need to adjust your
+$PATH; see above.
 
-```
-$ connect
-```
+Now you will have access to all of the Connect program plugins. For
+a list of available plugins, enter the following command:
 
-To run any of these extensions, just enter "connect [extension name]". The setup extension also requires one more argument: your username on UChicago Connect. For example, enter the command below to set up BOSCO, substituting your own username instead: 
+	$ connect
 
-```
-$ connect remote setup
-```
+To run any of these plugins, just enter "connect [plugin name]".
 
-The command will start BOSCO and ask for your ssh password to access UChicago Connect. Once the setup is over, you will be able to submit jobs via BOSCO to UChicago Connect. 
+    sh$ connect client setup
+    <enter your OSG Connect username and password when prompted>
 
-### Example job 
+The command will ask for your ssh password to access OSG Connect. Once
+the setup is over, you will be able to submit jobs.
 
-Now let's create a test script to execute as your job submission to UChicago Connect. Create the following script, titled short.sh: 
 
-````
-$ nano short.sh
-````
+## Example job 
+
+Now let's create a test script to execute as your job submission to
+OSG Connect. Create the following script, titled short.sh: 
+
+	$ nano short.sh
 
 ````bash
 #!/bin/bash
@@ -145,13 +147,15 @@ echo "Science complete!"
 ````
 
 Now, make the script executable.
-````bash
-$ chmod +x short.sh
-````
 
-### Run the job locally
+	sh$ chmod +x short.sh
 
-When setting up a new job type, it's important to test your job locally before submitting it into the grid.
+
+## Run the job locally
+
+When setting up a new job type, it's important to test your job locally
+before submitting it into the grid.
+
 ````bash
 $ ./short.sh
 Start time: Mon Aug 25 10:21:35 CDT 2014
@@ -162,19 +166,16 @@ Working hard...
 Science complete!
 ````
 
-### Create an HTCondor submit file
+## Create an HTCondor submit file
 
 Now, let's create a simple (if verbose) HTCondor submit file, called tutorial.submit
 
-````
-$ nano tutorial.submit
-````
+	sh$ nano tutorial.submit
 
-The submit file should contain the following. Replace "username" in the **grid_resource** line with your account name on UChicago Connect.
+The submit file should contain the following:
 ````
 # The UNIVERSE defines an execution environment. 
-universe = grid
-grid_resource = batch condor username@login.ci-connect.uchicago.edu
+universe = vanilla
 
 # EXECUTABLE is the program your job will run. It's often useful
 # to create a shell script to "wrap" your actual work.
@@ -194,20 +195,20 @@ Log = job.log
 Queue 1
 ````
 
-### Submit the job
+## Submit the job
 
-Submit the job using **condor_submit**.
+Submit the job using **connect client submit**.
 ````
-$ condor_submit tutorial.submit
+$ connect client submit tutorial.submit
 Submitting job(s).
 1 job(s) submitted to cluster 1.
 ````
 
-### Check job status
-The **condor_q** command tells the status of currently running jobs.
+## Check job status
+The **connect client q** command tells the status of currently running jobs.
 
 ````
-$ condor_q
+$ connect client q
 -- Submitter: midway-login1.rcc.local : <128.135.112.71:65045?sock=7603_c271_4> : midway-login1.rcc.local
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD               
    1.0   username         8/25 10:06   0+00:00:06 R  0   0.0  short.sh         
@@ -215,35 +216,42 @@ $ condor_q
 1 jobs; 0 completed, 0 removed, 0 idle, 1 running, 0 held, 0 suspended
 ````
 
-Let's wait for your job to finish - that is, for condor_q not to show the job in its output. A useful Connect extension for this is **watch** - it runs a program repeatedly, letting you see how the output differs at fixed five-second intervals.
+Let's wait for your job to finish - that is, for **q** not to show the
+job in its output. Just keep running **connect client q** until you see
+no output. When your job has completed, it will disappear from the list.
+
+
+## Job history
+
+Once your job has finished, you can get information about its execution
+from the **connect client history** command:
 
 ````
-$ condor_submit tutorial.submit
-Submitting job(s).
-1 job(s) submitted to cluster 2
-$ connect watch
-...
-````
-
-When your job has completed, it will disappear from the list.
-
-Note: To close **watch**, hold down *Ctrl* and press *C*.
-
-### Job history
-
-Once your job has finished, you can get information about its execution from the **condor_history** command:
-
-````
-$ condor_history 1
+$ connect client history 1
  ID      OWNER            SUBMITTED     RUN_TIME ST   COMPLETED CMD
  1.0   username            8/25 10:06   0+00:00:12 C   8/25 10:06 short.sh
 ````
 
-Note: You can see much more information about your job's final status using the -long option (e.g. "condor_history -long 1").
+Note: You can see much more information about your job's final status
+using the -long option (e.g. "connect client history -long 1").
 
-### Check the job output
 
-Once your job has finished, you can look at the files that HTCondor has returned to the working directory. If everything was successful, it should have returned:
+
+## Retrieve outputs
+
+To retrieve job outputs from the connect server, use **connect client pull**.
+
+````
+$ connect client pull
+...
+````
+
+
+## Check the job output
+
+Once your job has finished, you can look at the files that HTCondor has
+returned to the working directory. If everything was successful, it
+should have returned:
 
   * a log file from Condor for the job cluster: job.log
   * an output file for each job's output: job.output
