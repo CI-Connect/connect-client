@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# @usage [many options; "connect remote" for details]
+# @usage [many options; "connect client" for details]
 # 
 # XXX TODO
 #
@@ -34,7 +34,7 @@ import signal
 import errno
 
 # These are simple, transparent commands.  Given 'a': ['b', 'c'],
-# 'connect remote a' is equivalent to 'ssh server b c'.
+# 'connect client a' is equivalent to 'ssh server b c'.
 SimpleCommandMap = {
 	'q': ['condor_q'],
 	'rm': ['condor_rm'],
@@ -89,7 +89,7 @@ def cleanfn(fn):
 
 
 class ClientSession(object):
-	remotecmd = ['connect', 'remote', '--server-mode']
+	remotecmd = ['connect', 'client', '--server-mode']
 
 	def __init__(self, hostname, user=None, keyfile=None, password=None, debug=None):
 		self.hostname = hostname
@@ -155,7 +155,7 @@ class ClientSession(object):
 			cmd = ('[ -d "%s" ] && cd "%s"; ' % (remotedir, remotedir)) + cmd
 
 		channel = self.transport.open_session()
-		self.debug('remote command: ' + cmd)
+		self.debug('client command: ' + cmd)
 		channel.exec_command(cmd)
 		channel.fp = channel.makefile()
 
@@ -188,7 +188,7 @@ class ClientSession(object):
 		banner = channel.pgetline()
 		if not banner.startswith('connect client protocol'):
 			channel.close()
-			raise SSHError, 'no connect sync server at remote endpoint (closing)'
+			raise SSHError, 'no connect sync server at server endpoint (closing)'
 
 		self.version = int(banner.split()[3])
 		channel.session = self
@@ -456,9 +456,9 @@ class main(object):
 				self.output('       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__))
 		self.output('')
 		self.output('opts:')
-		self.output('    -s|--server hostname       set remote server name')
-		self.output('    -u|--user username         set remote user name')
-		self.output('    -r|--remote directory      set remote directory name')
+		self.output('    -s|--server hostname       set connect server name')
+		self.output('    -u|--user username         set connect server user name')
+		self.output('    -r|--remote directory      set connect server directory name')
 
 
 	def __call__(self, args):
@@ -619,7 +619,7 @@ class main(object):
 			            'Run "%s setup" to fix this.', self.server, self.local)
 			return 10
 
-		self.output('You already have remote access to %s. ' +
+		self.output('You already have client access to %s. ' +
 		            'There is no need to run setup.', self.server)
 		return 0
 
