@@ -208,7 +208,7 @@ Submitting job(s).
 The **connect client q** command tells the status of currently running jobs.
 
 ````
-$ connect client q
+$ connect client q <your-remote-username>
 -- Submitter: midway-login1.rcc.local : <128.135.112.71:65045?sock=7603_c271_4> : midway-login1.rcc.local
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD               
    1.0   username         8/25 10:06   0+00:00:06 R  0   0.0  short.sh         
