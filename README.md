@@ -66,7 +66,7 @@ install the software module into.  A reasonable choice for this at RCC
 is `/software/modulefiles`.  Then run `./install.sh` with these two
 directories and a version number:
 
-    sh$ ./install.sh /software/connect-client /software/modulefiles 0.2
+    sh$ ./install.sh -site /software/connect-client /software/modulefiles 0.2
 
 
 ### Using Connect Client after site installation

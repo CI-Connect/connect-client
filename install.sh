@@ -10,6 +10,13 @@
 module load python
 
 from=$(dirname "$0")
+siteinstall=false; export siteinstall
+
+if [ "$1" = "-site" -o "$1" = "--site" ]; then
+	siteinstall=true
+	shift
+fi
+
 base="$1"
 modlib="$2"
 version="$3"
@@ -63,5 +70,7 @@ status ... tutorial command
 #sh scripts/tutorial/bundle-prereqs "$base" 2>&1 | sed -e 's/^/ | /'
 copyfiles scripts/tutorial/tutorial "$base/bin/"
 
-# Install switch-module functions
-subinstall switch-module
+# Install switch-module functions?
+if $siteinstall; then
+	subinstall switch-module
+fi
