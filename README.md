@@ -34,7 +34,7 @@ install the software module into.  A reasonable choice for this on
 RCC/Midway is `~/privatemodules`.  Then run `./install.sh` with these
 two directories and a version number:
 
-    sh$ ./install.sh ~/software/connect-client ~/privatemodules 1.0
+    sh$ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 ### Using Connect Client after individual installation
 
@@ -45,7 +45,7 @@ any other software module on RCC -- with the exception that you will also
 need to load the `use.own` module.
 
     sh$ module load use.own
-    sh$ module load connect-client/1.0
+    sh$ module load connect-client/0.2
 
 #### Without environment modules
 
@@ -66,14 +66,14 @@ install the software module into.  A reasonable choice for this at RCC
 is `/software/modulefiles`.  Then run `./install.sh` with these two
 directories and a version number:
 
-    sh$ ./install.sh /software/connect-client /software/modulefiles 1.0
+    sh$ ./install.sh /software/connect-client /software/modulefiles 0.2
 
 
 ### Using Connect Client after site installation
 
 This is almost the same as for individual installation, but slightly simpler:
 
-    sh$ module load connect-client/1.0
+    sh$ module load connect-client/0.2
 
 
 First-time setup
