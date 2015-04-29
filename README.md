@@ -85,14 +85,35 @@ Connect Client "plugins"
 
 For a list of available "plugins", enter the following:
 
+	```
 	$ connect client
+       	usage: 	connect client [opts] <subcommand> [args]
+       		connect client [opts] history <condor_history arguments>
+       		connect client [opts] pull [[localdir] remotedir]
+       		connect client [opts] push [[localdir] remotedir]
+       		connect client [opts] q <condor_q arguments>
+       		connect client [opts] rm <condor_rm arguments>
+       		connect client [opts] run <condor_run arguments>
+       		connect client [opts] setup [--replace-keys] [servername]
+       		connect client [opts] status <condor_status arguments>
+       		connect client [opts] submit <submitfile>
+       		connect client [opts] sync [[localdir] remotedir]
+       		connect client [opts] test [servername]
+       		connect client [opts] wait <condor_wait arguments>
 
-To run any of these commands, just enter "connect client [plugin name]".
+	opts:
+    		-s|--server hostname       set connect server name
+    		-u|--user username         set connect server user name
+    		-r|--remote directory      set connect server directory name
+
+	````
+	
+To run any of these commands, just enter ````connect client [opts] [plugin name]````.
 
 
 ### Example submission
 
-Now let's create a test script for execution on OSG Connect as a set of 10 jobs.
+Now let's create a test script for execution of 10 jobs on the OSG.
 *Create a working directory* that will be synched with the remote host on OSG Connect.  
 
         $ mkdir ~/working-dir
