@@ -80,12 +80,11 @@ added. Test the setup with:
 User Guide 
 ==========
 
-Connect Client "plugins"
+Connect Client commands
 -------------------------
 
-For a list of available "plugins", enter the following:
+For a list of available commands, enter the following:
 
-	```
 	$ connect client
        	usage: 	connect client [opts] <subcommand> [args]
        		connect client [opts] history <condor_history arguments>
@@ -106,9 +105,8 @@ For a list of available "plugins", enter the following:
     		-u|--user username         set connect server user name
     		-r|--remote directory      set connect server directory name
 
-	````
 	
-To run any of these commands, just enter ````connect client [opts] [plugin name]````.
+To run any of these commands, just enter ````connect client [opts] [command name]````.
 
 
 ### Example submission
@@ -167,6 +165,9 @@ Log = log/job.log.$(Cluster)-$(Process)
 Queue 10
 ````
 
+Here, ```$(Cluster)``` labels the submission (called "Cluster ID") and ```$(Process)``` labels individual jobs. 
+
+
 ### Submit the script
 
 Submit the script using **connect client submit**.
@@ -188,8 +189,8 @@ Submitting job(s).
 ````
 
 
-### Check submission status
-The **connect client q** command tells the status of currently running jobs.
+### Check job queue
+The **connect client q** command tells the status of submitted jobs:
 
 ````
 $ connect client q <your-remote-username>
@@ -203,7 +204,7 @@ $ connect client q <your-remote-username>
 
 ### Job history
 
-Once your job has finished, you can get information about its execution
+Once your jobs have finished, you can get information about its execution
 from the **connect client history** command:
 
 ````
@@ -212,7 +213,7 @@ $ connect client history 1
  1.0   username            8/25 10:06   0+00:00:12 C   8/25 10:06 short.sh
 ````
 
-Note: You can see much more information about your jobs' final status
+Note: You can see much more information about status
 using the -long option (e.g. "connect client history -long 1").
 
 
@@ -230,13 +231,15 @@ $ connect client pull
 
 Once your jobs have finished, you can look at the files that HTCondor has
 returned to the working directory. If everything was successful, it
-should have returned in the ````~/working-dir/log```` directory
+should have returned in the ````~/working-dir/log```` directory:
 
-  * log files from Condor for the job cluster: job.log.
-  * output files for each job's output: job.output
-  * error files for each job's errors: job.error
+  * log files from Condor for the job cluster: job.log.$(Cluster).$(Process)
+  * output files for each job's output: job.output.$(Cluster).$(Process)
+  * error files for each job's errors: job.error.$(Cluster).$(Process)
 
-Read the output file. It should look something like this:
+where $(Cluster) will be a large integer number for this specific submission, and $(Process) will number 0...10.
+
+Read one of the output files. It should look something like this:
 
 ````
 $ cat job.output
