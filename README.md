@@ -195,27 +195,45 @@ The **connect client q** command tells the status of submitted jobs:
 
 ````
 $ connect client q <your-remote-username>
--- Submitter: midway-login1.rcc.local : <128.135.112.71:65045?sock=7603_c271_4> : midway-login1.rcc.local
- ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD               
-   1.0   username         8/25 10:06   0+00:00:06 R  0   0.0  short.sh         
 
-1 jobs; 0 completed, 0 removed, 0 idle, 1 running, 0 held, 0 suspended
+-- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
+ ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+9067914.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+9067914.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+9067914.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+9067914.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+
+10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
 ````
-
 
 ### Job history
 
 Once your jobs have finished, you can get information about its execution
-from the **connect client history** command:
+from the **connect client history** command. In this example:
 
 ````
-$ connect client history 1
- ID      OWNER            SUBMITTED     RUN_TIME ST   COMPLETED CMD
- 1.0   username            8/25 10:06   0+00:00:12 C   8/25 10:06 short.sh
+$ connect client history 9067914
+ ID     OWNER          SUBMITTED   RUN_TIME     ST COMPLETED   CMD
+9067914.5   rwg             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+9067914.4   rwg             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
+9067914.1   rwg             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+9067914.0   rwg             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+9067914.6   rwg             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+9067914.8   rwg             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+9067914.7   rwg             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+9067914.9   rwg             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+9067914.2   rwg             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+9067914.3   rwg             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
 ````
 
 Note: You can see much more information about status
-using the -long option (e.g. "connect client history -long 1").
+using the -long option (e.g. ```connect client history -long 9067914```).
 
 
 ### Retrieve outputs
@@ -243,11 +261,12 @@ where ````$(Cluster)```` will be a large integer number for this specific submis
 Read one of the output files. It should look something like this:
 
 ````
-$ cat job.output
-Start time: Mon Aug 25 10:06:12 CDT 2014
-Job is running on node: appcloud01
-Job running as user: uid=58704(osg) gid=58704(osg) groups=58704(osg)
-Job is running in directory: /var/lib/condor/execute/dir_2120
-Working hard ...
+$ cat job.output.9067914-0
+Start time: Wed Apr 29 17:44:36 EDT 2015
+Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
+Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
+Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.108-1098/dir_2553
+
+Working hard...
 Science complete!
 ````
