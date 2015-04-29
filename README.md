@@ -1,88 +1,77 @@
-
 Installation
 ============
 
 Connect Client is the set of programs and files for linking a campus
-cluster to a CI Connect instance.  
-
-Connect Client can be installed by an individual user, or sitewide
-by the site administrator.
+cluster to a CI Connect instance such as OSG Connect. Connect Client can be installed 
+by an individual user or by the HPC administrator for system-wide usage.
 
 Obtaining the Connect Client distribution
 -----------------------------------------
 
-Regardless of which installation path you follow, the first step is
-the same:
+Regardless of which installation path you follow, the first step is the same:
 
-    sh$ ssh my.cluster.edu            # [your cluster site here]
-    sh$ module load git               # [if needed]
-    sh$ git clone --recursive https://github.com/CI-Connect/connect-client
-    sh$ cd connect-client
+    $ ssh login.mycluster.edu            # [your cluster site here]
+    $ module load git                    # [if needed]
+    $ git clone --recursive https://github.com/CI-Connect/connect-client
+    $ cd connect-client
 
 This obtains a copy of the distribution and sets your shell's working
 directory to that copy.
 
-Installation for the individual
+Installation by an individual user
 -------------------------------
 
 Choose a directory to install Connect Client into.  A reasonable choice
 is `~/software/connect`.  Also choose a directory to
 install the software module into.  A reasonable choice for this on
 is `~/privatemodules`.  Then run `./install.sh` with these
-two directories and a version number:
+two directories and a version number (e.g. 0.2):
 
-    sh$ ./install.sh ~/software/connect-client ~/privatemodules 0.2
-
-### Using Connect Client after individual installation
-
-#### Using environment modules
-
-To make Connect Client available, use the `module` command as you would
-any other software module -- with the exception that you will also
-need to load the `use.own` module.
-
-    sh$ module load use.own
-    sh$ module load connect-client
-
-#### Without environment modules
-
-If your site does not have environment modules, you'll need to add the
-software to your $PATH in another way, such as:
-
-	sh$ export PATH=~/software/connect-client/bin:$PATH
-
-You should now have access to the Connect commands.
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 
-Installation for the site administrator
+Installation by a site administrator
 ---------------------------------------
 
-Likewise, choose a directory to install Connect Client into.  A
-reasonable choice is `/software/connect`.  Also choose a directory to
-install the software module into.  A reasonable choice for this
-is `/software/modulefiles`.  Then run `./install.sh` with these two
-directories and a version number:
+Typically this would be quite similar, only system paths would be used:
 
-    sh$ ./install.sh -site /software/connect-client /software/modulefiles 0.2
+    $ ./install.sh -site /software/connect-client /software/modulefiles 0.2
 
 
-### Using Connect Client after site installation
+Using Connect Client
+====================
 
-This is almost the same as for individual installation, but slightly simpler:
+Using environment modules
+----------------------------
 
-    sh$ module load connect-client
+To make Connect Client available, use the `module` command as you would
+any other software module.  
+
+    $ module load connect-client
+
+For user installations with modules, you'll need to load the `use.own` module first:
+
+    $ module load use.own
+    $ module load connect-client
+
+
+Without environment modules
+---------------------------
+
+If your site does not have environment modules, install the package as above and modify the $PATH:
+
+    $ export PATH=~/software/connect-client/bin:$PATH
+    
 
 
 First-time setup
 ================
 
 Each user must perform this setup step once before using
-the OSG Connect the first time.  Before doing so, be sure to
-load the module as described above in "Using Connect Client after
-installation":
+OSG Connect the first time.  
 
-    sh$ module load connect-client
-    sh$ connect client setup
+    $ module load connect-client
+    $ connect client setup
     <enter your OSG Connect username and password when prompted>
 
 The Connect Client should be set up, with the OSG Connect site
@@ -93,16 +82,16 @@ to check jobs.
 User Guide 
 ==========
 
-## Login to 
+### Login
 
 To begin, log in to your cluster's login node.
 
-	$ ssh username@my.cluster.edu   # [correct details for your site]
+	$ ssh username@login.mycluster.edu   # [correct details for your site]
 
 
-## Set up Connect
+### Set up Connect
 
-Once logged in to Midway, set up the Connect program with the following step:
+Once logged in, set up the Connect program with the following step:
 
 	$ module load connect-client
 
@@ -114,21 +103,18 @@ a list of available plugins, enter the following command:
 
 	$ connect client
 
-To run any of these plugins, just enter "connect [plugin name]".
-
-    sh$ connect client setup
-    <enter your OSG Connect username and password when prompted>
-
-The command will ask for your ssh password to access OSG Connect. Once
-the setup is over, you will be able to submit jobs.
+To run any of these plugins, just enter "connect client [plugin name]".
 
 
-## Example job 
+### Example job 
 
 Now let's create a test script to execute as your job submission to
-OSG Connect. Create the following script, titled short.sh: 
+OSG Connect. Create a working directory that will be synched with the
+remote host on OSG Connect.  
 
-	$ nano short.sh
+        $ mkdir working-dir
+        $ cd workding-dir
+        $ nano short.sh
 
 ````bash
 #!/bin/bash
@@ -145,29 +131,14 @@ echo "Science complete!"
 
 Now, make the script executable.
 
-	sh$ chmod +x short.sh
+	$ chmod +x short.sh
 
 
-## Run the job locally
+### Create an HTCondor submit file
 
-When setting up a new job type, it's important to test your job locally
-before submitting it into the grid.
+Create a simple HTCondor submit file, called tutorial.submit
 
-````bash
-$ ./short.sh
-Start time: Mon Aug 25 10:21:35 CDT 2014
-Job is running on node: midway-login1
-Job running as user: uid=54161(netid) gid=1000(users) groups=1000(users),10008(rcc)
-Job is running in directory: /home/netid
-Working hard...
-Science complete!
-````
-
-## Create an HTCondor submit file
-
-Now, let's create a simple (if verbose) HTCondor submit file, called tutorial.submit
-
-	sh$ nano tutorial.submit
+	$ nano tutorial.submit
 
 The submit file should contain the following:
 ````
@@ -192,7 +163,7 @@ Log = job.log
 Queue 1
 ````
 
-## Submit the job
+### Submit the job
 
 Submit the job using **connect client submit**.
 ````
@@ -213,7 +184,7 @@ Submitting job(s).
 ````
 
 
-## Check job status
+### Check job status
 The **connect client q** command tells the status of currently running jobs.
 
 ````
@@ -230,7 +201,7 @@ job in its output. Just keep running **connect client q** until you see
 no output. When your job has completed, it will disappear from the list.
 
 
-## Job history
+### Job history
 
 Once your job has finished, you can get information about its execution
 from the **connect client history** command:
@@ -246,7 +217,7 @@ using the -long option (e.g. "connect client history -long 1").
 
 
 
-## Retrieve outputs
+### Retrieve outputs
 
 To retrieve job outputs from the connect server, use **connect client pull**.
 
@@ -256,7 +227,7 @@ $ connect client pull
 ````
 
 
-## Check the job output
+### Check the job output
 
 Once your job has finished, you can look at the files that HTCondor has
 returned to the working directory. If everything was successful, it
