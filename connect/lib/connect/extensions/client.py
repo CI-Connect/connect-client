@@ -551,12 +551,22 @@ class main(object):
 		ident, key, pub = self.ssh_keygen()
 		keyfile = self.keyfile()
 		pubfile = keyfile + '.pub'
+		if os.path.exists(keyfile) and os.path.exists(pubfile) and not overwrite:
+			self.notice('You already have a setup key. (You may with to run')
+			self.notice('"%s setup --replace-keys" .)', self.local)
+			return 20
+
+		# If either pubfile or keyfile exists, it's missing its partner;
+		# setting overwrite will fix it.  And if neither is present, overwrite
+		# does no harm.
+		overwrite = True
+
 		try:
 			self.savefile(keyfile, key, overwrite=overwrite)
 			self.savefile(pubfile, pub, overwrite=overwrite)
 		except IOError, e:
 			self.error(e)
-			self.error('(You may wish to run "%s setup --replace-keys.)', self.local)
+			self.error('(You may wish to run "%s setup --replace-keys" .)', self.local)
 			return 20
 
 		# expressly do not use a keyfile (prompt instead)
