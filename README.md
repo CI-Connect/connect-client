@@ -38,7 +38,7 @@ Typically this would be quite similar, only system paths would be used:
     $ ./install.sh -site /software/connect-client /software/modulefiles 0.2
 
 
-Using Connect Client
+Setting up Connect Client
 ====================
 
 Using environment modules
@@ -65,8 +65,7 @@ If your site does not have environment modules, install the package as above and
 
 
 First-time setup
-================
-
+--------------
 Each user must perform this setup step once before using
 OSG Connect the first time.  
 
