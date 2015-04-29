@@ -3,10 +3,7 @@ Installation
 ============
 
 Connect Client is the set of programs and files for linking a campus
-cluster to a CI Connect instance.  Currently it is developed on and for
-the University of Chicago Research Computing Cluster (RCC) and RCC
-Connect, but the goal is to extend the toolchain to accomodate the
-peculiarities of other sites as well.
+cluster to a CI Connect instance.  
 
 Connect Client can be installed by an individual user, or sitewide
 by the site administrator.
@@ -17,7 +14,7 @@ Obtaining the Connect Client distribution
 Regardless of which installation path you follow, the first step is
 the same:
 
-    sh$ ssh midway.rcc.uchicago.edu   # [your cluster site here]
+    sh$ ssh my.cluster.edu            # [your cluster site here]
     sh$ module load git               # [if needed]
     sh$ git clone --recursive https://github.com/CI-Connect/connect-client
     sh$ cd connect-client
@@ -29,9 +26,9 @@ Installation for the individual
 -------------------------------
 
 Choose a directory to install Connect Client into.  A reasonable choice
-on RCC/Midway is `~/software/connect`.  Also choose a directory to
+is `~/software/connect`.  Also choose a directory to
 install the software module into.  A reasonable choice for this on
-RCC/Midway is `~/privatemodules`.  Then run `./install.sh` with these
+is `~/privatemodules`.  Then run `./install.sh` with these
 two directories and a version number:
 
     sh$ ./install.sh ~/software/connect-client ~/privatemodules 0.2
@@ -41,11 +38,11 @@ two directories and a version number:
 #### Using environment modules
 
 To make Connect Client available, use the `module` command as you would
-any other software module on RCC -- with the exception that you will also
+any other software module -- with the exception that you will also
 need to load the `use.own` module.
 
     sh$ module load use.own
-    sh$ module load connect-client/0.2
+    sh$ module load connect-client
 
 #### Without environment modules
 
@@ -62,7 +59,7 @@ Installation for the site administrator
 
 Likewise, choose a directory to install Connect Client into.  A
 reasonable choice is `/software/connect`.  Also choose a directory to
-install the software module into.  A reasonable choice for this at RCC
+install the software module into.  A reasonable choice for this
 is `/software/modulefiles`.  Then run `./install.sh` with these two
 directories and a version number:
 
@@ -73,14 +70,14 @@ directories and a version number:
 
 This is almost the same as for individual installation, but slightly simpler:
 
-    sh$ module load connect-client/0.2
+    sh$ module load connect-client
 
 
 First-time setup
 ================
 
-Each user of UChicago Connect must perform this setup step once before
-using RCC Connect for the first time.  Before doing so, be sure to
+Each user must perform this setup step once before using
+the OSG Connect the first time.  Before doing so, be sure to
 load the module as described above in "Using Connect Client after
 installation":
 
@@ -96,11 +93,11 @@ to check jobs.
 User Guide 
 ==========
 
-## Login to Midway
+## Login to 
 
 To begin, log in to your cluster's login node.
 
-	$ ssh username@midway.rcc.uchicago.edu   # [correct details for your site]
+	$ ssh username@my.cluster.edu   # [correct details for your site]
 
 
 ## Set up Connect
@@ -115,7 +112,7 @@ $PATH; see above.
 Now you will have access to all of the Connect program plugins. For
 a list of available plugins, enter the following command:
 
-	$ connect
+	$ connect client
 
 To run any of these plugins, just enter "connect [plugin name]".
 
