@@ -1,10 +1,12 @@
-Installation
+Introduction
 ============
-
 Connect Client is the set of programs and files for linking a campus
 research computing cluster to a [CI Connect] instance, such as [OSG Connect], 
-which uses [HTCondor] to submit jobs to the [Open Science Grid]. Connect Client 
-can be installed by an individual user or by the HPC administrator for 
+which uses [HTCondor] to submit jobs to the [Open Science Grid]. 
+
+Installation
+============
+Connect Client can be installed by an individual user or by the HPC administrator for 
 system-wide usage.
 
 Obtaining the Connect Client distribution
@@ -116,7 +118,7 @@ To run any of these commands, just enter ````connect client [opts] [command name
 Now let's create a test script for execution of 10 jobs on the OSG.
 *Create working directory (and logfile subdirectory)* that will be synched with the remote host on OSG Connect.  
 
-        $ mkdir ~/working-dir
+	$ mkdir ~/working-dir
         $ mkdir ~/working-dir/log
         $ cd ~/workding-dir
         $ nano short.sh
