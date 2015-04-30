@@ -7,6 +7,7 @@
 # The Connect module loads python.  We install some python modules
 # during build/installation, so we need to load python first to match
 # python versions.
+module list >/dev/null 2>&1 &&
 module load python
 
 from=$(dirname "$0")
