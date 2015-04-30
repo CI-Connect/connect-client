@@ -2,9 +2,10 @@ Installation
 ============
 
 Connect Client is the set of programs and files for linking a campus
-cluster to a [CI Connect] instance such as [OSG Connect] which uses
-[HTCondor] to submit jobs to the [Open Science Grid]. Connect Client can be installed 
-by an individual user or by the HPC administrator for system-wide usage.
+research computing cluster to a [CI Connect] instance, such as [OSG Connect], 
+which uses [HTCondor] to submit jobs to the [Open Science Grid]. Connect Client 
+can be installed by an individual user or by the HPC administrator for 
+system-wide usage.
 
 Obtaining the Connect Client distribution
 -----------------------------------------
