@@ -552,7 +552,7 @@ class main(object):
 		keyfile = self.keyfile()
 		pubfile = keyfile + '.pub'
 		if os.path.exists(keyfile) and os.path.exists(pubfile) and not overwrite:
-			self.notice('You already have a setup key. (You may with to run')
+			self.notice('You already have a setup key. (You may wish to run')
 			self.notice('"%s setup --replace-keys" .)', self.local)
 			return 20
 
@@ -627,11 +627,10 @@ class main(object):
 		test = channel.recv(1024).strip()
 		if code != test:
 			self.output('You have no access to %s. ' +
-			            'Run "%s setup" to fix this.', self.server, self.local)
+			            'Run "%s setup" to begin.', self.server, self.local)
 			return 10
 
-		self.output('You already have client access to %s. ' +
-		            'There is no need to run setup.', self.server)
+		self.output('Success! Your client access to %s is working.', self.server)
 		return 0
 
 
