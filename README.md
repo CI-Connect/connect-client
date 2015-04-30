@@ -3,7 +3,7 @@ Introduction
 Connect Client is the set of programs and files for linking a campus
 research computing cluster to a [CI Connect] instance, such as [OSG Connect], 
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
-examples below assume one has already [signed up for an account] on OSG Connect.
+example below assumes one has already [signed up for an account] on OSG Connect.
 
 Installation
 ============
