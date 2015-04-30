@@ -2,7 +2,7 @@ Installation
 ============
 
 Connect Client is the set of programs and files for linking a campus
-cluster to a CI Connect instance such as OSG Connect. Connect Client can be installed 
+cluster to a [CI Connect] instance such as [OSG Connect]. Connect Client can be installed 
 by an individual user or by the HPC administrator for system-wide usage.
 
 Obtaining the Connect Client distribution
@@ -270,3 +270,6 @@ Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.10
 Working hard...
 Science complete!
 ````
+
+[CI Connect]:http://ci-connect.net/
+[OSG Connect]:http://osgconnect.net/
