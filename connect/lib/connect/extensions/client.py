@@ -33,6 +33,8 @@ import stat
 import signal
 import errno
 
+version = '@@version@@'
+
 # These are simple, transparent commands.  Given 'a': ['b', 'c'],
 # 'connect client a' is equivalent to 'ssh server b c'.
 SimpleCommandMap = {
@@ -330,6 +332,7 @@ class main(object):
 		self.isdebug = False
 		self.idletimeout = 5 * 60
 		self.remotedir = None
+		self.verbose = False
 
 		# add methods dynamically from self.simple[]
 		for k, v in self.simple.items():
@@ -460,14 +463,18 @@ class main(object):
 		self.output('    -s|--server hostname       set connect server name')
 		self.output('    -u|--user username         set connect server user name')
 		self.output('    -r|--remote directory      set connect server directory name')
+		self.output('    -v|--verbose               show additional information')
 
+		if self.verbose:
+			self.output('\nAdditional information:')
+			self.platforminfo()
 
 	def __call__(self, args):
 		args = list(args)
 		try:
-			r = getopt.getopt(args, 'u:ds:r:',
+			r = getopt.getopt(args, 'u:ds:r:v',
 			                  ['server-mode', 'user=', 'debug', 'server=',
-			                   'remote=', 'repo='])
+			                   'remote=', 'repo=', 'verbose'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
@@ -490,6 +497,9 @@ class main(object):
 
 			if opt in ('-r', '--remote', '--repo'):
 				self.remotedir = arg
+
+			if opt in ('-v', '--verbose'):
+				self.verbose = True
 
 		if len(self.args) == 0:
 			self.usage()
@@ -619,18 +629,12 @@ class main(object):
 
 
 	def c_test(self, args):
-		'''[-v|--verbose] [servername]'''
-		verbose = 'noverbose'
+		'''[servername]'''
 
-		try:
-			opts, args = getopt.getopt(args, 'v', ['verbose'])
-		except getopt.GetoptError, e:
-			self.error('test: ' + str(e))
-			return self.usage()
-
-		for opt, arg in opts:
-			if opt in ('-v', '--verbose'):
-				verbose = 'verbose'
+		if self.verbose:
+			_verbose = 'verbose'
+		else:
+			_verbose = 'noverbose'
 
 		# XXX TODO does not correctly detect when you can log in remotely,
 		# but the client command is missing.
@@ -640,7 +644,7 @@ class main(object):
 			self.server = args.pop(0)
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['test', code, verbose], server=True, remotedir=self.remotedir)
+		channel = session.rcmd(['test', code, _verbose], server=True, remotedir=self.remotedir)
 		test = ''
 		while True:
 			buf = channel.recv(1024)
@@ -676,6 +680,7 @@ class main(object):
 		os.system('uname -a')
 		os.system('uptime')
 		sys.stdout.flush()
+		print 'Connect client version:', version
 		print 'Python version:', sys.version
 		print 'Prefix:', sys.prefix
 
