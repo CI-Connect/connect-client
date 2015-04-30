@@ -1,137 +1,128 @@
+Introduction
+============
+Connect Client is the set of programs and files for linking a campus
+research computing cluster to a [CI Connect] instance, such as [OSG Connect], 
+which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
+example below assumes one has already [signed up for an account] on OSG Connect.
 
 Installation
 ============
-
-Connect Client is the set of programs and files for linking a campus
-cluster to a CI Connect instance.  Currently it is developed on and for
-the University of Chicago Research Computing Cluster (RCC) and RCC
-Connect, but the goal is to extend the toolchain to accomodate the
-peculiarities of other sites as well.
-
-Connect Client can be installed by an individual user, or sitewide
-by the site administrator.
+Connect Client can be installed by an individual user or by the HPC administrator for 
+system-wide usage.
 
 Obtaining the Connect Client distribution
 -----------------------------------------
 
-Regardless of which installation path you follow, the first step is
-the same:
+Regardless of which installation path you follow, the first step is the same:
 
-    sh$ ssh midway.rcc.uchicago.edu   # [your cluster site here]
-    sh$ module load git               # [if needed]
-    sh$ git clone --recursive https://github.com/CI-Connect/connect-client
-    sh$ cd connect-client
+    $ ssh login.mycluster.edu            # [your cluster site here]
+    $ module load git                    # [if needed]
+    $ git clone --recursive https://github.com/CI-Connect/connect-client
+    $ cd connect-client
 
 This obtains a copy of the distribution and sets your shell's working
 directory to that copy.
 
-Installation for the individual
+Installation by an individual user
 -------------------------------
 
 Choose a directory to install Connect Client into.  A reasonable choice
-on RCC/Midway is `~/software/connect`.  Also choose a directory to
-install the software module into.  A reasonable choice for this on
-RCC/Midway is `~/privatemodules`.  Then run `./install.sh` with these
-two directories and a version number:
+is `~/software/connect`.  Also choose a directory for the module descrption 
+information.  A reasonable choice for this on
+is `~/privatemodules`.  Then run `./install.sh` with these
+two directories and a version number (e.g. 0.2):
 
-    sh$ ./install.sh ~/software/connect-client ~/privatemodules 0.2
-
-### Using Connect Client after individual installation
-
-#### Using environment modules
-
-To make Connect Client available, use the `module` command as you would
-any other software module on RCC -- with the exception that you will also
-need to load the `use.own` module.
-
-    sh$ module load use.own
-    sh$ module load connect-client/0.2
-
-#### Without environment modules
-
-If your site does not have environment modules, you'll need to add the
-software to your $PATH in another way, such as:
-
-	sh$ export PATH=~/software/connect-client/bin:$PATH
-
-You should now have access to the Connect commands.
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 
-Installation for the site administrator
+Installation by a site administrator
 ---------------------------------------
 
-Likewise, choose a directory to install Connect Client into.  A
-reasonable choice is `/software/connect`.  Also choose a directory to
-install the software module into.  A reasonable choice for this at RCC
-is `/software/modulefiles`.  Then run `./install.sh` with these two
-directories and a version number:
+Typically this would be quite similar, only system paths would be used, for example:
 
-    sh$ ./install.sh -site /software/connect-client /software/modulefiles 0.2
+    $ ./install.sh -site /software/connect-client /software/modulefiles 0.2
 
 
-### Using Connect Client after site installation
+Setting up Connect Client
+====================
 
-This is almost the same as for individual installation, but slightly simpler:
+Using environment modules
+----------------------------
 
-    sh$ module load connect-client/0.2
+To make Connect Client available, use the `module` command as you would
+any other software module.  
 
+    $ module load connect-client
+
+For user installations with modules, you'll need to load the `use.own` module first:
+
+    $ module load use.own
+    $ module load connect-client
+
+
+Without environment modules
+---------------------------
+
+If your site does not have environment modules, install the package as above and modify the $PATH:
+
+    $ export PATH=~/software/connect-client/bin:$PATH
+    
 
 First-time setup
-================
+--------------
+Each user must perform this setup step once before using
+OSG Connect the first time.  
 
-Each user of UChicago Connect must perform this setup step once before
-using RCC Connect for the first time.  Before doing so, be sure to
-load the module as described above in "Using Connect Client after
-installation":
-
-    sh$ module load connect-client
-    sh$ connect client setup
+    $ connect client setup
     <enter your OSG Connect username and password when prompted>
 
 The Connect Client should be set up, with the OSG Connect site
-added. Run `connect client submit` to submit jobs, `connect client q`
-to check jobs. 
+added. Test the setup with:
+
+    $ connect client test
 
 
 User Guide 
 ==========
 
-## Login to Midway
+Connect Client commands
+-------------------------
 
-To begin, log in to your cluster's login node.
+For a list of available commands, enter the following:
 
-	$ ssh username@midway.rcc.uchicago.edu   # [correct details for your site]
+	$ connect client
+       	usage: 	connect client [opts] <subcommand> [args]
+       		connect client [opts] history <condor_history arguments>
+       		connect client [opts] pull [[localdir] remotedir]
+       		connect client [opts] push [[localdir] remotedir]
+       		connect client [opts] q <condor_q arguments>
+       		connect client [opts] rm <condor_rm arguments>
+       		connect client [opts] run <condor_run arguments>
+       		connect client [opts] setup [--replace-keys] [servername]
+       		connect client [opts] status <condor_status arguments>
+       		connect client [opts] submit <submitfile>
+       		connect client [opts] sync [[localdir] remotedir]
+       		connect client [opts] test [servername]
+       		connect client [opts] wait <condor_wait arguments>
 
+	opts:
+    		-s|--server hostname       set connect server name
+    		-u|--user username         set connect server user name
+    		-r|--remote directory      set connect server directory name
 
-## Set up Connect
-
-Once logged in to Midway, set up the Connect program with the following step:
-
-	$ module load connect-client
-
-If your site doesn't use environment modules, you may need to adjust your
-$PATH; see above.
-
-Now you will have access to all of the Connect program plugins. For
-a list of available plugins, enter the following command:
-
-	$ connect
-
-To run any of these plugins, just enter "connect [plugin name]".
-
-    sh$ connect client setup
-    <enter your OSG Connect username and password when prompted>
-
-The command will ask for your ssh password to access OSG Connect. Once
-the setup is over, you will be able to submit jobs.
+	
+To run any of these commands, just enter ````connect client [opts] [command name]````.
 
 
-## Example job 
+### Example submission
 
-Now let's create a test script to execute as your job submission to
-OSG Connect. Create the following script, titled short.sh: 
+Now let's create a test script for execution of 10 jobs on the OSG.
+*Create working directory (and logfile subdirectory)* that will be synched with the remote host on OSG Connect.  
 
-	$ nano short.sh
+	$ mkdir ~/working-dir
+        $ mkdir ~/working-dir/log
+        $ cd ~/workding-dir
+        $ nano short.sh
 
 ````bash
 #!/bin/bash
@@ -146,31 +137,16 @@ sleep ${1-15}
 echo "Science complete!"
 ````
 
-Now, make the script executable.
+Make the script executable.
 
-	sh$ chmod +x short.sh
+	$ chmod +x short.sh
 
 
-## Run the job locally
+### Create the HTCondor submit description file
 
-When setting up a new job type, it's important to test your job locally
-before submitting it into the grid.
+Create a simple HTCondor submit description file, called tutorial.submit
 
-````bash
-$ ./short.sh
-Start time: Mon Aug 25 10:21:35 CDT 2014
-Job is running on node: midway-login1
-Job running as user: uid=54161(netid) gid=1000(users) groups=1000(users),10008(rcc)
-Job is running in directory: /home/netid
-Working hard...
-Science complete!
-````
-
-## Create an HTCondor submit file
-
-Now, let's create a simple (if verbose) HTCondor submit file, called tutorial.submit
-
-	sh$ nano tutorial.submit
+	$ nano tutorial.submit
 
 The submit file should contain the following:
 ````
@@ -183,21 +159,24 @@ Executable = short.sh
 
 # ERROR and OUTPUT are the error and output channels from your job
 # that HTCondor returns from the remote host.
-Error = job.error
-Output = job.output
+Error = log/job.error.$(Cluster)-$(Process)
+Output = log/job.output.$(Cluster)-$(Process)
 
 # The LOG file is where HTCondor places information about your
 # job's status, success, and resource consumption.
-Log = job.log
+Log = log/job.log.$(Cluster)-$(Process)
 
 # QUEUE is the "start button" - it launches any jobs that have been
 # specified thus far.
-Queue 1
+Queue 10
 ````
 
-## Submit the job
+Here, ```$(Cluster)``` labels the submission (called "Cluster ID") and ```$(Process)``` labels individual jobs. 
 
-Submit the job using **connect client submit**.
+
+### Submit the script
+
+Submit the script using **connect client submit**.
 ````
 $ connect client submit tutorial.submit
 Submitting job(s).
@@ -216,40 +195,53 @@ Submitting job(s).
 ````
 
 
-## Check job status
-The **connect client q** command tells the status of currently running jobs.
+### Check job queue
+The **connect client q** command tells the status of submitted jobs:
 
 ````
 $ connect client q <your-remote-username>
--- Submitter: midway-login1.rcc.local : <128.135.112.71:65045?sock=7603_c271_4> : midway-login1.rcc.local
- ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD               
-   1.0   username         8/25 10:06   0+00:00:06 R  0   0.0  short.sh         
 
-1 jobs; 0 completed, 0 removed, 0 idle, 1 running, 0 held, 0 suspended
+-- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
+ ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+9067914.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+9067914.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+9067914.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+9067914.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+9067914.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+
+10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
 ````
 
-Let's wait for your job to finish - that is, for **q** not to show the
-job in its output. Just keep running **connect client q** until you see
-no output. When your job has completed, it will disappear from the list.
+### Job history
 
-
-## Job history
-
-Once your job has finished, you can get information about its execution
-from the **connect client history** command:
+Once your jobs have finished, you can get information about its execution
+from the **connect client history** command. In this example:
 
 ````
-$ connect client history 1
- ID      OWNER            SUBMITTED     RUN_TIME ST   COMPLETED CMD
- 1.0   username            8/25 10:06   0+00:00:12 C   8/25 10:06 short.sh
+$ connect client history 9067914
+ ID     OWNER          SUBMITTED   RUN_TIME     ST COMPLETED   CMD
+9067914.5   rwg             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+9067914.4   rwg             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
+9067914.1   rwg             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+9067914.0   rwg             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+9067914.6   rwg             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+9067914.8   rwg             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+9067914.7   rwg             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+9067914.9   rwg             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+9067914.2   rwg             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+9067914.3   rwg             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
 ````
 
-Note: You can see much more information about your job's final status
-using the -long option (e.g. "connect client history -long 1").
+Note: You can see much more information about status
+using the -long option (e.g. ```connect client history -long 9067914```).
 
 
-
-## Retrieve outputs
+### Retrieve outputs
 
 To retrieve job outputs from the connect server, use **connect client pull**.
 
@@ -259,24 +251,35 @@ $ connect client pull
 ````
 
 
-## Check the job output
+### Check the job output
 
-Once your job has finished, you can look at the files that HTCondor has
+Once your jobs have finished, you can look at the files that HTCondor has
 returned to the working directory. If everything was successful, it
-should have returned:
+should have returned in the ````~/working-dir/log```` directory:
 
-  * a log file from Condor for the job cluster: job.log
-  * an output file for each job's output: job.output
-  * an error file for each job's errors: job.error
+  * log files from Condor for the job cluster: ````job.log.$(Cluster).$(Process)````
+  * output files for each job's output: ````job.output.$(Cluster).$(Process)````
+  * error files for each job's errors: ````job.error.$(Cluster).$(Process)````
 
-Read the output file. It should look something like this:
+where ````$(Cluster)```` will be a large integer number for this specific submission, and ````$(Process)```` will number 0...10.
+
+Read one of the output files. It should look something like this:
 
 ````
-$ cat job.output
-Start time: Mon Aug 25 10:06:12 CDT 2014
-Job is running on node: appcloud01
-Job running as user: uid=58704(osg) gid=58704(osg) groups=58704(osg)
-Job is running in directory: /var/lib/condor/execute/dir_2120
-Working hard ...
+$ cat job.output.9067914-0
+Start time: Wed Apr 29 17:44:36 EDT 2015
+Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
+Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
+Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.108-1098/dir_2553
+
+Working hard...
 Science complete!
 ````
+
+[CI Connect]:http://ci-connect.net/
+[OSG Connect]:http://osgconnect.net/
+[HTCondor]:http://research.cs.wisc.edu/htcondor/
+[Open Science Grid]:http://www.opensciencegrid.org/
+[signed up for an account]:http://osgconnect.net/signup
+
+
