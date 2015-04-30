@@ -495,6 +495,12 @@ class main(object):
 			self.usage()
 			return 2
 
+		if self.mode != 'server' and paramiko is None:
+			self.error('%s %s requires the "paramiko" module for python%d.%d',
+			           self.name, __name__, sys.version_info[0], sys.version_info[1])
+			self.error('(try "pip install paramiko")')
+			sys.exit(5)
+
 		subcmd = self.args.pop(0)
 		if self.mode == 'client':
 			driver = 'c_' + subcmd
@@ -613,31 +619,65 @@ class main(object):
 
 
 	def c_test(self, args):
-		'''[servername]'''
+		'''[-v|--verbose] [servername]'''
+		verbose = 'noverbose'
 
-		# XXX does not correctly detect when you can log in remotely,
-		# but the remote command is missing.
+		try:
+			opts, args = getopt.getopt(args, 'v', ['verbose'])
+		except getopt.GetoptError, e:
+			self.error('test: ' + str(e))
+			return self.usage()
+
+		for opt, arg in opts:
+			if opt in ('-v', '--verbose'):
+				verbose = 'verbose'
+
+		# XXX TODO does not correctly detect when you can log in remotely,
+		# but the client command is missing.
 		code = str(random.randint(0, 1000))
 
 		if args:
 			self.server = args.pop(0)
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['test', code], server=True, remotedir=self.remotedir)
-		test = channel.recv(1024).strip()
-		if code != test:
+		channel = session.rcmd(['test', code, verbose], server=True, remotedir=self.remotedir)
+		test = ''
+		while True:
+			buf = channel.recv(1024)
+			if len(buf) <= 0:
+				break
+			test += buf
+		test = [x.strip() for x in test.strip().split('\n')]
+		if code != test[0]:
 			self.output('You have no access to %s. ' +
 			            'Run "%s setup" to begin.', self.server, self.local)
 			return 10
 
 		self.output('Success! Your client access to %s is working.', self.server)
+		if len(test) > 1:
+			self.output('\nAdditional information:')
+			for item in test[1:]:
+				self.output(' * ' + item)
 		return 0
 
 
 	def s_test(self, args):
-		'''Just an echo test to verify access to server.'''
+		'''Just an echo test to verify access to server.
+		With verbose, print additional info.'''
+
 		print args[0]
+		sys.stdout.flush()
+		if 'verbose' in args[1:]:
+			self.platforminfo()
 		return 0
+
+
+	def platforminfo(self):
+		os.system('uname -a')
+		os.system('uptime')
+		sys.stdout.flush()
+		print 'Python version:', sys.version
+		print 'Prefix:', sys.prefix
 
 
 	def disabled_c_prototest(self, args):
@@ -1034,12 +1074,7 @@ try:
 		warnings.simplefilter("ignore")
 		import paramiko
 except ImportError:
-	m = main()
-	p = os.path.basename(sys.argv[0])
-	m.error('%s %s requires the "paramiko" module for python%d.%d',
-	        p, __name__, sys.version_info.major, sys.version_info.minor)
-	m.error('(try "pip install paramiko")')
-	sys.exit(5)
+	paramiko = None
 
 
 if __name__ == '__main__':
