@@ -92,6 +92,7 @@ For a list of available commands, enter the following:
 
 	$ connect client
        	usage: 	connect client [opts] <subcommand> [args]
+       		connect client [opts] dag <dagfile>
        		connect client [opts] history <condor_history arguments>
        		connect client [opts] pull [[localdir] remotedir]
        		connect client [opts] push [[localdir] remotedir]
