@@ -82,6 +82,18 @@ added. Test the setup with:
     $ connect client test
 
 
+Updating
+========
+To update your connect client installation, it's necessary to re-install.
+There are two paths. You can update using git:
+
+	$ git pull
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
+
+Alternatively, you can delete your installation directory and restart
+these instructions from the beginning.
+
+
 User Guide 
 ==========
 
