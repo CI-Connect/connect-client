@@ -1043,6 +1043,32 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 
+	def c_revoke(self, args):
+		''''''
+		self.output('')
+		self.output('This command -permanently- deletes the key used to authorize')
+		self.output('access to your Connect servers from this client. You can')
+		self.output('re-establish access using "%s setup". Is this' % self.local)
+		yn = self.prompt('what you want [y/N]? ')
+		self.output('')
+		if yn.lower() not in ['y', 'yes']:
+			self.output('Not revoking keys.')
+			return
+
+		try:
+			os.unlink(self.keyfile())
+			os.unlink(self.keyfile() + '.pub')
+			self.notice('Key revoked.')
+		except:
+			self.notice('No keys to revoke!')
+
+
+	def prompt(self, prompt):
+		sys.stdout.write(prompt)
+		sys.stdout.flush()
+		r = sys.stdin.readline()
+		return r.strip()
+
 	simple = SimpleCommandMap
 
 
