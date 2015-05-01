@@ -24,19 +24,19 @@ This obtains a copy of the distribution and sets your shell's working
 directory to that copy.
 
 Installation by an individual user
--------------------------------
+----------------------------------
 
-Choose a directory to install Connect Client into.  A reasonable choice
-is `~/software/connect`.  Also choose a directory for the module descrption 
-information.  A reasonable choice for this on
-is `~/privatemodules`.  Then run `./install.sh` with these
-two directories and a version number (e.g. 0.2):
+Choose a directory to install Connect Client into.  A reasonable
+choice is `~/software/connect`.  Also choose a directory for the
+module descrption information.  A reasonable choice for this on
+`~/privatemodules`.  Then run `./install.sh` with these two directories
+and a version number (e.g. 0.2):
 
     $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 
 Installation by a site administrator
----------------------------------------
+------------------------------------
 
 Typically this would be quite similar, only system paths would be used, for example:
 
@@ -44,7 +44,7 @@ Typically this would be quite similar, only system paths would be used, for exam
 
 
 Setting up Connect Client
-====================
+=========================
 
 Using environment modules
 ----------------------------
@@ -69,7 +69,7 @@ If your site does not have environment modules, install the package as above and
     
 
 First-time setup
---------------
+----------------
 Each user must perform this setup step once before using
 OSG Connect the first time.  
 
@@ -97,6 +97,7 @@ For a list of available commands, enter the following:
        		connect client [opts] push [[localdir] remotedir]
        		connect client [opts] q <condor_q arguments>
        		connect client [opts] rm <condor_rm arguments>
+       		connect client [opts] revoke
        		connect client [opts] run <condor_run arguments>
        		connect client [opts] setup [--replace-keys] [servername]
        		connect client [opts] status <condor_status arguments>
@@ -109,6 +110,7 @@ For a list of available commands, enter the following:
     		-s|--server hostname       set connect server name
     		-u|--user username         set connect server user name
     		-r|--remote directory      set connect server directory name
+            -v|--verbose               show additional information
 
 	
 To run any of these commands, just enter ````connect client [opts] [command name]````.
@@ -120,9 +122,9 @@ Now let's create a test script for execution of 10 jobs on the OSG.
 *Create working directory (and logfile subdirectory)* that will be synched with the remote host on OSG Connect.  
 
 	$ mkdir ~/working-dir
-        $ mkdir ~/working-dir/log
-        $ cd ~/workding-dir
-        $ nano short.sh
+	$ mkdir ~/working-dir/log
+	$ cd ~/workding-dir
+	$ nano short.sh
 
 ````bash
 #!/bin/bash
