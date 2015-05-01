@@ -964,7 +964,7 @@ class main(object):
 	#	return _
 
 
-	def c_submit(self, args):
+	def _submit(self, args, command='condor_submit'):
 		'''<submitfile>'''
 
 		session = self.sessionsetup()
@@ -978,7 +978,7 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 		# Now run a submit
-		channel = session.rcmd(['condor_submit'] + args, remotedir=self.remotedir)
+		channel = session.rcmd([command] + args, remotedir=self.remotedir)
 		channel.rio()
 		rc = channel.recv_exit_status()
 
@@ -990,6 +990,16 @@ class main(object):
 		# and close
 		session.close()
 		return rc
+
+
+	def c_submit(self, args):
+		'''<submitfile>'''
+		return self._submit(args, command='condor_submit')
+
+
+	def c_dag(self, args):
+		'''<dagfile>'''
+		return self._submit(args, command='condor_submit_dag')
 
 
 	def c_push(self, args):
