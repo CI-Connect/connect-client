@@ -1,5 +1,9 @@
 status ... connect command
 copyfiles . "$base/."
+gitver=$(git describe --abbrev=6 --dirty --always --tags)
+sed -e "s/@@version@@/$gitver/" \
+	< lib/connect/extensions/client.py \
+	> ${base}/lib/connect/extensions/client.py
 
 status "... paramiko (for connect command)"
 pip install -b /tmp/pip-build-$USER --install-option="--prefix=$base" paramiko
