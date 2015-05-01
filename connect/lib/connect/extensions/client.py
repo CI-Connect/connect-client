@@ -451,90 +451,6 @@ class main(object):
 		return os.path.expanduser(os.path.join('~/.ssh/connect', ident))
 
 
-	def usage(self):
-		self.output('usage: %s [opts] <subcommand> [args]' % self.local)
-		for attr in sorted(dir(self)):
-			if attr.startswith('c_'):
-				subcmd = attr[2:]
-				driver = getattr(self, attr)
-				self.output('       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__))
-		self.output('')
-		self.output('opts:')
-		self.output('    -s|--server hostname       set connect server name')
-		self.output('    -u|--user username         set connect server user name')
-		self.output('    -r|--remote directory      set connect server directory name')
-		self.output('    -v|--verbose               show additional information')
-
-		if self.verbose:
-			self.output('\nAdditional information:')
-			self.platforminfo()
-
-	def __call__(self, args):
-		args = list(args)
-		try:
-			r = getopt.getopt(args, 'u:ds:r:v',
-			                  ['server-mode', 'user=', 'debug', 'server=',
-			                   'remote=', 'repo=', 'verbose'])
-		except getopt.GetoptError, e:
-			self.error(e)
-			return 2
-
-		self.opts, self.args = r
-
-		for opt, arg in self.opts:
-			if opt in ('--server-mode',):
-				self.mode = 'server'
-
-			if opt in ('-u', '--user'):
-				self.user = arg
-
-			if opt in ('-d', '--debug'):
-				self.debug = self._debug
-				self.isdebug = True
-
-			if opt in ('-s', '--server'):
-				self.server = arg
-
-			if opt in ('-r', '--remote', '--repo'):
-				self.remotedir = arg
-
-			if opt in ('-v', '--verbose'):
-				self.verbose = True
-
-		if len(self.args) == 0:
-			self.usage()
-			return 2
-
-		if self.mode != 'server' and paramiko is None:
-			self.error('%s %s requires the "paramiko" module for python%d.%d',
-			           self.name, __name__, sys.version_info[0], sys.version_info[1])
-			self.error('(try "pip install paramiko")')
-			sys.exit(5)
-
-		subcmd = self.args.pop(0)
-		if self.mode == 'client':
-			driver = 'c_' + subcmd
-		else:
-			driver = 's_' + subcmd
-
-		try:
-			driver = getattr(self, driver)
-		except AttributeError:
-			self.error('"%s" is not implemented', driver)
-			return 10
-
-		try:
-			rc = driver(self.args)
-		except SSHError, e:
-			e.bubble('Did you run "%s setup"?' % self.local)
-		except UsageError, e:
-			e.bubble('usage: %s %s %s' % (self.local, subcmd, driver.__doc__))
-
-		if self.session:
-			self.session.close()
-		return rc
-
-
 	def sessionsetup(self):
 		try:
 			return ClientSession(self.server, user=self.user, keyfile=self.keyfile(),
@@ -543,137 +459,6 @@ class main(object):
 			e.bubble(
 			    'You have no access to %s.' % self.server,
 			)
-
-
-	def c_setup(self, args):
-		'''[--replace-keys] [servername]'''
-
-		overwrite = False
-
-		try:
-			opts, args = getopt.getopt(args, '', ['replace-keys'])
-		except getopt.GetoptError, e:
-			self.error(e)
-			return 2
-
-		for opt, arg in opts:
-			if opt in ('--replace-keys',):
-				overwrite = True
-
-		if args:
-			self.server = args.pop(0)
-
-		self.ensure_dir(self.path('.ssh/connect'))
-		ident, key, pub = self.ssh_keygen()
-		keyfile = self.keyfile()
-		pubfile = keyfile + '.pub'
-		if os.path.exists(keyfile) and os.path.exists(pubfile) and not overwrite:
-			self.notice('You already have a setup key. (You may wish to run')
-			self.notice('"%s setup --replace-keys" .)', self.local)
-			return 20
-
-		# If either pubfile or keyfile exists, it's missing its partner;
-		# setting overwrite will fix it.  And if neither is present, overwrite
-		# does no harm.
-		overwrite = True
-
-		try:
-			self.savefile(keyfile, key, overwrite=overwrite)
-			self.savefile(pubfile, pub, overwrite=overwrite)
-		except IOError, e:
-			self.error(e)
-			self.error('(You may wish to run "%s setup --replace-keys" .)', self.local)
-			return 20
-
-		# expressly do not use a keyfile (prompt instead)
-		try:
-			session = ClientSession(self.server, user=self.user, keyfile=None, debug=self.debug)
-		except SSHError, e:
-			raise GeneralException, e.args
-
-		channel = session.rcmd(['setup'], server=True, remotedir=self.remotedir)
-		channel.send(pub + '\n')
-		channel.send('.\n')
-		channel.rio(stdin=False)
-		channel.close()
-
-		self.notice('Ongoing remote access has been authorized at %s.',
-		            self.server)
-		self.notice('Use "%s test" to verify access.', self.local)
-		return 0
-
-
-	def s_setup(self, args):
-		'''--server-mode setup'''
-		self.ensure_dir(self.path('.ssh'))
-		fn = os.path.join('.ssh', 'authorized_keys')
-		if os.path.exists(fn):
-			authkeys = self.readfile(fn)
-		else:
-			authkeys = ''
-		nauthkeys = authkeys
-
-		while True:
-			line = sys.stdin.readline()
-			line = line.strip()
-			if line == '.':
-				break
-			nauthkeys += line + '\n'
-
-		if nauthkeys != authkeys:
-			if os.path.exists(fn):
-				os.rename(fn, fn + '.save')
-			self.savefile(fn, nauthkeys, mode=0600, overwrite=True)
-
-		return 0
-
-
-	def c_test(self, args):
-		'''[servername]'''
-
-		if self.verbose:
-			_verbose = 'verbose'
-		else:
-			_verbose = 'noverbose'
-
-		# XXX TODO does not correctly detect when you can log in remotely,
-		# but the client command is missing.
-		code = str(random.randint(0, 1000))
-
-		if args:
-			self.server = args.pop(0)
-
-		session = self.sessionsetup()
-		channel = session.rcmd(['test', code, _verbose], server=True, remotedir=self.remotedir)
-		test = ''
-		while True:
-			buf = channel.recv(1024)
-			if len(buf) <= 0:
-				break
-			test += buf
-		test = [x.strip() for x in test.strip().split('\n')]
-		if code != test[0]:
-			self.output('You have no access to %s. ' +
-			            'Run "%s setup" to begin.', self.server, self.local)
-			return 10
-
-		self.output('Success! Your client access to %s is working.', self.server)
-		if len(test) > 1:
-			self.output('\nAdditional information:')
-			for item in test[1:]:
-				self.output(' * ' + item)
-		return 0
-
-
-	def s_test(self, args):
-		'''Just an echo test to verify access to server.
-		With verbose, print additional info.'''
-
-		print args[0]
-		sys.stdout.flush()
-		if 'verbose' in args[1:]:
-			self.platforminfo()
-		return 0
 
 
 	def platforminfo(self):
@@ -842,6 +627,222 @@ class main(object):
 
 	def fndecode(self, fn):
 		return urllib.unquote_plus(fn)
+
+
+	def usage(self):
+		self.output('usage: %s [opts] <subcommand> [args]' % self.local)
+		for attr in sorted(dir(self)):
+			if attr.startswith('c_'):
+				subcmd = attr[2:]
+				driver = getattr(self, attr)
+				self.output('       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__))
+		self.output('')
+		self.output('opts:')
+		self.output('    -s|--server hostname       set connect server name')
+		self.output('    -u|--user username         set connect server user name')
+		self.output('    -r|--remote directory      set connect server directory name')
+		self.output('    -v|--verbose               show additional information')
+
+		if self.verbose:
+			self.output('\nAdditional information:')
+			self.platforminfo()
+
+
+	def __call__(self, args):
+		args = list(args)
+		try:
+			r = getopt.getopt(args, 'u:ds:r:v',
+			                  ['server-mode', 'user=', 'debug', 'server=',
+			                   'remote=', 'repo=', 'verbose'])
+		except getopt.GetoptError, e:
+			self.error(e)
+			return 2
+
+		self.opts, self.args = r
+
+		for opt, arg in self.opts:
+			if opt in ('--server-mode',):
+				self.mode = 'server'
+
+			if opt in ('-u', '--user'):
+				self.user = arg
+
+			if opt in ('-d', '--debug'):
+				self.debug = self._debug
+				self.isdebug = True
+
+			if opt in ('-s', '--server'):
+				self.server = arg
+
+			if opt in ('-r', '--remote', '--repo'):
+				self.remotedir = arg
+
+			if opt in ('-v', '--verbose'):
+				self.verbose = True
+
+		if len(self.args) == 0:
+			self.usage()
+			return 2
+
+		if self.mode != 'server' and paramiko is None:
+			self.error('%s %s requires the "paramiko" module for python%d.%d',
+			           self.name, __name__, sys.version_info[0], sys.version_info[1])
+			self.error('(try "pip install paramiko")')
+			sys.exit(5)
+
+		subcmd = self.args.pop(0)
+		if self.mode == 'client':
+			driver = 'c_' + subcmd
+		else:
+			driver = 's_' + subcmd
+
+		try:
+			driver = getattr(self, driver)
+		except AttributeError:
+			self.error('"%s" is not implemented', driver)
+			return 10
+
+		try:
+			rc = driver(self.args)
+		except SSHError, e:
+			e.bubble('Did you run "%s setup"?' % self.local)
+		except UsageError, e:
+			e.bubble('usage: %s %s %s' % (self.local, subcmd, driver.__doc__))
+
+		if self.session:
+			self.session.close()
+		return rc
+
+
+	def c_setup(self, args):
+		'''[--replace-keys] [servername]'''
+
+		overwrite = False
+
+		try:
+			opts, args = getopt.getopt(args, '', ['replace-keys'])
+		except getopt.GetoptError, e:
+			self.error(e)
+			return 2
+
+		for opt, arg in opts:
+			if opt in ('--replace-keys',):
+				overwrite = True
+
+		if args:
+			self.server = args.pop(0)
+
+		self.ensure_dir(self.path('.ssh/connect'))
+		ident, key, pub = self.ssh_keygen()
+		keyfile = self.keyfile()
+		pubfile = keyfile + '.pub'
+		if os.path.exists(keyfile) and os.path.exists(pubfile) and not overwrite:
+			self.notice('You already have a setup key. (You may wish to run')
+			self.notice('"%s setup --replace-keys" .)', self.local)
+			return 20
+
+		# If either pubfile or keyfile exists, it's missing its partner;
+		# setting overwrite will fix it.  And if neither is present, overwrite
+		# does no harm.
+		overwrite = True
+
+		try:
+			self.savefile(keyfile, key, overwrite=overwrite)
+			self.savefile(pubfile, pub, overwrite=overwrite)
+		except IOError, e:
+			self.error(e)
+			self.error('(You may wish to run "%s setup --replace-keys" .)', self.local)
+			return 20
+
+		# expressly do not use a keyfile (prompt instead)
+		try:
+			session = ClientSession(self.server, user=self.user, keyfile=None, debug=self.debug)
+		except SSHError, e:
+			raise GeneralException, e.args
+
+		channel = session.rcmd(['setup'], server=True, remotedir=self.remotedir)
+		channel.send(pub + '\n')
+		channel.send('.\n')
+		channel.rio(stdin=False)
+		channel.close()
+
+		self.notice('Ongoing remote access has been authorized at %s.',
+		            self.server)
+		self.notice('Use "%s test" to verify access.', self.local)
+		return 0
+
+
+	def s_setup(self, args):
+		'''--server-mode setup'''
+		self.ensure_dir(self.path('.ssh'))
+		fn = os.path.join('.ssh', 'authorized_keys')
+		if os.path.exists(fn):
+			authkeys = self.readfile(fn)
+		else:
+			authkeys = ''
+		nauthkeys = authkeys
+
+		while True:
+			line = sys.stdin.readline()
+			line = line.strip()
+			if line == '.':
+				break
+			nauthkeys += line + '\n'
+
+		if nauthkeys != authkeys:
+			if os.path.exists(fn):
+				os.rename(fn, fn + '.save')
+			self.savefile(fn, nauthkeys, mode=0600, overwrite=True)
+
+		return 0
+
+
+	def c_test(self, args):
+		'''[servername]'''
+
+		if self.verbose:
+			_verbose = 'verbose'
+		else:
+			_verbose = 'noverbose'
+
+		# XXX TODO does not correctly detect when you can log in remotely,
+		# but the client command is missing.
+		code = str(random.randint(0, 1000))
+
+		if args:
+			self.server = args.pop(0)
+
+		session = self.sessionsetup()
+		channel = session.rcmd(['test', code, _verbose], server=True, remotedir=self.remotedir)
+		test = ''
+		while True:
+			buf = channel.recv(1024)
+			if len(buf) <= 0:
+				break
+			test += buf
+		test = [x.strip() for x in test.strip().split('\n')]
+		if code != test[0]:
+			self.output('You have no access to %s. ' +
+			            'Run "%s setup" to begin.', self.server, self.local)
+			return 10
+
+		self.output('Success! Your client access to %s is working.', self.server)
+		if len(test) > 1:
+			self.output('\nAdditional information:')
+			for item in test[1:]:
+				self.output(' * ' + item)
+		return 0
+
+
+	def s_test(self, args):
+		'''Just an echo test to verify access to server.
+		With verbose, print additional info.'''
+
+		print args[0]
+		sys.stdout.flush()
+		if 'verbose' in args[1:]:
+			self.platforminfo()
+		return 0
 
 
 	def s_server(self, args):
