@@ -6,5 +6,8 @@ sed -e "s/@@version@@/$gitver/" \
 	> ${base}/lib/connect/extensions/client.py
 
 status "... paramiko (for connect command)"
-pip install -b /tmp/pip-build-$USER --install-option="--prefix=$base" paramiko
+pip install \
+	-b /tmp/pip-build-$USER \
+	--target="$base" \
+	paramiko
 rm -rf /tmp/pip-build-$USER
