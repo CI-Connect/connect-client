@@ -51,13 +51,7 @@ conflict "$mname"
 #set os [uname release]
 #set arch [uname machine]
 
-eval set  [ array get env SOFTPATH ]
-eval set  [ array get env DISTARCH ]
-eval set  [ array get env ARCH ]
-eval set  [ array get env DIST ]
-
-# the next line will be replaced with the proper suffix for this software
-set suffix "$DISTARCH"
+set ARCH [exec uname -m]
 
 if [ module-info mode load ] {
    if { [string compare $compiler ""] != 0 } {
@@ -76,7 +70,6 @@ if [ module-info mode load ] {
    }
 }
 set appdir @CONNECTDIR@/connect-client
-#set	appdir   $SOFTPATH/$mname-$mversion-$suffix
 if { [string compare $compiler ""] != 0 } {
       set    appdir   $appdir+$compiler
 }
