@@ -93,6 +93,11 @@ There are two paths. You can update using git:
 Alternatively, you can delete your installation directory and restart
 these instructions from the beginning.
 
+If you need to revoke your access to the Connect server, either permanently
+or for testing purposes:
+
+	$ connect client revoke
+
 
 User Guide 
 ==========
