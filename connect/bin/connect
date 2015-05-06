@@ -33,7 +33,7 @@ Extensions = [os.path.join(x, 'extensions') for x in Libraries]
 Configs = [os.path.join(x, 'config.ini') for x in Libraries]
 
 # Add Libraries paths to python search path
-pylib = 'python%d.%d/site-packages' % (sys.version_info.major, sys.version_info.minor)
+pylib = 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])
 sys.path = [os.path.join(_, pylib) for _ in Libraries] + sys.path
 
 
