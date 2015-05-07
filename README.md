@@ -207,7 +207,7 @@ use the user option (````-u <osgconnect-username>)```` ina all connect client co
 
 Submit the task with ````$ connect client submit````.
 ````
-$ connect client -u <osg-connect-username> submit tutorial.submit
+$ connect client -u <osgconnect-username> submit tutorial.submit
 Submitting job(s).
 10 job(s) submitted to cluster 1234.
 ````
@@ -217,7 +217,7 @@ Submitting job(s).
 The **connect client q** command tells the status of submitted jobs:
 
 ````
-$ connect client q <your-remote-username>
+$ connect client q <osgconnect-username>
 
 -- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
