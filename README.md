@@ -136,7 +136,7 @@ To run any of these commands, just enter ````connect client [opts] [command name
 
 ### Example submission
 
-Now let's create a test script for execution of 10 jobs on the OSG. **Create working directory (and logfile subdirectory)** that will be synched with the remote host on the OSG Connect server.  
+Now let's create a test script for execution of 10 jobs on the OSG. **Create a working directory (and logfile subdirectory)** that will be synched with the remote host on the OSG Connect server.  
 
 	$ mkdir ~/working-dir
 	$ mkdir ~/working-dir/log
@@ -178,12 +178,12 @@ Executable = short.sh
 
 # ERROR and OUTPUT are the error and output channels from your job
 # that HTCondor returns from the remote host.
-Error = log/job.error.$(Cluster)-$(Process)
-Output = log/job.output.$(Cluster)-$(Process)
+Error = log/job.error.$(Cluster).$(Process)
+Output = log/job.output.$(Cluster).$(Process)
 
 # The LOG file is where HTCondor places information about your
 # job's status, success, and resource consumption.
-Log = log/job.log.$(Cluster)-$(Process)
+Log = log/job.log.$(Cluster).$(Process)
 
 # QUEUE is the "start button" - it launches any jobs that have been
 # specified thus far.
@@ -195,15 +195,15 @@ Here, ```$(Cluster)``` labels the submission task (called "Cluster ID") and ```$
 
 ### Submit the script
 
-Submit the script using **connect client submit**.
+Submit the script using ```$ connect client submit```.  You must invoke connect client commands from the working directory.
 ````
+$ cd ~/working-dir/
 $ connect client submit tutorial.submit
 Submitting job(s).
 10 job(s) submitted to cluster 1234.
 ````
 
-**N.B. If your OSG Connect username differs from your local username,
-use the user option (````-u <osgconnect-username>)```` ina all connect client commands.**
+**N.B. If your OSG Connect username differs from your local username, include (````-u <osgconnect-username>)```` in all connect client commands.**
 
 Submit the task with ````$ connect client submit````.
 ````
@@ -284,7 +284,7 @@ where ````$(Cluster)```` will be a large integer number for this specific submis
 Read one of the output files. It should look something like this:
 
 ````
-$ cat job.output.1234-0
+$ cat job.output.1234.0
 Start time: Wed Apr 29 17:44:36 EDT 2015
 Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
 Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
