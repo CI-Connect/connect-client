@@ -124,11 +124,11 @@ For a list of available commands, enter ```$ connect client``` from the command 
        		connect client [opts] test [servername]
        		connect client [opts] wait <condor_wait arguments>
 
-	opts:
+        opts:
     		-s|--server hostname       set connect server name
     		-u|--user username         set connect server user name
     		-r|--remote directory      set connect server directory name
-            	-v|--verbose               show additional information
+                -v|--verbose               show additional information
 
 	
 To run any of these commands, just enter ````connect client [opts] [command name]````.
