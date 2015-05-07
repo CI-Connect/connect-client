@@ -615,7 +615,7 @@ class main(object):
 		if 'size' in attrs and s.st_size != int(attrs['size']):
 			return True
 
-		if 'mtime' in attrs and s.st_mtime != int(attrs['mtime']):
+		if 'mtime' in attrs and s.st_mtime < int(attrs['mtime']):
 			return True
 
 		return False
