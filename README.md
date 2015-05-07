@@ -136,8 +136,7 @@ To run any of these commands, just enter ````connect client [opts] [command name
 
 ### Example submission
 
-Now let's create a test script for execution of 10 jobs on the OSG.
-*Create working directory (and logfile subdirectory)* that will be synched with the remote host on OSG Connect.  
+Now let's create a test script for execution of 10 jobs on the OSG. **Create working directory (and logfile subdirectory)** that will be synched with the remote host on the OSG Connect server.  
 
 	$ mkdir ~/working-dir
 	$ mkdir ~/working-dir/log
