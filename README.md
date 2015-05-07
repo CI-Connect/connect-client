@@ -5,6 +5,11 @@ research computing cluster to a [CI Connect] instance, such as [OSG Connect],
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
 example below assumes one has already [signed up for an account] on OSG Connect.
 
+Contact us
+----------
+For help or questions please email connect-support@opensciencegrid.org.
+
+
 Installation
 ============
 Connect Client can be installed by an individual user or by the HPC administrator for 
