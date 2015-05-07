@@ -190,7 +190,7 @@ Log = log/job.log.$(Cluster)-$(Process)
 Queue 10
 ````
 
-Here, ```$(Cluster)``` labels the submission (called "Cluster ID") and ```$(Process)``` labels individual jobs. 
+Here, ```$(Cluster)``` labels the submission task (called "Cluster ID") and ```$(Process)``` labels individual jobs in the task. 
 
 
 ### Submit the script
@@ -199,18 +199,17 @@ Submit the script using **connect client submit**.
 ````
 $ connect client submit tutorial.submit
 Submitting job(s).
-1 job(s) submitted to cluster 1.
+10 job(s) submitted to cluster 1234.
 ````
 
 **N.B. If your OSG Connect username differs from your local username,
-you will need an additional option for all connect client commands.**
-This will be remedied soon.**
+use the user option (````-u <osgconnect-username>)```` ina all connect client commands.**
 
-Submit the job using **connect client submit**.
+Submit the task with ````$ connect client submit````.
 ````
 $ connect client -u <osg-connect-username> submit tutorial.submit
 Submitting job(s).
-1 job(s) submitted to cluster 1.
+10 job(s) submitted to cluster 1234.
 ````
 
 
@@ -222,16 +221,16 @@ $ connect client q <your-remote-username>
 
 -- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
  ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
-9067914.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-9067914.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-9067914.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-9067914.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-9067914.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-9067914.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-9067914.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-9067914.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-9067914.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-9067914.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+1234.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+1234.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+1234.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+1234.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+1234.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+1234.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+1234.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+1234.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+1234.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+1234.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
 
 10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
 ````
@@ -242,22 +241,22 @@ Once your jobs have finished, you can get information about its execution
 from the **connect client history** command. In this example:
 
 ````
-$ connect client history 9067914
+$ connect client history 1234
  ID     OWNER          SUBMITTED   RUN_TIME     ST COMPLETED   CMD
-9067914.5   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-9067914.4   username             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
-9067914.1   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-9067914.0   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-9067914.6   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-9067914.8   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-9067914.7   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-9067914.9   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-9067914.2   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-9067914.3   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+1234.5   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+1234.4   username             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
+1234.1   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+1234.0   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+1234.6   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+1234.8   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+1234.7   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+1234.9   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+1234.2   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+1234.3   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
 ````
 
 Note: You can see much more information about status
-using the -long option (e.g. ```connect client history -long 9067914```).
+using the -long option (e.g. ```connect client history -long 1234```).
 
 
 ### Retrieve outputs
@@ -285,7 +284,7 @@ where ````$(Cluster)```` will be a large integer number for this specific submis
 Read one of the output files. It should look something like this:
 
 ````
-$ cat job.output.9067914-0
+$ cat job.output.1234-0
 Start time: Wed Apr 29 17:44:36 EDT 2015
 Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
 Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
@@ -294,6 +293,7 @@ Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.10
 Working hard...
 Science complete!
 ````
+In this example we see the first job in the submission (1234.0) ran on a free node at Syracuse University.
 
 [CI Connect]:http://ci-connect.net/
 [OSG Connect]:http://osgconnect.net/
