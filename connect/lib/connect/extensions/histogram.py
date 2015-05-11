@@ -91,7 +91,7 @@ def last_cluster(user):
 
 def usage():
 	p = os.path.basename(sys.argv[0])
-	yield '[-l | --last] [user]'
+	yield '@ [-l | --last] [user]'
 
 def run(*args):
 	try:

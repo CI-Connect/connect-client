@@ -10,7 +10,7 @@ import curses.panel
 import getopt
 
 def usage():
-	yield ''
+	yield '@'
 
 # TODO: need a help keystroke
 

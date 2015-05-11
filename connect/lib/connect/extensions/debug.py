@@ -1,6 +1,6 @@
 
 def usage():
-	yield ''
+	yield '@'
 
 def run(opts, args, **kwargs):
 	from IPython.Shell import IPShellEmbed as embed

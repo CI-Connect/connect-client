@@ -1,7 +1,7 @@
 import getopt
 
 def usage():
-	yield '[-f | --full]'
+	yield '@ [-f | --full]'
 
 def status(pool):
 	if pool:

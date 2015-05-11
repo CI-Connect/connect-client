@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# @usage user@hostname sched-type
+# @help @ user@hostname sched-type
 #
 
 NAME="UChicago CI Connect"
