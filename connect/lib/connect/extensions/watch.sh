@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# @usage [seconds [user]]
+# @usage @ [seconds [user]]
 #
 
 if [ $# -gt 0 ]; then

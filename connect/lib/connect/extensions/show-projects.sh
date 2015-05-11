@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# @usage [-u username] [projectname]
+# @usage @ [-u username] [projectname]
 # 
 #Marco Mambelli 130820 marco@hep.uchicago.edu
 #Lincoln Bryant (lincolnb@hep.uchicago.edu) 
