@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 #
-# @usage [many options; "connect client" for details]
-# 
 # XXX TODO
 #
 # 1. use a uuid file to verify that local and remote project dirs match
@@ -34,6 +32,10 @@ import signal
 import errno
 
 version = '@@version@@'
+
+def help():
+	m = main()
+	return m._help()
 
 # These are simple, transparent commands.  Given 'a': ['b', 'c'],
 # 'connect client a' is equivalent to 'ssh server b c'.
@@ -630,18 +632,24 @@ class main(object):
 
 
 	def usage(self):
-		self.output('usage: %s [opts] <subcommand> [args]' % self.local)
+		for line in self._help():
+			if line.startswith('@ '):
+				line = 'usage: %s %s' % (self.local, line[2:])
+			self.output(line)
+
+	def _help(self):
+		yield '@ [opts] <subcommand> [args]'
 		for attr in sorted(dir(self)):
 			if attr.startswith('c_'):
 				subcmd = attr[2:]
 				driver = getattr(self, attr)
-				self.output('       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__))
-		self.output('')
-		self.output('opts:')
-		self.output('    -s|--server hostname       set connect server name')
-		self.output('    -u|--user username         set connect server user name')
-		self.output('    -r|--remote directory      set connect server directory name')
-		self.output('    -v|--verbose               show additional information')
+				yield '       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__)
+		yield ''
+		yield 'opts:'
+		yield '    -s|--server hostname       set connect server name'
+		yield '    -u|--user username         set connect server user name'
+		yield '    -r|--remote directory      set connect server directory name'
+		yield '    -v|--verbose               show additional information'
 
 		if self.verbose:
 			self.output('\nAdditional information:')

@@ -93,8 +93,8 @@ class PluginProxy(object):
 			agent += ' '
 		print >>sys.stdout, ('%s %s:' % (self.arg0, agent)), ' '.join(args)
 
-	def usage(self, *args):
-		yield ' '.join(args)
+	def help(self, *args):
+		yield '@ ' + ' '.join(args)
 
 	def sh(self, command):
 		fp = os.popen(command, 'r')
@@ -179,11 +179,8 @@ class commandtype(object):
 		'''dummy'''
 		return False
 
-	def usage(self):
-		yield ''
-
 	def help(self):
-		yield None
+		yield '@'
 
 
 class builtintype(commandtype):
@@ -201,15 +198,6 @@ class builtintype(commandtype):
 	def __call__(self, *args, **kwargs):
 		handler = self.data
 		return handler(*args, **kwargs)
-
-	def usage(self):
-		handler = self.data
-		if not handler.__doc__:
-			yield ''
-			return
-		for line in handler.__doc__.split('\n'):
-			if line and line[0] == '@':
-				yield line[1:].strip()
 
 	def help(self):
 		handler = self.data
@@ -233,13 +221,6 @@ class condortype(commandtype):
 		except OSError, e:
 			raise ConnectException, 'cannot run %s: %s' % (self.data, str(e.errno))
 
-	def usage(self):
-		fp = os.popen(self.data + ' -h')
-		for line in fp:
-			if line.lower().startswith('usage:'):
-				yield ' '.join(line.split()[2:])
-		fp.close()
-
 	def help(self):
 		fp = os.popen(self.data + ' -h')
 		for line in fp:
@@ -247,7 +228,7 @@ class condortype(commandtype):
 			if line.lower().startswith('usage:'):
 				yield '@ ' + ' '.join(line.split()[2:])
 			else:
-				yield '>' + line
+				yield line
 		fp.close()
 
 class pyexttype(commandtype):
@@ -271,11 +252,10 @@ class pyexttype(commandtype):
 		self.mod.proxy.agent = self.mod.agent
 		self.mod.config = self.config
 
-		if hasattr(self.mod, 'usage'):
-			self.usage = self.mod.usage
-
 		if hasattr(self.mod, 'help'):
 			self.help = self.mod.help
+		elif hasattr(self.mod, 'usage'):
+			self.help = self.mod.usage
 		else:
 			self.help = self.usage
 
@@ -285,7 +265,7 @@ class pyexttype(commandtype):
 		for name in self.mod.proxy.exports:
 			try:
 				setattr(self.mod, name, getattr(self.mod.proxy, name))
-			except ImportError, e:
+			except AttributeError, e:
 				pass
 
 		for name in PluginModules:
@@ -349,12 +329,67 @@ class shexttype(commandtype):
 		sys.exit(rc)
 		#os.execv('/bin/sh', [self.name, self.data] + list(args))
 
-	def usage(self, *args, **kwargs):
+	def help(self):
+		# there are two ways to embed usage/help into a shell extension:
+		#
+		# 1. line by line
+		#     # @help @ [options] arguments
+		#     # @help    ...help text...
+		#     # @help    ...more help text...
+		#
+		# 2. in blocks:
+		#     # @help.begin
+		#     # @ [options] arguments
+		#     #     ...help text...
+		#     #     ...more help text...
+		#     # @help.end
+		#
+		# In either case, a lone "@" is replaced by "usage:" and the
+		# calling syntax for the subcommand in question. (Generally
+		# this is "connect subcommand".)  The usage lines are reported
+		# for usage summaries. The entire help is reproduced for long
+		# help statements (connect help ...).
+
 		# self.data contains path
 		fp = open(self.data, 'r')
+		something = False
+		helpoff = -1
 		for line in fp:
+			if helpoff >= 0:
+				if '@help.end' in line:
+					helpoff = -1
+				else:
+					something = True
+					yield line[helpoff:].rstrip()
+				continue
+
+			if '@help.begin' in line:
+				helpoff = line.find('@help.begin')
+				continue
+
+			if '@help' in line:
+				line = line[line.index('@help') + 5:].rstrip()
+				if line and line[0] == ' ':
+					line = line[1:]
+				something = True
+				yield line
+				continue
+
+			# for backward compatibility
 			if '@usage' in line:
-				yield line[line.find('@usage')+6:].strip()
+				line = line[line.index('@usage') + 6:].rstrip()
+				if line and line[0] == ' ':
+					line = line[1:]
+				if line != '':
+					something = True
+				yield line
+				continue
+
+		if not something:
+			# at least show usage
+			yield '@'
+
+		fp.close()
 
 
 class Main(object):
@@ -372,9 +407,14 @@ class Main(object):
 				continue
 			if args and cmd.name not in args:
 				continue
-			for usage in cmd.usage():
-				print >>sys.stderr, '       %s %s %s' % (self.arg0, cmd.name, usage)
+			for line in cmd.help():
+				line = line.rstrip()
+				if line == '@' or line.startswith('@ '):
+					print >>sys.stderr, \
+					      '       %s %s %s' % (self.arg0, cmd.name, line[1:].strip())
 
+		print
+		print 'See "%s help <subcommand>" for more details.' % self.arg0
 		return 2
 
 	def secret(f, *args, **kwargs):
@@ -434,8 +474,6 @@ class Main(object):
 				for line in cmd.help():
 					if line is None:
 						break
-					if line == '':
-						line = '@'
 					if line and line[0] == '@':
 						print >>sys.stderr, \
 						      'usage: %s %s %s' % (self.arg0, cmd.name, line[1:].strip())
