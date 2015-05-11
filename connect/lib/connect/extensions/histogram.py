@@ -15,7 +15,9 @@ compute-\d-\d{2}.nysu\d          *       uconn.edu
 nodo\d{2}                        *       cinvestav.mx
 compute-\d-\d.local              atlas   swt2.org
 compute-\d+-\d+.local            *       vt.edu
-computer?-\d+n?-\d+.tier2        *       compute-*.tier2
+#computer?-\d+n?-\d+.tier2        *       compute-*.tier2
+# Not sure this is unique, but at least some are caltech
+computer?-\d+n?-\d+.tier2        *       caltech.edu
 node\d{3}.local                  atlas   swt2.org
 node\d{3}.local                  *       unesp.br
 compute-\d-\d{2}.nys1            *       swt2.org
