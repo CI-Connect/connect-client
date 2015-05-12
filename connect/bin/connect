@@ -228,7 +228,7 @@ class condortype(commandtype):
 			if line.lower().startswith('usage:'):
 				yield '@ ' + ' '.join(line.split()[2:])
 			else:
-				yield line
+				yield '>' + line
 		fp.close()
 
 class pyexttype(commandtype):
@@ -380,9 +380,10 @@ class shexttype(commandtype):
 				line = line[line.index('@usage') + 6:].rstrip()
 				if line and line[0] == ' ':
 					line = line[1:]
-				if line != '':
+				if line.strip() != '':
 					something = True
-				yield line
+				if something:
+					yield line
 				continue
 
 		if not something:
@@ -468,9 +469,18 @@ class Main(object):
 			return self.usage()
 
 		args = dict([x, None] for x in args)
+		if 'all' in args:
+			all = True
+			del args['all']
+		else:
+			all = False
+
 		for cmd in self.cmds:
+			this = False
 			if cmd.name in args:
 				del args[cmd.name]
+				this = True
+			if this or all:
 				for line in cmd.help():
 					if line is None:
 						break
@@ -481,11 +491,12 @@ class Main(object):
 						print >>sys.stderr, '       ' + line.strip()
 					elif line and line[0] == '>':
 						# preserve space
-						print >>sys.stderr, line[1:]
+						print >>sys.stderr, line[1:].rstrip()
 					else:
-						print >>sys.stderr, line
+						print >>sys.stderr, line.rstrip()
 				print >>sys.stderr
 
+		# Alert to any subcommands requested but missing
 		for arg in sorted(args.keys()):
 			print >>sys.stderr, 'Unknown subcommand: %s' % arg
 
