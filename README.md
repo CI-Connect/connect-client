@@ -173,49 +173,46 @@ Create a simple HTCondor submit description file, called tutorial.submit
 	$ nano tutorial.submit
 
 The submit file should contain the following:
-````
-# The UNIVERSE defines an execution environment. 
-universe = vanilla
 
-# EXECUTABLE is the program your job will run. It's often useful
-# to create a shell script to "wrap" your actual work.
-Executable = short.sh
+	# The UNIVERSE defines an execution environment. 
+	universe = vanilla
 
-# ERROR and OUTPUT are the error and output channels from your job
-# that HTCondor returns from the remote host.
-Error = log/job.error.$(Cluster).$(Process)
-Output = log/job.output.$(Cluster).$(Process)
+	# EXECUTABLE is the program your job will run. It's often useful
+	# to create a shell script to "wrap" your actual work.
+	Executable = short.sh
 
-# The LOG file is where HTCondor places information about your
-# job's status, success, and resource consumption.
-Log = log/job.log.$(Cluster).$(Process)
+	# ERROR and OUTPUT are the error and output channels from your job
+	# that HTCondor returns from the remote host.
+	Error = log/job.error.$(Cluster).$(Process)
+	Output = log/job.output.$(Cluster).$(Process)
 
-# QUEUE is the "start button" - it launches any jobs that have been
-# specified thus far.
-Queue 10
-````
+	# The LOG file is where HTCondor places information about your
+	# job's status, success, and resource consumption.
+	Log = log/job.log.$(Cluster).$(Process)
 
-Here, ```$(Cluster)``` labels the submission task (called "Cluster ID") and ```$(Process)``` labels individual jobs in the task. 
+	# QUEUE is the "start button" - it launches any jobs that have been
+	# specified thus far.
+	Queue 10
 
+Here, `$(Cluster)` labels the submission task (called "Cluster ID") and `$(Process)` labels individual jobs in the task. 
 
 ### Submit the script
 
-Submit the script using ```$ connect client submit```.  You must invoke connect client commands from the working directory.
-````
-$ cd ~/working-dir/
-$ connect client submit tutorial.submit
-Submitting job(s).
-10 job(s) submitted to cluster 1234.
-````
+Submit the script using `$ connect client submit`.  You must invoke connect client commands from the working directory.
+
+	$ cd ~/working-dir/
+	$ connect client submit tutorial.submit
+	Submitting job(s).
+	10 job(s) submitted to cluster 1234.
+
 
 **N.B. If your OSG Connect username differs from your local username, include (````-u <osgconnect-username>)```` in all connect client commands.**
 
-Submit the task with ````$ connect client submit````.
-````
-$ connect client -u <osgconnect-username> submit tutorial.submit
-Submitting job(s).
-10 job(s) submitted to cluster 1234.
-````
+Submit the task with `$ connect client submit`.
+
+	$ connect client -u <osgconnect-username> submit tutorial.submit
+	Submitting job(s).
+	10 job(s) submitted to cluster 1234.
 
 
 ### Check job queue
