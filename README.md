@@ -148,18 +148,18 @@ Now let's create a test script for execution of 10 jobs on the OSG. **Create a w
 	$ cd ~/workding-dir
 	$ nano short.sh
 
-````bash
-#!/bin/bash
-# short.sh: a short discovery job
-printf "Start time: "; /bin/date
-printf "Job is running on node: "; /bin/hostname
-printf "Job running as user: "; /usr/bin/id
-printf "Job is running in directory: "; /bin/pwd
-echo
-echo "Working hard..."
-sleep ${1-15}
-echo "Science complete!"
-````
+Here is the short.sh script:
+
+	#!/bin/bash
+	# short.sh: a short discovery job
+	printf "Start time: "; /bin/date
+	printf "Job is running on node: "; /bin/hostname
+	printf "Job running as user: "; /usr/bin/id
+	printf "Job is running in directory: "; /bin/pwd
+	echo
+	echo "Working hard..."
+	sleep ${1-15}
+	echo "Science complete!"
 
 Make the script executable.
 
