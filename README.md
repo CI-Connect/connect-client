@@ -298,7 +298,7 @@ Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.10
 Working hard...
 Science complete!
 ````
-In this example we see the first job in the submission (1234.0) ran on a free node at Syracuse University.
+For this example we see the first job in the submission (1234.0) ran on a free node at Syracuse University.
 
 [CI Connect]:http://ci-connect.net/
 [OSG Connect]:http://osgconnect.net/
