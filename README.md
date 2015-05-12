@@ -211,44 +211,42 @@ Submit the task with `$ connect client submit`.
 #### Check job queue
 The **connect client q** command tells the status of submitted jobs:
 
-````
-$ connect client q <osgconnect-username>
+	$ connect client q <osgconnect-username>
 
--- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
- ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
-1234.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-1234.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-1234.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-1234.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	-- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
+ 	ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+	1234.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+	1234.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+	1234.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+	1234.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
 
-10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
-````
-
+	10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
+	
 #### Job history
 
 Once your jobs have finished, you can get information about its execution
 from the **connect client history** command. In this example:
 
-````
-$ connect client history 1234
- ID     OWNER          SUBMITTED   RUN_TIME     ST COMPLETED   CMD
-1234.5   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-1234.4   username             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
-1234.1   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-1234.0   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-1234.6   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-1234.8   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-1234.7   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-1234.9   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-1234.2   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-1234.3   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-````
+
+	$ connect client history 1234
+ 	ID     OWNER          SUBMITTED   RUN_TIME     ST COMPLETED   CMD
+	1234.5   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+	1234.4   username             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
+	1234.1   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+	1234.0   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+	1234.6   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+	1234.8   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+	1234.7   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+	1234.9   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+	1234.2   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+	1234.3   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+
 
 Note: You can see much more information about status
 using the -long option (e.g. ```connect client history -long 1234```).
@@ -258,36 +256,31 @@ using the -long option (e.g. ```connect client history -long 1234```).
 
 To retrieve job outputs from the connect server, use **connect client pull**.
 
-````
-$ connect client pull
-...
-````
-
+	$ connect client pull
 
 #### Check the job output
 
 Once your jobs have finished, you can look at the files that HTCondor has
 returned to the working directory. If everything was successful, it
-should have returned in the ````~/working-dir/log```` directory:
+should have returned in the `~/working-dir/log` directory:
 
-  * log files from Condor for the job cluster: ````job.log.$(Cluster).$(Process)````
-  * output files for each job's output: ````job.output.$(Cluster).$(Process)````
-  * error files for each job's errors: ````job.error.$(Cluster).$(Process)````
+  * log files from Condor for the job cluster:  `job.log.$(Cluster).$(Process)`
+  * output files for each job's output: `job.output.$(Cluster).$(Process)`
+  * error files for each job's errors: `job.error.$(Cluster).$(Process)`
 
-where ````$(Cluster)```` will be a large integer number for this specific submission, and ````$(Process)```` will number 0...10.
+where `$(Cluster)` will be a large integer number for this specific submission, and `$(Process)` will number 0...10.
 
 Read one of the output files. It should look something like this:
 
-````
-$ cat job.output.1234.0
-Start time: Wed Apr 29 17:44:36 EDT 2015
-Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
-Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
-Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.108-1098/dir_2553
+	$ cat job.output.1234.0
+	Start time: Wed Apr 29 17:44:36 EDT 2015
+	Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
+	Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
+	Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.108-1098/dir_2553
 
-Working hard...
-Science complete!
-````
+	Working hard...
+	Science complete!
+	
 For this example we see the first job in the submission (1234.0) ran on a free node at Syracuse University.
 
 [CI Connect]:http://ci-connect.net/
