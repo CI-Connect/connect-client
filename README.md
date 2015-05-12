@@ -1,22 +1,22 @@
-Introduction
-============
+## Introduction
+
 Connect Client is the set of programs and files for linking a campus
 research computing cluster to a [CI Connect] instance, such as [OSG Connect], 
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
 example below assumes one has already [signed up for an account] on OSG Connect.
 
-Contact us
-----------
+### Contact us
+
 For help or questions please email connect-support@opensciencegrid.org.
 
 
-Installation
-============
+## Installation
+
+
 Connect Client can be installed by an individual user or by the HPC administrator for 
 system-wide usage.
 
-Obtaining the Connect Client distribution
------------------------------------------
+### Obtaining the Connect Client distribution
 
 Regardless of which installation path you follow, the first step is the same:
 
@@ -28,8 +28,7 @@ Regardless of which installation path you follow, the first step is the same:
 This obtains a copy of the distribution and sets your shell's working
 directory to that copy.
 
-Installation by an individual user
-----------------------------------
+### Installation by an individual user
 
 Choose a directory to install Connect Client into.  A reasonable
 choice is `~/software/connect`.  Also choose a directory for the
@@ -40,19 +39,16 @@ and a version number (e.g. 0.2):
     $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 
-Installation by a site administrator
-------------------------------------
+### Installation by a site administrator
 
 Typically this would be quite similar, only system paths would be used, for example:
 
     $ ./install.sh -site /software/connect-client /software/modulefiles 0.2
 
 
-Setting up Connect Client
-=========================
+## Setting up Connect Client
 
-Using environment modules
-----------------------------
+### Using environment modules
 
 To make Connect Client available, use the `module` command as you would
 any other software module.  
@@ -65,16 +61,15 @@ For user installations with modules, you'll need to load the `use.own` module fi
     $ module load connect-client
 
 
-Without environment modules
----------------------------
+### Without environment modules
 
 If your site does not have environment modules, install the package as above and modify the $PATH:
 
     $ export PATH=~/software/connect-client/bin:$PATH
     
 
-First-time setup
-----------------
+### First-time setup
+
 Each user must perform this setup step once before using
 OSG Connect the first time.  
 
@@ -87,8 +82,8 @@ added. Test the setup with:
     $ connect client test
 
 
-Updating
-========
+## Updating
+
 To update your connect client installation, it's necessary to re-install.
 There are two paths. You can update using git:
 
@@ -104,11 +99,9 @@ or for testing purposes:
 	$ connect client revoke
 
 
-User Guide 
-==========
+## User Guide 
 
-Connect Client commands
--------------------------
+### Connect Client commands
 
 For a list of available commands, enter ```$ connect client``` from the command line:
 
@@ -166,7 +159,7 @@ Make the script executable.
 	$ chmod +x short.sh
 
 
-### Create the HTCondor submit description file
+#### Create the HTCondor submit description file
 
 Create a simple HTCondor submit description file, called tutorial.submit
 
@@ -196,7 +189,7 @@ The submit file should contain the following:
 
 Here, `$(Cluster)` labels the submission task (called "Cluster ID") and `$(Process)` labels individual jobs in the task. 
 
-### Submit the script
+#### Submit the script
 
 Submit the script using `$ connect client submit`.  You must invoke connect client commands from the working directory.
 
@@ -215,7 +208,7 @@ Submit the task with `$ connect client submit`.
 	10 job(s) submitted to cluster 1234.
 
 
-### Check job queue
+#### Check job queue
 The **connect client q** command tells the status of submitted jobs:
 
 ````
@@ -237,7 +230,7 @@ $ connect client q <osgconnect-username>
 10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
 ````
 
-### Job history
+#### Job history
 
 Once your jobs have finished, you can get information about its execution
 from the **connect client history** command. In this example:
@@ -261,7 +254,7 @@ Note: You can see much more information about status
 using the -long option (e.g. ```connect client history -long 1234```).
 
 
-### Retrieve outputs
+#### Retrieve outputs
 
 To retrieve job outputs from the connect server, use **connect client pull**.
 
@@ -271,7 +264,7 @@ $ connect client pull
 ````
 
 
-### Check the job output
+#### Check the job output
 
 Once your jobs have finished, you can look at the files that HTCondor has
 returned to the working directory. If everything was successful, it
@@ -302,5 +295,3 @@ For this example we see the first job in the submission (1234.0) ran on a free n
 [HTCondor]:http://research.cs.wisc.edu/htcondor/
 [Open Science Grid]:http://www.opensciencegrid.org/
 [signed up for an account]:http://osgconnect.net/signup
-
-
