@@ -1,22 +1,22 @@
-Introduction
-============
+## Introduction
+
 Connect Client is the set of programs and files for linking a campus
 research computing cluster to a [CI Connect] instance, such as [OSG Connect], 
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
 example below assumes one has already [signed up for an account] on OSG Connect.
 
-Contact us
-----------
+### Contact us
+
 For help or questions please email connect-support@opensciencegrid.org.
 
 
-Installation
-============
+## Installation
+
+
 Connect Client can be installed by an individual user or by the HPC administrator for 
 system-wide usage.
 
-Obtaining the Connect Client distribution
------------------------------------------
+### Obtaining the Connect Client distribution
 
 Regardless of which installation path you follow, the first step is the same:
 
@@ -28,8 +28,7 @@ Regardless of which installation path you follow, the first step is the same:
 This obtains a copy of the distribution and sets your shell's working
 directory to that copy.
 
-Installation by an individual user
-----------------------------------
+### Installation by an individual user
 
 Choose a directory to install Connect Client into.  A reasonable
 choice is `~/software/connect`.  Also choose a directory for the
@@ -40,19 +39,16 @@ and a version number (e.g. 0.2):
     $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 
-Installation by a site administrator
-------------------------------------
+### Installation by a site administrator
 
 Typically this would be quite similar, only system paths would be used, for example:
 
     $ ./install.sh -site /software/connect-client /software/modulefiles 0.2
 
 
-Setting up Connect Client
-=========================
+## Setting up Connect Client
 
-Using environment modules
-----------------------------
+### Using environment modules
 
 To make Connect Client available, use the `module` command as you would
 any other software module.  
@@ -65,16 +61,15 @@ For user installations with modules, you'll need to load the `use.own` module fi
     $ module load connect-client
 
 
-Without environment modules
----------------------------
+### Without environment modules
 
 If your site does not have environment modules, install the package as above and modify the $PATH:
 
     $ export PATH=~/software/connect-client/bin:$PATH
     
 
-First-time setup
-----------------
+### First-time setup
+
 Each user must perform this setup step once before using
 OSG Connect the first time.  
 
@@ -87,8 +82,8 @@ added. Test the setup with:
     $ connect client test
 
 
-Updating
-========
+## Updating
+
 To update your connect client installation, it's necessary to re-install.
 There are two paths. You can update using git:
 
@@ -104,11 +99,9 @@ or for testing purposes:
 	$ connect client revoke
 
 
-User Guide 
-==========
+## User Guide 
 
-Connect Client commands
--------------------------
+### Connect Client commands
 
 For a list of available commands, enter ```$ connect client``` from the command line:
 
@@ -148,162 +141,150 @@ Now let's create a test script for execution of 10 jobs on the OSG. **Create a w
 	$ cd ~/workding-dir
 	$ nano short.sh
 
-````bash
-#!/bin/bash
-# short.sh: a short discovery job
-printf "Start time: "; /bin/date
-printf "Job is running on node: "; /bin/hostname
-printf "Job running as user: "; /usr/bin/id
-printf "Job is running in directory: "; /bin/pwd
-echo
-echo "Working hard..."
-sleep ${1-15}
-echo "Science complete!"
-````
+Here is the short.sh script:
+
+	#!/bin/bash
+	# short.sh: a short discovery job
+	printf "Start time: "; /bin/date
+	printf "Job is running on node: "; /bin/hostname
+	printf "Job running as user: "; /usr/bin/id
+	printf "Job is running in directory: "; /bin/pwd
+	echo
+	echo "Working hard..."
+	sleep ${1-15}
+	echo "Science complete!"
 
 Make the script executable.
 
 	$ chmod +x short.sh
 
 
-### Create the HTCondor submit description file
+#### Create the HTCondor submit description file
 
 Create a simple HTCondor submit description file, called tutorial.submit
 
 	$ nano tutorial.submit
 
 The submit file should contain the following:
-````
-# The UNIVERSE defines an execution environment. 
-universe = vanilla
 
-# EXECUTABLE is the program your job will run. It's often useful
-# to create a shell script to "wrap" your actual work.
-Executable = short.sh
+	# The UNIVERSE defines an execution environment. 
+	universe = vanilla
 
-# ERROR and OUTPUT are the error and output channels from your job
-# that HTCondor returns from the remote host.
-Error = log/job.error.$(Cluster).$(Process)
-Output = log/job.output.$(Cluster).$(Process)
+	# EXECUTABLE is the program your job will run. It's often useful
+	# to create a shell script to "wrap" your actual work.
+	Executable = short.sh
 
-# The LOG file is where HTCondor places information about your
-# job's status, success, and resource consumption.
-Log = log/job.log.$(Cluster).$(Process)
+	# ERROR and OUTPUT are the error and output channels from your job
+	# that HTCondor returns from the remote host.
+	Error = log/job.error.$(Cluster).$(Process)
+	Output = log/job.output.$(Cluster).$(Process)
 
-# QUEUE is the "start button" - it launches any jobs that have been
-# specified thus far.
-Queue 10
-````
+	# The LOG file is where HTCondor places information about your
+	# job's status, success, and resource consumption.
+	Log = log/job.log.$(Cluster).$(Process)
 
-Here, ```$(Cluster)``` labels the submission task (called "Cluster ID") and ```$(Process)``` labels individual jobs in the task. 
+	# QUEUE is the "start button" - it launches any jobs that have been
+	# specified thus far.
+	Queue 10
 
+Here, `$(Cluster)` labels the submission task (called "Cluster ID") and `$(Process)` labels individual jobs in the task. 
 
-### Submit the script
+#### Submit the script
 
-Submit the script using ```$ connect client submit```.  You must invoke connect client commands from the working directory.
-````
-$ cd ~/working-dir/
-$ connect client submit tutorial.submit
-Submitting job(s).
-10 job(s) submitted to cluster 1234.
-````
+Submit the script using `$ connect client submit`.  You must invoke connect client commands from the working directory.
+
+	$ cd ~/working-dir/
+	$ connect client submit tutorial.submit
+	Submitting job(s).
+	10 job(s) submitted to cluster 1234.
+
 
 **N.B. If your OSG Connect username differs from your local username, include (````-u <osgconnect-username>)```` in all connect client commands.**
 
-Submit the task with ````$ connect client submit````.
-````
-$ connect client -u <osgconnect-username> submit tutorial.submit
-Submitting job(s).
-10 job(s) submitted to cluster 1234.
-````
+Submit the task with `$ connect client submit`.
+
+	$ connect client -u <osgconnect-username> submit tutorial.submit
+	Submitting job(s).
+	10 job(s) submitted to cluster 1234.
 
 
-### Check job queue
+#### Check job queue
 The **connect client q** command tells the status of submitted jobs:
 
-````
-$ connect client q <osgconnect-username>
+	$ connect client q <osgconnect-username>
 
--- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
- ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
-1234.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-1234.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-1234.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
-1234.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
-1234.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	-- Submitter: login01.osgconnect.net : <192.170.227.195:40814> : login01.osgconnect.net
+ 	ID      OWNER            SUBMITTED     RUN_TIME ST PRI SIZE CMD
+	1234.0   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+	1234.1   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+	1234.2   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.3   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.4   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.5   username             4/29 16:42   0+00:00:00 I  0   0.0  short.sh
+	1234.6   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.7   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.8   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
+	1234.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
 
-10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
-````
-
-### Job history
+	10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
+	
+#### Job history
 
 Once your jobs have finished, you can get information about its execution
 from the **connect client history** command. In this example:
 
-````
-$ connect client history 1234
- ID     OWNER          SUBMITTED   RUN_TIME     ST COMPLETED   CMD
-1234.5   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-1234.4   username             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
-1234.1   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-1234.0   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
-1234.6   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-1234.8   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-1234.7   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
-1234.9   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-1234.2   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-1234.3   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
-````
+
+	$ connect client history 1234
+ 	ID     OWNER          SUBMITTED   RUN_TIME     ST COMPLETED   CMD
+	1234.5   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+	1234.4   username             4/29 16:42   0+00:01:18 C   4/29 16:45 /home/...
+	1234.1   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+	1234.0   username             4/29 16:42   0+00:00:27 C   4/29 16:45 /home/...
+	1234.6   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+	1234.8   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+	1234.7   username             4/29 16:42   0+00:00:52 C   4/29 16:44 /home/...
+	1234.9   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+	1234.2   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+	1234.3   username             4/29 16:42   0+00:00:51 C   4/29 16:44 /home/...
+
 
 Note: You can see much more information about status
 using the -long option (e.g. ```connect client history -long 1234```).
 
 
-### Retrieve outputs
+#### Retrieve outputs
 
 To retrieve job outputs from the connect server, use **connect client pull**.
 
-````
-$ connect client pull
-...
-````
+	$ connect client pull
 
-
-### Check the job output
+#### Check the job output
 
 Once your jobs have finished, you can look at the files that HTCondor has
 returned to the working directory. If everything was successful, it
-should have returned in the ````~/working-dir/log```` directory:
+should have returned in the `~/working-dir/log` directory:
 
-  * log files from Condor for the job cluster: ````job.log.$(Cluster).$(Process)````
-  * output files for each job's output: ````job.output.$(Cluster).$(Process)````
-  * error files for each job's errors: ````job.error.$(Cluster).$(Process)````
+  * log files from Condor for the job cluster:  `job.log.$(Cluster).$(Process)`
+  * output files for each job's output: `job.output.$(Cluster).$(Process)`
+  * error files for each job's errors: `job.error.$(Cluster).$(Process)`
 
-where ````$(Cluster)```` will be a large integer number for this specific submission, and ````$(Process)```` will number 0...10.
+where `$(Cluster)` will be a large integer number for this specific submission, and `$(Process)` will number 0...10.
 
 Read one of the output files. It should look something like this:
 
-````
-$ cat job.output.1234.0
-Start time: Wed Apr 29 17:44:36 EDT 2015
-Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
-Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
-Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.108-1098/dir_2553
+	$ cat job.output.1234.0
+	Start time: Wed Apr 29 17:44:36 EDT 2015
+	Job is running on node: MAX-EDLASCH-S3-its-u12-nfs-20141003
+	Job running as user: uid=1066(osgconnect) gid=502(condoruser) groups=502(condoruser),108(fuse)
+	Job is running in directory: /tmp/rcc_syracuse/rcc.1bNeUskyJl/execute.10.5.70.108-1098/dir_2553
 
-Working hard...
-Science complete!
-````
-In this example we see the first job in the submission (1234.0) ran on a free node at Syracuse University.
+	Working hard...
+	Science complete!
+	
+For this example we see the first job in the submission (1234.0) ran on a free node at Syracuse University.
 
 [CI Connect]:http://ci-connect.net/
 [OSG Connect]:http://osgconnect.net/
 [HTCondor]:http://research.cs.wisc.edu/htcondor/
 [Open Science Grid]:http://www.opensciencegrid.org/
 [signed up for an account]:http://osgconnect.net/signup
-
-
