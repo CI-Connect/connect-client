@@ -256,7 +256,7 @@ class pyexttype(commandtype):
 			self.help = self.mod.help
 		elif hasattr(self.mod, 'usage'):
 			self.help = self.mod.usage
-		else:
+		elif hasattr(self, 'usage'):
 			self.help = self.usage
 
 		if hasattr(self.mod, 'secret'):
