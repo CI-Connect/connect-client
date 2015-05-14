@@ -7,8 +7,13 @@
 # The Connect module loads python.  We install some python modules
 # during build/installation, so we need to load python first to match
 # python versions.
-module list >/dev/null 2>&1 &&
-module load python
+#
+# XX Disable this for now: a site's default python version is not
+# predictable, so we may end up loading Python 3 instead of Python 2.
+# We'll just assume Py2 is in the environment already, and document
+# the edge cases.
+#module list >/dev/null 2>&1 &&
+#module load python
 
 from=$(dirname "$0")
 siteinstall=false; export siteinstall
