@@ -8,6 +8,7 @@ sed -e "s/@@version@@/$gitver/" \
 status "... paramiko (for connect command)"
 
 builddir=${HOME}/.tmp/pip-build
+rm -rf "${builddir}"
 mkdir -p "${builddir}"
 
 lib=$(python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
@@ -16,5 +17,7 @@ pip install \
 	--log="${builddir}/log" \
 	-b "${builddir}" \
 	--target="$target" \
-	pycrypto paramiko
-#rm -rf "${builddir}"
+	pycrypto paramiko \
+	||
+{ code=$?; echo "== Do you need to load a python module?"; }
+rm -rf "${builddir}"
