@@ -10,7 +10,8 @@ status "... paramiko (for connect command)"
 lib=$(python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
 target="$base/lib/$lib"
 pip install \
+	--log=/tmp/argh \
 	-b /tmp/pip-build-$USER \
 	--target="$target" \
-	paramiko
-rm -rf /tmp/pip-build-$USER
+	pycrypto paramiko
+#rm -rf /tmp/pip-build-$USER

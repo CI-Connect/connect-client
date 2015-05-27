@@ -75,8 +75,9 @@ if { [string compare $compiler ""] != 0 } {
 }
 
 # module dependencies
-module load python
-module load git
+#module load python
+#module load git
+@@MODULES@@
 
 if { [ file isdirectory @CONNECTDIR@/bin ] } {
    prepend-path PATH @CONNECTDIR@/bin

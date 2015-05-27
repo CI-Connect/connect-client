@@ -3,7 +3,15 @@ status Setting up the Connect module $version
 [ -n "$modlib" ] && mkdir -p "$modlib/connect-client" 2>/dev/null
 [ -n "$modlib" ] && dst="$modlib/connect-client" || dst="$base"
 
-sed -e "s!@CONNECTDIR@!$base!g" \
-	<connect.in >"$dst/$version"
+modules=$(
+	module -t list 2>&1 | grep -v Currently | while read module; do
+		printf "module load $module~"
+	done
+)
+
+sed <connect.in \
+	-e "s!@CONNECTDIR@!$base!g" \
+	-e "s!@MODULES@!$modules!g" \
+	| tr '~' '\012' >"$dst/$version"
 
 echo "Connect modulefile is in $dst/connect-client"
