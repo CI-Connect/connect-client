@@ -162,19 +162,24 @@ To run any of these commands, just enter `connect client [opts] [command name]`.
 
 Now let's create a test script for execution of 10 jobs on the OSG. **Create a working directory (and logfile subdirectory)** that will be synched with the remote host on the OSG Connect server.  
 
-	$ mkdir ~/working-dir
-	$ mkdir ~/working-dir/log
-	$ cd ~/workding-dir
-	$ nano short.sh
+	$ cd
+	$ tutorial quickstart
+	Installing quickstart (osg)...
+	Tutorial files installed in ./tutorial-quickstart.
+	Running setup in ./tutorial-quickstart...
+	$ cd tutorial-quickstart
+	$ cat short.sh
 
 Here is the short.sh script:
 
 	#!/bin/bash
-	# short.sh: a short discovery job
-	printf "Start time: "; /bin/date
-	printf "Job is running on node: "; /bin/hostname
-	printf "Job running as user: "; /usr/bin/id
-	printf "Job is running in directory: "; /bin/pwd
+	# short.sh: a short discovery job 
+	
+	printf "Start time: "; /bin/date 
+	printf "Job is running on node: "; /bin/hostname 
+	printf "Job running as user: "; /usr/bin/id 
+	printf "Job is running in directory: "; /bin/pwd 
+	
 	echo
 	echo "Working hard..."
 	sleep ${1-15}
@@ -187,49 +192,48 @@ Make the script executable.
 
 #### Create the HTCondor submit description file
 
-Create a simple HTCondor submit description file, called tutorial.submit
+This tutorial is part of the greater [ConnectBook], which has many
+illustrations of distributed computation jobs. We'll just sample one
+here to show how to execute tutorials using Connect Client.
+
+The `tutorial02.submit` file is a good foundation. Let's edit it, changing
+it from 25 jobs to just 10:
 
 	$ nano tutorial.submit
 
 The submit file should contain the following:
 
-	# The UNIVERSE defines an execution environment. 
-	universe = vanilla
+	Universe = vanilla 
 
-	# EXECUTABLE is the program your job will run. It's often useful
-	# to create a shell script to "wrap" your actual work.
-	Executable = short.sh
+	Executable = short.sh 
 
-	# ERROR and OUTPUT are the error and output channels from your job
-	# that HTCondor returns from the remote host.
-	Error = log/job.error.$(Cluster).$(Process)
-	Output = log/job.output.$(Cluster).$(Process)
+	Error = log/job.error.$(Cluster)-$(Process) 
+	Output = log/job.output.$(Cluster)-$(Process) 
+	Log = log/job.log.$(Cluster) 
 
-	# The LOG file is where HTCondor places information about your
-	# job's status, success, and resource consumption.
-	Log = log/job.log.$(Cluster).$(Process)
+	Queue 25
 
-	# QUEUE is the "start button" - it launches any jobs that have been
-	# specified thus far.
-	Queue 10
+Change `Queue 25` to `Queue 10`.
 
-Here, `$(Cluster)` labels the submission task (called "Cluster ID") and `$(Process)` labels individual jobs in the task. 
+In an HTCondor submit file, `$(Cluster)` labels the submission task
+(called "Cluster ID") and `$(Process)` labels individual jobs in the
+task. This submit file thus directs logs for each job into files in the
+`log/` directory. You'll see the relevance of this further on.
 
 #### Submit the script
 
-Submit the script using `$ connect client submit`.  You must invoke connect client commands from the working directory.
+Submit the script using `connect client submit tutorial02.submit`.  You
+must invoke connect client commands from the working directory.
 
-	$ cd ~/working-dir/
-	$ connect client submit tutorial.submit
+	$ connect client submit tutorial02.submit
 	Submitting job(s).
 	10 job(s) submitted to cluster 1234.
 
 
-**N.B. If your OSG Connect username differs from your local username, include (````-u <osgconnect-username>)```` in all connect client commands.**
+**N.B. If your OSG Connect username differs from your local username,
+include (`-u <osgconnect-username>)` in all connect client commands.**
 
-Submit the task with `$ connect client submit`.
-
-	$ connect client -u <osgconnect-username> submit tutorial.submit
+	$ connect client -u <osgconnect-username> submit tutorial02.submit
 	Submitting job(s).
 	10 job(s) submitted to cluster 1234.
 
@@ -314,3 +318,4 @@ For this example we see the first job in the submission (1234.0) ran on a free n
 [HTCondor]:http://research.cs.wisc.edu/htcondor/
 [Open Science Grid]:http://www.opensciencegrid.org/
 [signed up for an account]:http://osgconnect.net/signup
+[ConnectBook]:http://osgconnect.net/book
