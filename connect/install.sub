@@ -7,11 +7,14 @@ sed -e "s/@@version@@/$gitver/" \
 
 status "... paramiko (for connect command)"
 
+builddir=${HOME}/.tmp/pip-build
+mkdir -p "${builddir}"
+
 lib=$(python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
 target="$base/lib/$lib"
 pip install \
-	--log=/tmp/argh \
-	-b /tmp/pip-build-$USER \
+	--log="${builddir}/log" \
+	-b "${builddir}" \
 	--target="$target" \
 	pycrypto paramiko
-#rm -rf /tmp/pip-build-$USER
+#rm -rf "${builddir}"
