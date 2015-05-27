@@ -28,6 +28,13 @@ Regardless of which installation path you follow, the first step is the same:
 This obtains a copy of the distribution and sets your shell's working
 directory to that copy.
 
+To install the Connect Client you will need Python 2.x and a compiler.  It
+_might_ be necessary to do something special to get access to these; for
+example:
+
+    $ module load gcc
+    $ module load python/2.7.6
+
 ### Installation by an individual user
 
 Choose a directory to install Connect Client into.  A reasonable
