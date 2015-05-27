@@ -77,7 +77,10 @@ if { [string compare $compiler ""] != 0 } {
 # module dependencies
 #module load python
 #module load git
-@@MODULES@@
+# The following were inferred from the build environment: The
+# person who prepared this module had these modules loaded at
+# time of build.
+@MODULES@
 
 if { [ file isdirectory @CONNECTDIR@/bin ] } {
    prepend-path PATH @CONNECTDIR@/bin
