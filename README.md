@@ -1,7 +1,7 @@
 ## Introduction
 
 Connect Client is the set of programs and files for linking a campus
-research computing cluster to a [CI Connect] instance, such as [OSG Connect], 
+research computing cluster to a [CI Connect] instance (such as [OSG Connect])
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
 example below assumes one has already [signed up for an account] on OSG Connect.
 
@@ -12,13 +12,13 @@ For help or questions please email connect-support@opensciencegrid.org.
 
 ## Installation
 
+Connect Client can be installed by an individual user or by an HPC site
+administrator for system-wide usage.
 
-Connect Client can be installed by an individual user or by the HPC administrator for 
-system-wide usage.
 
 ### Obtaining the Connect Client distribution
 
-Regardless of which installation path you follow, the first step is the same:
+Regardless of whether you are a user or an admin, the first step is the same:
 
     $ ssh login.mycluster.edu            # [your cluster site here]
     $ module load git                    # [if needed]
@@ -26,31 +26,45 @@ Regardless of which installation path you follow, the first step is the same:
     $ cd connect-client
 
 This obtains a copy of the distribution and sets your shell's working
-directory to that copy.
+directory to that copy. *The --recursive option is important!*
 
-To install the Connect Client you will need Python 2.x and a compiler.  It
-_might_ be necessary to do something special to get access to these; for
-example:
+To install the Connect Client you will need Python 2.x and a compiler.  Python
+3 is not currently supported. It _might_ be necessary to do something special
+to get access to these; for example:
 
     $ module load gcc
     $ module load python/2.7.6
+
 
 ### Installation by an individual user
 
 Choose a directory to install Connect Client into.  A reasonable
 choice is `~/software/connect`.  Also choose a directory for the
-module descrption information.  A reasonable choice for this on
-`~/privatemodules`.  Then run `./install.sh` with these two directories
-and a version number (e.g. 0.2):
+module description information.  A reasonable choice for this is
+`~/privatemodules`; for many sites, this is where the `use.own`
+module looks for personal modules.
+
+Then run `./install.sh` with these two directories and a version
+number (e.g. 0.2):
 
     $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 
 ### Installation by a site administrator
 
-Typically this would be quite similar, only system paths would be used, for example:
+Typically this would be quite similar, only system paths would be used.
+For example:
 
     $ ./install.sh -site /software/connect-client /software/modulefiles 0.2
+
+Note the `-site` option.
+
+
+N.B. Any modules that you have loaded at the time you install Connect
+Client will be loaded by the Connect Client modulefile _each time you
+load the `connect-client` module_. This ensures that dependencies are
+handled internally. To reduce unnecessary module loads, be sure not to
+load unnecessary modules before installing.
 
 
 ## Setting up Connect Client
@@ -62,7 +76,7 @@ any other software module.
 
     $ module load connect-client
 
-For user installations with modules, you'll need to load the `use.own` module first:
+For user installations with `module`, you'll need to load the `use.own` module first:
 
     $ module load use.own
     $ module load connect-client
@@ -73,12 +87,17 @@ For user installations with modules, you'll need to load the `use.own` module fi
 If your site does not have environment modules, install the package as above and modify the $PATH:
 
     $ export PATH=~/software/connect-client/bin:$PATH
-    
+
+
+### Other
+
+We expect to provide an RPM-based installation in the near future.
+
 
 ### First-time setup
 
-Each user must perform this setup step once before using
-OSG Connect the first time.  
+Each user must perform this setup step once before using Connect Client
+for the first time.  
 
     $ connect client setup
     <enter your OSG Connect username and password when prompted>
@@ -94,8 +113,8 @@ added. Test the setup with:
 To update your connect client installation, it's necessary to re-install.
 There are two paths. You can update using git:
 
-	$ git pull
-    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
+    $ git pull
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2.1
 
 Alternatively, you can delete your installation directory and restart
 these instructions from the beginning.
@@ -103,14 +122,14 @@ these instructions from the beginning.
 If you need to revoke your access to the Connect server, either permanently
 or for testing purposes:
 
-	$ connect client revoke
+    $ connect client revoke
 
 
 ## User Guide 
 
 ### Connect Client commands
 
-For a list of available commands, enter ```$ connect client``` from the command line:
+For a list of available commands, enter `connect client` from the command line:
 
 	$ connect client
        	usage: 	connect client [opts] <subcommand> [args]
@@ -136,7 +155,7 @@ For a list of available commands, enter ```$ connect client``` from the command 
                 -v|--verbose               show additional information
 
 	
-To run any of these commands, just enter ````connect client [opts] [command name]````.
+To run any of these commands, just enter `connect client [opts] [command name]`.
 
 
 ### Example submission
