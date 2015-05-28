@@ -707,7 +707,7 @@ class main(object):
 		try:
 			driver = getattr(self, driver)
 		except AttributeError:
-			self.error('"%s" is not implemented', driver)
+			self.error('"%s" is not not a valid subcommand', subcmd)
 			return 10
 
 		try:
