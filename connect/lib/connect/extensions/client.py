@@ -113,9 +113,9 @@ class ClientSession(object):
 
 		err = self.connect()
 		if err:
-			raise SSHError, 'Remote authentication failed'
+			raise SSHError, 'Client authentication failed'
 		if not self.ssh:
-			raise SSHError, 'Remote authentication failed'
+			raise SSHError, 'Client authentication failed'
 
 		self.transport = self.ssh.get_transport()
 
@@ -774,7 +774,7 @@ class main(object):
 		channel.rio(stdin=False)
 		channel.close()
 
-		self.notice('Ongoing remote access has been authorized at %s.',
+		self.notice('Ongoing client access has been authorized at %s.',
 		            self.server)
 		self.notice('Use "%s test" to verify access.', self.local)
 		return 0
