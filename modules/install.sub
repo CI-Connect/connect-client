@@ -4,7 +4,7 @@ status Setting up the Connect module $version
 [ -n "$modlib" ] && dst="$modlib/connect-client" || dst="$base"
 
 modules=$(
-	module -t list 2>&1 | grep -v Currently | while read module; do
+	module list -t 2>&1 | grep -v Currently | while read module; do
 		printf "module load $module~"
 	done
 )
