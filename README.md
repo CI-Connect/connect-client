@@ -27,9 +27,9 @@ Regardless of whether you are a user or an admin, the first step is the same:
 This obtains a copy of the distribution and sets your shell's working
 directory to that copy. *The --recursive option is important!*
 
-To install the Connect Client you will need Python 2.x and a compiler.  Python
-3 is not currently supported. It _might_ be necessary to do something special
-to get access to these; for example:
+To install the Connect Client you will need Python 2.x and a C compiler.
+*Python 3 is not supported.* At some sites, `module load python` will load
+Python 3, so it _might_ be necessary to load Python 2 explicitly. For example:
 
     $ module load gcc
     $ module load python/2.7.6
