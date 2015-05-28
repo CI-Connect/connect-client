@@ -161,7 +161,9 @@ To run any of these commands, just enter `connect client [opts] [command name]`.
 
 ### Example submission
 
-Now let's create a test script for execution of 10 jobs on the OSG. **Create a working directory (and logfile subdirectory)** that will be synched with the remote host on the OSG Connect server.  
+Now let's create a test script for execution of 10 jobs on the OSG.
+**Create a working directory (and logfile subdirectory)** that will be
+synched with the remote host on the OSG Connect server.  
 
 	$ cd
 	$ tutorial quickstart
@@ -241,9 +243,10 @@ The `notice` lines indicate that files local to your client were transferred to 
 server in order to submit the job.
 
 **N.B. If your OSG Connect username differs from your local username,
-include (`-u <osgconnect-username>)` in all connect client commands.**
+set `CONNECT_CLIENT_USER` in your environment.**
 
-	$ connect client -u <osgconnect-username> submit tutorial02.submit
+	$ export CONNECT_CLIENT_USER=osgconnect-username
+	$ connect client submit tutorial02.submit
 	notice: sending README.md as tutorial-quickstart/README.md...
 	notice: sending short.sh as tutorial-quickstart/short.sh...
 	notice: sending tutorial01.submit as tutorial-quickstart/tutorial01.submit...
@@ -273,10 +276,6 @@ The **connect client q** command tells the status of submitted jobs:
 	1234.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
 
 	10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
-
-or:
-
-	$ connect client -u <osgconnect-username> q
 
 
 #### Job history
