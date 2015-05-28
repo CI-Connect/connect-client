@@ -50,7 +50,7 @@ SimpleCommandMap = {
 	'status': ['condor_status'],
 }
 
-DEFAULT_REMOTE_SERVER = 'connect-client.osgconnect.net'
+DEFAULT_CLIENT_SERVER = 'connect-client.osgconnect.net'
 
 class GeneralException(Exception):
 	def __iadd__(self, other):
@@ -299,7 +299,7 @@ class ClientSession(object):
 
 
 class main(object):
-	server = os.environ.get('CONNECT_REMOTE_SERVER', DEFAULT_REMOTE_SERVER)
+	server = os.environ.get('CONNECT_CLIENT_SERVER', DEFAULT_CLIENT_SERVER)
 	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
 
 	@staticmethod
@@ -329,7 +329,7 @@ class main(object):
 		self.mode = 'client'
 		self.keybits = 2048
 		self.session = None
-		self.user = os.environ.get('CONNECT_REMOTE_USER', getpass.getuser())
+		self.user = os.environ.get('CONNECT_CLIENT_USER', getpass.getuser())
 		self.tty = None
 		self.isdebug = False
 		self.idletimeout = 5 * 60
