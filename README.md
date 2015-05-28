@@ -23,7 +23,6 @@ Regardless of whether you are a user or an admin, the first step is the same:
     $ ssh login.mycluster.edu            # [your cluster site here]
     $ module load git                    # [if needed]
     $ git clone --recursive https://github.com/CI-Connect/connect-client
-    $ cd connect-client
 
 This obtains a copy of the distribution and sets your shell's working
 directory to that copy. *The --recursive option is important!*
@@ -47,6 +46,7 @@ module looks for personal modules.
 Then run `./install.sh` with these two directories and a version
 number (e.g. 0.2):
 
+    $ cd connect-client
     $ ./install.sh ~/software/connect-client ~/privatemodules 0.2
 
 
@@ -55,6 +55,7 @@ number (e.g. 0.2):
 Typically this would be quite similar, only system paths would be used.
 For example:
 
+    $ cd connect-client
     $ ./install.sh -site /software/connect-client /software/modulefiles 0.2
 
 Note the `-site` option.
