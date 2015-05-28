@@ -329,7 +329,7 @@ class main(object):
 		self.mode = 'client'
 		self.keybits = 2048
 		self.session = None
-		self.user = getpass.getuser()
+		self.user = os.environ.get('CONNECT_REMOTE_USER', getpass.getuser())
 		self.tty = None
 		self.isdebug = False
 		self.idletimeout = 5 * 60
