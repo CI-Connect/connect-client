@@ -193,7 +193,7 @@ Make the script executable.
 #### Create the HTCondor submit description file
 
 This tutorial is part of the greater [ConnectBook], which has many
-illustrations of distributed computation jobs. We'll just sample one
+illustrations of distributed computation jobs. We'll sample just one
 here to show how to execute tutorials using Connect Client.
 
 The `tutorial02.submit` file is a good foundation. Let's edit it, changing
@@ -213,7 +213,8 @@ The submit file should contain the following:
 
 	Queue 25
 
-Change `Queue 25` to `Queue 10`.
+Change `Queue 25` to `Queue 10`. This will create 10 instances of your
+`short.sh` job.
 
 In an HTCondor submit file, `$(Cluster)` labels the submission task
 (called "Cluster ID") and `$(Process)` labels individual jobs in the
@@ -226,14 +227,28 @@ Submit the script using `connect client submit tutorial02.submit`.  You
 must invoke connect client commands from the working directory.
 
 	$ connect client submit tutorial02.submit
+	notice: sending README.md as tutorial-quickstart/README.md...
+	notice: sending short.sh as tutorial-quickstart/short.sh...
+	notice: sending tutorial01.submit as tutorial-quickstart/tutorial01.submit...
+	notice: sending tutorial02.submit as tutorial-quickstart/tutorial02.submit...
+	notice: sending tutorial03.submit as tutorial-quickstart/tutorial03.submit...
+	notice: sending log/.gitignore as tutorial-quickstart/log/.gitignore...
 	Submitting job(s).
 	10 job(s) submitted to cluster 1234.
 
+The `notice` lines indicate that files local to your client were transferred to the
+server in order to submit the job.
 
 **N.B. If your OSG Connect username differs from your local username,
 include (`-u <osgconnect-username>)` in all connect client commands.**
 
 	$ connect client -u <osgconnect-username> submit tutorial02.submit
+	notice: sending README.md as tutorial-quickstart/README.md...
+	notice: sending short.sh as tutorial-quickstart/short.sh...
+	notice: sending tutorial01.submit as tutorial-quickstart/tutorial01.submit...
+	notice: sending tutorial02.submit as tutorial-quickstart/tutorial02.submit...
+	notice: sending tutorial03.submit as tutorial-quickstart/tutorial03.submit...
+	notice: sending log/.gitignore as tutorial-quickstart/log/.gitignore...
 	Submitting job(s).
 	10 job(s) submitted to cluster 1234.
 
@@ -257,7 +272,12 @@ The **connect client q** command tells the status of submitted jobs:
 	1234.9   username             4/29 16:42   0+00:00:49 R  0   0.0  short.sh
 
 	10 jobs; 0 completed, 0 removed, 3 idle, 7 running, 0 held, 0 suspended
-	
+
+or:
+
+	$ connect client -u <osgconnect-username> q
+
+
 #### Job history
 
 Once your jobs have finished, you can get information about its execution
@@ -292,13 +312,14 @@ To retrieve job outputs from the connect server, use **connect client pull**.
 
 Once your jobs have finished, you can look at the files that HTCondor has
 returned to the working directory. If everything was successful, it
-should have returned in the `~/working-dir/log` directory:
+should have returned in the `~/tutorial-quickstart/log` directory:
 
   * log files from Condor for the job cluster:  `job.log.$(Cluster).$(Process)`
   * output files for each job's output: `job.output.$(Cluster).$(Process)`
   * error files for each job's errors: `job.error.$(Cluster).$(Process)`
 
-where `$(Cluster)` will be a large integer number for this specific submission, and `$(Process)` will number 0...10.
+where `$(Cluster)` will be an integer number (typically a large number)
+for this specific submission, and `$(Process)` will number 0...9.
 
 Read one of the output files. It should look something like this:
 
