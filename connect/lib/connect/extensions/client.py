@@ -308,6 +308,10 @@ class Profile(object):
 		for k, v in kwargs.items():
 			setattr(self, k, v)
 
+	def __str__(self):
+		return '[%s: user=%s, server=%s]' % \
+		       (self.name, self.user, self.server)
+
 
 class main(object):
 	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
@@ -513,12 +517,21 @@ class main(object):
 
 
 	def platforminfo(self):
-		os.system('uname -a')
-		os.system('uptime')
+		print '| Connect client version:', version
+		print '| Python version:', sys.version.replace('\n', '\n|   ')
+		print '| Prefix:', sys.prefix
+		print '| User profile:', self.profile
+		print
+		print 'System:'
+
+		def sh(cmd):
+			fp = os.popen(cmd, 'r')
+			for line in fp:
+				sys.stdout.write('| ' + line)
+			fp.close()
+		sh('uname -a')
+		sh('uptime')
 		sys.stdout.flush()
-		print 'Connect client version:', version
-		print 'Python version:', sys.version
-		print 'Prefix:', sys.prefix
 
 
 	def disabled_c_prototest(self, args):
