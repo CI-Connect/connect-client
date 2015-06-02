@@ -1,3 +1,6 @@
+# used by connect-client, a repo that includes connect-command
+# as a submodule.
+
 status ... connect command
 copyfiles . "$base/."
 gitver=$(git describe --abbrev=6 --dirty --always --tags)
