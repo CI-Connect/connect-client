@@ -30,6 +30,7 @@ import urllib
 import stat
 import signal
 import errno
+import stat
 
 version = '@@version@@'
 
@@ -515,6 +516,15 @@ class main(object):
 
 
 	def push(self, channel, local=None):
+		def awfulrecursivemkdir(sftp, dir):
+			rel = '.'
+			for part in dir.split('/'):
+				rel = os.path.join(rel, part)
+				try:
+					rs = sftp.stat(rel)
+				except:
+					sftp.mkdir(rel)
+
 		if local is None:
 			local = os.getcwd()
 		if self.remotedir is None:
@@ -526,7 +536,7 @@ class main(object):
 		basedir = os.getcwd()
 		os.chdir(local)
 		for root, dirs, files in os.walk('.'):
-			for file in files:
+			for file in files + dirs:
 				fn = os.path.join(root, file)
 				fn = cleanfn(fn)
 				# Initiate a push
@@ -537,21 +547,16 @@ class main(object):
 				if rcode == codes.YES:
 					# send
 					rfn = os.path.join(self.remotedir, fn)
-					# awful recursive mkdir
-					dir = os.path.dirname(rfn)
-					try:
-						rel = '.'
-						for part in dir.split('/'):
-							rel = os.path.join(rel, part)
-							try:
-								rs = sftp.stat(rel)
-							except:
-								sftp.mkdir(rel)
-					except:
-						raise
-					self.notice('sending %s as %s...', fn, rfn)
-					sftp.put(fn, rfn)
+					awfulrecursivemkdir(sftp, os.path.dirname(rfn))
+					if stat.S_ISDIR(s.st_mode):
+						sftp.mkdir(rfn)
+						self.notice('sending %s/ as %s/...', fn, rfn)
+					else:
+						sftp.put(fn, rfn)
+						self.notice('sending %s as %s...', fn, rfn)
 					sftp.utime(rfn, (s.st_atime, s.st_mtime))
+					sftp.chmod(rfn, s.st_mode)
+					# do we need this? doesn't utime() handle it?
 					channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
 
 		os.chdir(basedir)
