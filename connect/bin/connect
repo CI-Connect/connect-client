@@ -22,21 +22,12 @@ p = os.path.basename(sys.argv[0])
 d = os.path.dirname(sys.argv[0]) + '/'
 Libraries = [
 	'/etc/ciconnect',
-	os.path.expanduser('~/lib/' + p),
+	os.path.join('~/lib', p),
 	d.replace('/bin/', '/lib/'),
 	d.replace('/bin/', '/etc/'),
 	sys.argv[0].replace('/bin/', '/lib/'),
 	os.path.join('/usr/lib', p),
 ]
-
-Excludes = [os.path.join(x, 'exclude') for x in Libraries]
-Exposes = [os.path.join(x, 'expose') for x in Libraries]
-Extensions = [os.path.join(x, 'extensions') for x in Libraries]
-Configs = [os.path.join(x, 'config.ini') for x in Libraries]
-
-# Add Libraries paths to python search path
-pylib = 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])
-sys.path = [os.path.join(_, pylib) for _ in Libraries] + sys.path
 
 
 class ConnectException(Exception): pass
@@ -149,6 +140,7 @@ class commandtype(object):
 			dirs = cls.splitpath(kwargs['path'])
 		else:
 			dirs = cls.splitpath()
+		dirs = [os.path.expanduser(dir) for dir in dirs]
 
 		def pfxfilter(file):
 			for prefix in prefixes:
@@ -396,6 +388,7 @@ class shexttype(commandtype):
 class Main(object):
 	def __init__(self):
 		self.arg0 = os.path.basename(sys.argv[0])
+		self.libraries = Libraries
 
 	def error(self, *args):
 		print >>sys.stderr, self.arg0 + ': ' + ' '.join(args)
@@ -511,25 +504,26 @@ class Main(object):
 				if line == '' or line.startswith('#'):
 					continue
 				yield line
+
 		def readfiles(filelist):
 			result = []
 			for fn in filelist:
 				try:
-					fp = open(fn, 'r')
+					fp = open(os.path.expanduser(fn), 'r')
 				except IOError:
 					continue
 				result.extend(lines(fp))
 				fp.close()
 			return result
 
-		excludes = readfiles(Excludes)
-		exposes = readfiles(Exposes)
+		excludes = readfiles(self.excludes)
+		exposes = readfiles(self.exposes)
 
 		builtin_ns = dict([(k, getattr(self, k)) for k in dir(self)])
 		generators = [
 			# once we have Matcher(), we should discard path=
-			pyexttype.discover(self.config, dirs=Extensions),
-			shexttype.discover(self.config, dirs=Extensions),
+			pyexttype.discover(self.config, dirs=self.extensions),
+			shexttype.discover(self.config, dirs=self.extensions),
 			condortype.discover(self.config, prefixes=['condor_'], path='/usr/bin:/usr/local/bin:' + os.path.expanduser('~/bin')),
 			# builtins come last so that extensions can supersede
 			builtintype.discover(self.config, namespace=builtin_ns),
@@ -554,26 +548,55 @@ class Main(object):
 		self.cmds = []
 		self.cmddict = {}
 
+		# We'll read options -before- config, since options may
+		# affect where we find configs.
+		try:
+			opts, args = getopt.getopt(args, 'h', ['help', 'nolocal'])
+		except getopt.GetoptError, e:
+			self.error(str(e))
+			return 10
+
+		# In particular we want to check for this option. Other
+		# options can/should be handled later.
+		if '--nolocal' in [x[0] for x in opts]:
+			self.libraries = [x for x in self.libraries if not x.startswith('~/')]
+
+		# Add libraries paths to python search path
+		pylib = 'python%d.%d/site-packages' % \
+		        (sys.version_info[0], sys.version_info[1])
+		sys.path = [os.path.join(_, pylib) for _ in Libraries] + sys.path
+
+		self.excludes = [os.path.join(x, 'exclude') for x in self.libraries]
+		self.exposes = [os.path.join(x, 'expose') for x in self.libraries]
+		self.extensions = [os.path.join(x, 'extensions') for x in self.libraries]
+		self.configs = [os.path.join(x, 'config.ini') for x in self.libraries]
+
 		self.config = ConnectConfig()
 		fp = StringIO.StringIO(DefaultConfig)
 		self.config.readfp(fp)
 		fp.close()
-		for path in Configs:
-			self.config.read(path)
 
+		# Read all possible configuration files
+		for path in self.configs:
+			self.config.read(os.path.expanduser(path))
+
+		# If connect.client = true, we have a very restricted subset
+		# of functionality.
+		#
+		# For now this will mean that ONLY the client subcommand is
+		# available.  Later it will also mean that the client subcommand
+		# is _implied_.
 		self.cmds, self.cmddict = self.discovercommands()
 		self.cmds.sort(lambda a, b: cmp(a.name, b.name))
+		if self.config.getboolean('connect', 'client'):
+			self.cmds = [cmd for cmd in self.cmds if cmd.name == 'client']
+			# (But we will sneakily not delete the cmddict entries)
 
 		# Check usage
 		if not args:
 			return self.usage()
 
-		try:
-			opts, args = getopt.getopt(args, 'h', ['help'])
-		except getopt.GetoptError, e:
-			self.error(str(e))
-			return 10
-
+		# Resume looking at global options
 		for opt, arg in opts:
 			if opt in ('-h', '--help'):
 				self.usage(*args)
