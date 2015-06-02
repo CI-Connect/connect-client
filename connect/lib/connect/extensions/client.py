@@ -38,6 +38,7 @@ def help():
 	m = main()
 	return m._help()
 
+
 # These are simple, transparent commands.  Given 'a': ['b', 'c'],
 # 'connect client a' is equivalent to 'ssh server b c'.
 SimpleCommandMap = {
@@ -299,6 +300,15 @@ class ClientSession(object):
 		return paramiko.SFTPClient.from_transport(self.transport)
 
 
+class Profile(object):
+	def __init__(self, **kwargs):
+		self.name = None
+		self.user = None
+		self.server = None
+		for k, v in kwargs.items():
+			setattr(self, k, v)
+
+
 class main(object):
 	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
 
@@ -329,13 +339,51 @@ class main(object):
 		self.mode = 'client'
 		self.keybits = 2048
 		self.session = None
-		self.user = os.environ.get('CONNECT_CLIENT_USER', getpass.getuser())
-		self.server = os.environ.get('CONNECT_CLIENT_SERVER', DEFAULT_CLIENT_SERVER)
+
 		self.tty = None
 		self.isdebug = False
 		self.idletimeout = 5 * 60
 		self.remotedir = None
 		self.verbose = False
+
+		# We'll put all the user/server contextual information
+		# into a profile object:
+		self.profile = Profile(name='builtin', server=None, user=None)
+
+		# Go through some options for figuring out desired profile.
+		# These are in PRIORITY ORDER. The first match wins.
+		if self.profile.server is None:
+			self.profile.server = os.environ.get('CONNECT_CLIENT_SERVER', None)
+
+		if self.profile.user is None:
+			self.profile.user = os.environ.get('CONNECT_CLIENT_USER', None)
+
+		try:
+			self.profile.name = config.get('client', 'profile')
+			if self.profile.server is None:
+				self.profile.server = config.get('clientprofiles',
+				                                 self.profile.name + '.server')
+			if self.profile.user is None:
+				self.profile.user = config.get('clientprofiles',
+				                               self.profile.name + '.user')
+		except:
+			# if anything went wrong, that's ok - we'll try the next thing
+			pass
+
+		if self.profile.server and '@' in self.profile.server:
+			user, server = self.profile.server.split('@', 1)
+			self.profile.server = server
+			if self.profile.user is None:
+				self.profile.user = user
+
+		if self.profile.server is None:
+			self.profile.server = DEFAULT_CLIENT_SERVER
+
+		if self.profile.user is None:
+			self.profile.user = getpass.getuser()
+
+		# end profile stuff
+
 
 		# add methods dynamically from self.simple[]
 		for k, v in self.simple.items():
@@ -637,6 +685,7 @@ class main(object):
 
 
 	def usage(self):
+		self.output('This is Connect Client v%s.' % version)
 		for line in self._help():
 			if line.startswith('@ '):
 				line = 'usage: %s %s' % (self.local, line[2:])
@@ -664,9 +713,9 @@ class main(object):
 	def __call__(self, args):
 		args = list(args)
 		try:
-			r = getopt.getopt(args, 'u:ds:r:v',
+			r = getopt.getopt(args, 'u:ds:r:vh',
 			                  ['server-mode', 'user=', 'debug', 'server=',
-			                   'remote=', 'repo=', 'verbose'])
+			                   'remote=', 'repo=', 'verbose', 'help'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
@@ -693,6 +742,10 @@ class main(object):
 			if opt in ('-v', '--verbose'):
 				self.verbose = True
 
+			if opt in ('-h', '--help'):
+				self.usage()
+				return 0
+
 		if len(self.args) == 0:
 			self.usage()
 			return 2
@@ -712,7 +765,8 @@ class main(object):
 		try:
 			driver = getattr(self, driver)
 		except AttributeError:
-			self.error('"%s" is not not a valid subcommand', subcmd)
+			self.error('"%s" is not a valid subcommand. (Try %s -h.)',
+			           subcmd, self.local)
 			return 10
 
 		try:
