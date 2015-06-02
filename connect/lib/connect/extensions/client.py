@@ -718,10 +718,6 @@ class main(object):
 		yield '    -r|--remote directory      set connect server directory name'
 		yield '    -v|--verbose               show additional information'
 
-		if self.verbose:
-			self.output('\nAdditional information:')
-			self.platforminfo()
-
 
 	def __call__(self, args):
 		args = list(args)
@@ -758,6 +754,11 @@ class main(object):
 			if opt in ('-h', '--help'):
 				self.usage()
 				return 0
+
+		if self.verbose:
+			self.output('\nAdditional information:')
+			self.platforminfo()
+			print
 
 		if len(self.args) == 0:
 			self.usage()
