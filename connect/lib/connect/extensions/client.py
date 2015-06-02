@@ -300,7 +300,6 @@ class ClientSession(object):
 
 
 class main(object):
-	server = os.environ.get('CONNECT_CLIENT_SERVER', DEFAULT_CLIENT_SERVER)
 	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
 
 	@staticmethod
@@ -331,6 +330,7 @@ class main(object):
 		self.keybits = 2048
 		self.session = None
 		self.user = os.environ.get('CONNECT_CLIENT_USER', getpass.getuser())
+		self.server = os.environ.get('CONNECT_CLIENT_SERVER', DEFAULT_CLIENT_SERVER)
 		self.tty = None
 		self.isdebug = False
 		self.idletimeout = 5 * 60
@@ -403,7 +403,7 @@ class main(object):
 
 
 	def makeident(self):
-		return self.user + '@' + self.hostname()
+		return self.user + '@' + self.server
 
 
 	def ssh_keygen(self, ident=None, comment=None):
@@ -728,12 +728,13 @@ class main(object):
 
 
 	def c_setup(self, args):
-		'''[--replace-keys] [servername]'''
+		'''[--replace-keys] [--update-keys] [servername]'''
 
 		overwrite = False
+		update = False
 
 		try:
-			opts, args = getopt.getopt(args, '', ['replace-keys'])
+			opts, args = getopt.getopt(args, '', ['replace-keys', 'update-keys'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
@@ -741,6 +742,8 @@ class main(object):
 		for opt, arg in opts:
 			if opt in ('--replace-keys',):
 				overwrite = True
+			if opt in ('--update-keys',):
+				update = True
 
 		if args:
 			self.server = args.pop(0)
@@ -749,6 +752,7 @@ class main(object):
 		ident, key, pub = self.ssh_keygen()
 		keyfile = self.keyfile()
 		pubfile = keyfile + '.pub'
+
 		if os.path.exists(keyfile) and os.path.exists(pubfile) and not overwrite:
 			self.notice('You already have a setup key. (You may wish to run')
 			self.notice('"%s setup --replace-keys" .)', self.local)
@@ -766,6 +770,17 @@ class main(object):
 			self.error(e)
 			self.error('(You may wish to run "%s setup --replace-keys" .)', self.local)
 			return 20
+
+		if update:
+			oldkeyfile = self.keyfile().replace(self.server, self.hostname())
+			oldpubfile = oldkeyfile + '.pub'
+			if os.path.exists(oldkeyfile) and os.path.exists(oldpubfile):
+				os.rename(oldkeyfile, keyfile)
+				os.rename(oldpubfile, pubfile)
+				self.output('Keys updated.')
+				return 0
+			self.error('No keys could be updated.')
+			return 21
 
 		# expressly do not use a keyfile (prompt instead)
 		try:
