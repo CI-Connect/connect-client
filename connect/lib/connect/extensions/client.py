@@ -622,8 +622,11 @@ class main(object):
 							sftp.mkdir(rfn)
 							pass
 					else:
-						self.notice('sending %s as %s...', fn, rfn)
-						sftp.put(fn, rfn)
+						try:
+							self.notice('sending %s as %s...', fn, rfn)
+							sftp.put(fn, rfn)
+						except Exception, e:
+							self.notice('while sending %s: %s', rfn, str(e))
 					sftp.utime(rfn, (s.st_atime, s.st_mtime))
 					sftp.chmod(rfn, s.st_mode)
 					# do we need this? doesn't utime() handle it?
