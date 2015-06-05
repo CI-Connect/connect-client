@@ -107,9 +107,11 @@ class ClientSession(object):
 		self.user = user
 		self.keyfile = keyfile
 		self.password = password
+		self.isdebug = False
 
 		if debug:
 			self.debug = debug
+			self.isdebug = True
 		else:
 			self.debug = lambda *args: True
 
@@ -191,7 +193,10 @@ class ClientSession(object):
 
 
 	def handshake(self):
-		channel = self.rcmd(['server'], server=True)
+		if self.isdebug:
+			channel = self.rcmd(['server', '-debug'], server=True)
+		else:
+			channel = self.rcmd(['server'], server=True)
 		banner = channel.pgetline()
 		if not banner.startswith('connect client protocol'):
 			channel.close()
@@ -319,8 +324,8 @@ class main(object):
 	@staticmethod
 	def simpleremote(primaryArgs):
 		def _(self, args):
-			session = ClientSession(self.server,
-			                        user=self.user,
+			session = ClientSession(self.profile.server,
+			                        user=self.profile.user,
 			                        keyfile=self.keyfile(),
 			                        password='nopassword',
 			                        debug=self.debug)
@@ -344,7 +349,7 @@ class main(object):
 		self.keybits = 2048
 		self.session = None
 
-		self.tty = None
+		self.debug = lambda *args: True
 		self.isdebug = False
 		self.idletimeout = 5 * 60
 		self.remotedir = None
@@ -455,7 +460,7 @@ class main(object):
 
 
 	def makeident(self):
-		return self.user + '@' + self.server
+		return self.profile.user + '@' + self.profile.server
 
 
 	def ssh_keygen(self, ident=None, comment=None):
@@ -508,11 +513,11 @@ class main(object):
 
 	def sessionsetup(self):
 		try:
-			return ClientSession(self.server, user=self.user, keyfile=self.keyfile(),
+			return ClientSession(self.profile.server, user=self.profile.user, keyfile=self.keyfile(),
 			                     password='nopassword', debug=self.debug)
 		except SSHError, e:
 			e.bubble(
-			    'You have no access to %s.' % self.server,
+			    'You have no access to %s.' % self.profile.server,
 			)
 
 
@@ -602,7 +607,7 @@ class main(object):
 				fn = cleanfn(fn)
 				# Initiate a push
 				s = os.lstat(fn)
-				channel.pcmd('want %s mtime=%d size=%d' % (self.fnencode(fn), s.st_mtime, s.st_size))
+				channel.pcmd('want %s mtime=%d size=%d mode=0%04o' % (self.fnencode(fn), s.st_mtime, s.st_size, s.st_mode & 0777))
 				args = channel.pgetline(split=True)
 				rcode = int(args.pop(0))
 				if rcode == codes.YES:
@@ -610,11 +615,15 @@ class main(object):
 					rfn = os.path.join(self.remotedir, fn)
 					awfulrecursivemkdir(sftp, os.path.dirname(rfn))
 					if stat.S_ISDIR(s.st_mode):
-						sftp.mkdir(rfn)
-						self.notice('sending %s/ as %s/...', fn, rfn)
+						try:
+							self.notice('sending %s/ as %s/...', fn, rfn)
+							rs = sftp.stat(rfn)
+						except:
+							sftp.mkdir(rfn)
+							pass
 					else:
-						sftp.put(fn, rfn)
 						self.notice('sending %s as %s...', fn, rfn)
+						sftp.put(fn, rfn)
 					sftp.utime(rfn, (s.st_atime, s.st_mtime))
 					sftp.chmod(rfn, s.st_mode)
 					# do we need this? doesn't utime() handle it?
@@ -657,9 +666,7 @@ class main(object):
 
 	def sreply(self, code, *args):
 		msg = str(code) + ' ' + ' '.join(args)
-		if self.tty:
-			self.tty.write('server: >> ' + msg + '\n')
-			self.tty.flush()
+		self.debug('server: >> ' + msg)
 		sys.stdout.write(msg + '\n')
 		sys.stdout.flush()
 
@@ -684,6 +691,9 @@ class main(object):
 			return True
 
 		if 'mtime' in attrs and s.st_mtime < int(attrs['mtime']):
+			return True
+
+		if 'mode' in attrs and s.st_mode != int(attrs['mode'], base=8):
 			return True
 
 		return False
@@ -736,14 +746,14 @@ class main(object):
 				self.mode = 'server'
 
 			if opt in ('-u', '--user'):
-				self.user = arg
+				self.profile.user = arg
 
 			if opt in ('-d', '--debug'):
 				self.debug = self._debug
 				self.isdebug = True
 
 			if opt in ('-s', '--server'):
-				self.server = arg
+				self.profile.server = arg
 
 			if opt in ('-r', '--remote', '--repo'):
 				self.remotedir = arg
@@ -814,7 +824,7 @@ class main(object):
 				update = True
 
 		if args:
-			self.server = args.pop(0)
+			self.profile.server = args.pop(0)
 
 		self.ensure_dir(self.path('.ssh/connect'))
 		ident, key, pub = self.ssh_keygen()
@@ -840,7 +850,7 @@ class main(object):
 			return 20
 
 		if update:
-			oldkeyfile = self.keyfile().replace(self.server, self.hostname())
+			oldkeyfile = self.keyfile().replace(self.profile.server, self.hostname())
 			oldpubfile = oldkeyfile + '.pub'
 			if os.path.exists(oldkeyfile) and os.path.exists(oldpubfile):
 				os.rename(oldkeyfile, keyfile)
@@ -852,7 +862,7 @@ class main(object):
 
 		# expressly do not use a keyfile (prompt instead)
 		try:
-			session = ClientSession(self.server, user=self.user, keyfile=None, debug=self.debug)
+			session = ClientSession(self.profile.server, user=self.profile.user, keyfile=None, debug=self.debug)
 		except SSHError, e:
 			raise GeneralException, e.args
 
@@ -863,7 +873,7 @@ class main(object):
 		channel.close()
 
 		self.notice('Ongoing client access has been authorized at %s.',
-		            self.server)
+		            self.profile.server)
 		self.notice('Use "%s test" to verify access.', self.local)
 		return 0
 
@@ -893,8 +903,24 @@ class main(object):
 		return 0
 
 
+	def c_echo(self, args):
+		''' '''
+
+		session = self.sessionsetup()
+		channel = session.rcmd(['echo'], server=True, remotedir=self.remotedir)
+		# we will do an echo test here later. For now, just echo at both ends.
+		while True:
+			buf = channel.recv(1024)
+			if len(buf) <= 0:
+				break
+			sys.stdout.write(buf)
+			sys.stdout.flush()
+
+		return 0
+
+
 	def c_test(self, args):
-		'''[servername]'''
+		''' '''
 
 		if self.verbose:
 			_verbose = 'verbose'
@@ -904,9 +930,6 @@ class main(object):
 		# XXX TODO does not correctly detect when you can log in remotely,
 		# but the client command is missing.
 		code = str(random.randint(0, 1000))
-
-		if args:
-			self.server = args.pop(0)
 
 		session = self.sessionsetup()
 		channel = session.rcmd(['test', code, _verbose], server=True, remotedir=self.remotedir)
@@ -919,15 +942,27 @@ class main(object):
 		test = [x.strip() for x in test.strip().split('\n')]
 		if code != test[0]:
 			self.output('You have no access to %s. ' +
-			            'Run "%s setup" to begin.', self.server, self.local)
+			            'Run "%s setup" to begin.', self.profile.server, self.local)
 			return 10
 
-		self.output('Success! Your client access to %s is working.', self.server)
+		self.output('Success! Your client access to %s is working.', self.profile.server)
 		if len(test) > 1:
 			self.output('\nAdditional information:')
 			for item in test[1:]:
 				self.output(' * ' + item)
 		return 0
+
+
+	def s_echo(self, args):
+		'''Echo everything in a loop.'''
+		sys.stdout.write('Echo mode.\n')
+		sys.stdout.flush()
+		while True:
+			buf = sys.stdin.read(1024)
+			if len(buf) <= 0:
+				break
+			sys.stdout.write(buf)
+			sys.stdout.flush()
 
 
 	def s_test(self, args):
@@ -942,8 +977,18 @@ class main(object):
 
 
 	def s_server(self, args):
-		# extreme debugging
-		#self.tty = open('/dev/pts/20', 'w')
+		debugfp = None
+		if args and args[0] == '-debug':
+			debugfp = open(os.path.expanduser('~/connect-server.log'), 'w')
+			def _(*args):
+				if not args:
+					return
+				if '%' in args[0]:
+					debugfp.write((args[0] % args[1:]) + '\n')
+				else:
+					debugfp.write(' '.join([str(x) for x in args]) + '\n')
+				debugfp.flush()
+			self.debug = _
 
 		# remember where we started
 		basedir = os.getcwd()
@@ -965,14 +1010,17 @@ class main(object):
 			# reset idle timer on each loop
 			signal.alarm(self.idletimeout)
 
-			line = sys.stdin.readline().strip()
+			line = sys.stdin.readline()
+			if line == '':
+				self.debug('hangup')
+				break
+			line = line.strip()
 			if line == '':
 				continue
 			args = line.split()
 			cmd = args.pop(0).lower()
-			if self.tty:
-				print >>self.tty, 'server: <<', cmd, args
-				self.tty.flush()
+			self.debug('hello,', 'sailor')
+			self.debug('server: <<', cmd, args)
 
 			if cmd == 'quit':
 				self.sreply(codes.OK, 'bye')
@@ -1045,6 +1093,8 @@ class main(object):
 			sys.stdout.flush()
 
 		sys.stdout.flush()
+		if debugfp:
+			debugfp.close()
 		return 0
 
 
