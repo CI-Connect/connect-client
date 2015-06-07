@@ -355,9 +355,15 @@ Read one of the output files. It should look something like this:
 	
 For this example we see the first job in the submission (1234.0) ran on a free node at Syracuse University.
 
+## Getting Help
+For assistance or questions, please email the OSG User Support team  at `user-support@opensciencegrid.org`, direct message tweet to [@osgusers](http://twitter.com/osgusers) or visit the [help desk and community forums](http://support.opensciencegrid.org).
+
+
+
 [CI Connect]:http://ci-connect.net/
 [OSG Connect]:http://osgconnect.net/
 [HTCondor]:http://research.cs.wisc.edu/htcondor/
 [Open Science Grid]:http://www.opensciencegrid.org/
 [signed up for an account]:http://osgconnect.net/signup
 [ConnectBook]:http://osgconnect.net/book
+
