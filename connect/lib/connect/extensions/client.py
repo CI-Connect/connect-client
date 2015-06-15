@@ -32,7 +32,7 @@ import signal
 import errno
 import stat
 
-version = '@@version@@'
+_version = '@@version@@'
 
 defaults = '''
 [server]
@@ -43,19 +43,6 @@ def help():
 	m = main()
 	return m._help()
 
-
-# These are simple, transparent commands.  Given 'a': ['b', 'c'],
-# 'connect client a' is equivalent to 'ssh server b c'.
-SimpleCommandMap = {
-	'q': ['condor_q'],
-	'rm': ['condor_rm'],
-	'history': ['condor_history'],
-	'run': ['condor_run'],
-	'wait': ['condor_wait'],
-
-	# XXX need to store default pool name in local config for status
-	'status': ['condor_status'],
-}
 
 DEFAULT_CLIENT_SERVER = 'connect-client.osgconnect.net'
 
@@ -84,6 +71,14 @@ class codes(object):
 	NOTPRESENT = 403
 	FAILED = 404
 	
+
+def units(n):
+	_ = 'bkmgtpezy'
+	while n > 10240 and _:
+		n /= 1024
+		_ = _[1:]
+	return '%.4g%s' % (n, _[0])
+
 
 def cleanfn(fn):
 	fn = os.path.normpath(fn)
@@ -326,26 +321,6 @@ class Profile(object):
 class main(object):
 	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
 
-	@staticmethod
-	def simpleremote(primaryArgs):
-		def _(self, args):
-			session = ClientSession(self.profile.server,
-			                        user=self.profile.user,
-			                        keyfile=self.keyfile(),
-			                        password='nopassword',
-			                        debug=self.debug)
-
-			if self.remotedir is None:
-				self.remotedir = os.path.basename(os.getcwd())
-
-			channel = session.rcmd(primaryArgs + args, remotedir=self.remotedir)
-			channel.rio()
-			rc = channel.recv_exit_status()
-			session.close()
-			return rc
-		_.__doc__ = '<' + ' '.join(primaryArgs) + ' arguments>'
-		return _
-
 	def __init__(self):
 		self.name = os.path.basename(sys.argv[0])
 		self.opts = []
@@ -397,11 +372,6 @@ class main(object):
 			self.profile.user = getpass.getuser()
 
 		# end profile stuff
-
-
-		# add methods dynamically from self.simple[]
-		for k, v in self.simple.items():
-			setattr(self, 'c_' + k, new.instancemethod(self.simpleremote(v), self))
 
 
 	def _msg(self, fp, prefix, *args, **kwargs):
@@ -527,7 +497,7 @@ class main(object):
 
 
 	def platforminfo(self):
-		print '| Connect client version:', version
+		print '| Connect client version:', _version
 		print '| Python version:', sys.version.replace('\n', '\n|   ')
 		print '| Prefix:', sys.prefix
 		print '| User profile:', self.profile
@@ -716,7 +686,7 @@ class main(object):
 
 
 	def usage(self):
-		self.output('This is Connect Client v%s.' % version)
+		self.output('This is Connect Client v%s.' % _version)
 		for line in self._help():
 			if line.startswith('@ '):
 				line = 'usage: %s %s' % (self.local, line[2:])
@@ -800,6 +770,15 @@ class main(object):
 			self.error('"%s" is not a valid subcommand. (Try %s -h.)',
 			           subcmd, self.local)
 			return 10
+
+		if self.mode == 'server':
+			# chdir to starting point
+			basedir = config.get('server', 'staging')
+			try:
+				os.makedirs(basedir)
+			except:
+				pass
+			os.chdir(basedir)
 
 		try:
 			rc = driver(self.args)
@@ -927,6 +906,18 @@ class main(object):
 		return 0
 
 
+	def s_echo(self, args):
+		'''Echo everything in a loop.'''
+		sys.stdout.write('Echo mode.\n')
+		sys.stdout.flush()
+		while True:
+			buf = sys.stdin.read(1024)
+			if len(buf) <= 0:
+				break
+			sys.stdout.write(buf)
+			sys.stdout.flush()
+
+
 	def c_test(self, args):
 		''' '''
 
@@ -961,18 +952,6 @@ class main(object):
 		return 0
 
 
-	def s_echo(self, args):
-		'''Echo everything in a loop.'''
-		sys.stdout.write('Echo mode.\n')
-		sys.stdout.flush()
-		while True:
-			buf = sys.stdin.read(1024)
-			if len(buf) <= 0:
-				break
-			sys.stdout.write(buf)
-			sys.stdout.flush()
-
-
 	def s_test(self, args):
 		'''Just an echo test to verify access to server.
 		With verbose, print additional info.'''
@@ -988,6 +967,7 @@ class main(object):
 		debugfp = None
 		if args and args[0] == '-debug':
 			debugfp = open(os.path.expanduser('~/connect-server.log'), 'w')
+			sys.stderr = debugfp
 			def _(*args):
 				if not args:
 					return
@@ -997,9 +977,6 @@ class main(object):
 					debugfp.write(' '.join([str(x) for x in args]) + '\n')
 				debugfp.flush()
 			self.debug = _
-
-		# remember where we started
-		basedir = os.getcwd()
 
 		# hello banner / protocol magic
 		sys.stdout.write('connect client protocol 1\n')
@@ -1027,7 +1004,6 @@ class main(object):
 				continue
 			args = line.split()
 			cmd = args.pop(0).lower()
-			self.debug('hello,', 'sailor')
 			self.debug('server: <<', cmd, args)
 
 			if cmd == 'quit':
@@ -1234,7 +1210,105 @@ class main(object):
 		r = sys.stdin.readline()
 		return r.strip()
 
-	simple = SimpleCommandMap
+	# Creates a standard method that runs a remote shell command
+	# indicated by _args.
+	def _remoteshell(*_args):
+		_args = list(_args)
+		def _(self, args):
+			session = ClientSession(self.profile.server,
+			                        user=self.profile.user,
+			                        keyfile=self.keyfile(),
+			                        password='nopassword',
+			                        debug=self.debug)
+
+			if self.remotedir is None:
+				self.remotedir = os.path.basename(os.getcwd())
+
+			channel = session.rcmd(_args + args, remotedir=self.remotedir)
+			channel.rio()
+			rc = channel.recv_exit_status()
+			session.close()
+			return rc
+		_.__doc__ = '<' + ' '.join(_args) + ' arguments>'
+		return _
+
+	# Creates a standard method that runs a remote connnect command.
+	def _remoteconnect(*_args, **kwargs):
+		min = None
+		max = None
+		if 'min' in kwargs:
+			min = kwargs['min']
+		if 'max' in kwargs:
+			max = kwargs['max']
+		_args = list(_args)
+		def _(self, args):
+			if min and len(args) < min:
+				raise UsageError, 'not enough arguments'
+			if max and len(args) > max:
+				raise UsageError, 'too many arguments'
+
+			session = ClientSession(self.profile.server,
+			                        user=self.profile.user,
+			                        keyfile=self.keyfile(),
+			                        password='nopassword',
+			                        debug=self.debug)
+
+			if self.remotedir is None:
+				self.remotedir = os.path.basename(os.getcwd())
+
+			channel = session.rcmd(_args + args, remotedir=self.remotedir, server=True)
+			channel.rio()
+			rc = channel.recv_exit_status()
+			session.close()
+			return rc
+		_.__doc__ = '<' + ' '.join(_args) + ' arguments>'
+		return _
+
+	# These are simple, transparent commands -- no more complexity
+	# than 'ssh server cmd args'.
+	c_q = _remoteshell('condor_q')
+	c_rm = _remoteshell('condor_rm')
+	c_history = _remoteshell('condor_history')
+	c_run = _remoteshell('condor_run')
+	c_wait = _remoteshell('condor_wait')
+
+	# XXX need to store default pool name in local config for status
+	c_status = _remoteshell('condor_status')
+
+	# These are direct remote procedure calls to server-mode methods.
+	# E.g., if c_xyz = _remoteconnect('abc') then 'connect client xyz'
+	# will invoke s_xyz() at the server.
+	c_list = _remoteconnect('list')
+
+
+	def s_list(self, args):
+		# List job repos in this dir
+		# TODO: should check for job uuid (juid)
+		# TODO: some interactive logic to flag out-of-sync repos
+
+		def getsize(path):
+			size = 0
+			nfiles = 0
+			for root, files, dirs in os.walk(path):
+				nfiles += len(files)
+				for file in files:
+					s = os.stat(os.path.join(root, file))
+					size += s.st_size
+			return nfiles, size
+
+		for entry in sorted(os.listdir('.')):
+			if entry.startswith('.'):
+				continue
+			if os.path.islink(entry):
+				continue
+			if not os.path.isdir(entry):
+				continue
+			if '-v' in args:
+				nfiles, size = getsize(entry)
+				print '%s   [%d files, %s total]' % (entry, nfiles, units(size))
+			else:
+				print entry
+			sys.stdout.flush()
 
 
 # consider using rsync implementation by Isis Lovecruft at

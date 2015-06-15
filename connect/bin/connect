@@ -36,6 +36,7 @@ class ConnectException(Exception): pass
 DefaultConfig = '''
 [connect]
 blacklist = /etc/ciconnect/project_blacklist
+client = false
 '''
 
 class ConnectConfig(ConfigParser.SafeConfigParser):
@@ -394,7 +395,7 @@ class Main(object):
 		self.libraries = Libraries
 
 	def error(self, *args):
-		print >>sys.stderr, self.arg0 + ': ' + ' '.join([str(x) for x in arg])
+		print >>sys.stderr, self.arg0 + ': ' + ' '.join([str(x) for x in args])
 
 	def usage(self, *args):
 		print >>sys.stderr, 'usage: %s <subcommand> [args]' % self.arg0
