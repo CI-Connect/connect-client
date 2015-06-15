@@ -11,6 +11,7 @@ import string
 import ConfigParser
 import StringIO
 import getopt
+import pwd
 
 # Modules to preload into python plugins
 PluginModules = 'os sys getopt'.split()
@@ -35,9 +36,12 @@ class ConnectException(Exception): pass
 DefaultConfig = '''
 [connect]
 blacklist = /etc/ciconnect/project_blacklist
+
+[server]
+staging = %(home)s
 '''
 
-class ConnectConfig(ConfigParser.RawConfigParser):
+class ConnectConfig(ConfigParser.SafeConfigParser):
 	cleantrans = ['_'] * 256
 	for c in string.ascii_letters + string.digits:
 		cleantrans[ord(c)] = c
@@ -573,6 +577,9 @@ class Main(object):
 
 		self.config = ConnectConfig()
 		fp = StringIO.StringIO(DefaultConfig)
+		user = pwd.getpwuid(os.getuid())
+		self.config.set('DEFAULT', 'user', os.environ.get('USER', user.pw_name))
+		self.config.set('DEFAULT', 'home', os.environ.get('USER', user.pw_dir))
 		self.config.readfp(fp)
 		fp.close()
 
