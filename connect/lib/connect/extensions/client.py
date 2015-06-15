@@ -98,7 +98,7 @@ def cleanfn(fn):
 class ClientSession(object):
 	remotecmd = ['connect', 'client', '--server-mode']
 
-	def __init__(self, hostname, user=None, keyfile=None, password=None, debug=None):
+	def __init__(self, hostname, user=None, keyfile=None, password=None, debug=None, repo=None):
 		self.hostname = hostname
 		self.ssh = None
 		self.version = 0
@@ -108,6 +108,7 @@ class ClientSession(object):
 		self.keyfile = keyfile
 		self.password = password
 		self.isdebug = False
+		self.repo = repo
 
 		if debug:
 			self.debug = debug
@@ -158,6 +159,8 @@ class ClientSession(object):
 	def rcmd(self, args, server=False, remotedir=None):
 		if server:
 			args = self.remotecmd + args
+		if self.repo:
+			args = ['/usr/bin/env', 'JOBREPO=' + self.repo] + args
 		cmd = ' '.join(["'" + x + "'" for x in args])
 
 		if remotedir:
@@ -488,7 +491,9 @@ class main(object):
 
 	def sessionsetup(self):
 		try:
-			return ClientSession(self.profile.server, user=self.profile.user, keyfile=self.keyfile(),
+			return ClientSession(self.profile.server, user=self.profile.user,
+			                     keyfile=self.keyfile(),
+			                     repo=os.path.basename(os.getcwd()),
 			                     password='nopassword', debug=self.debug)
 		except SSHError, e:
 			e.bubble(
@@ -772,13 +777,19 @@ class main(object):
 			return 10
 
 		if self.mode == 'server':
-			# chdir to starting point
-			basedir = config.get('server', 'staging')
+			# chdir to repo staging dir
+			self.basedir = config.get('server', 'staging')
+			self.repodir = None
+			if 'JOBREPO' in os.environ:
+				self.repodir = os.path.join(self.basedir, os.environ['JOBREPO'])
+			else:
+				raise ValueError, 'JOBREPO not set in environment'
 			try:
-				os.makedirs(basedir)
+				os.makedirs(self.basedir)
+				os.makedirs(self.repodir)
 			except:
 				pass
-			os.chdir(basedir)
+			os.chdir(self.repodir)
 
 		try:
 			rc = driver(self.args)
@@ -849,7 +860,10 @@ class main(object):
 
 		# expressly do not use a keyfile (prompt instead)
 		try:
-			session = ClientSession(self.profile.server, user=self.profile.user, keyfile=None, debug=self.debug)
+			session = ClientSession(self.profile.server,
+			                        user=self.profile.user, keyfile=None,
+			                        repo=os.path.basename(os.getcwd()),
+			                        debug=self.debug)
 		except SSHError, e:
 			raise GeneralException, e.args
 
@@ -1219,6 +1233,7 @@ class main(object):
 			                        user=self.profile.user,
 			                        keyfile=self.keyfile(),
 			                        password='nopassword',
+			                        repo=os.path.basename(os.getcwd()),
 			                        debug=self.debug)
 
 			if self.remotedir is None:
@@ -1236,10 +1251,14 @@ class main(object):
 	def _remoteconnect(*_args, **kwargs):
 		min = None
 		max = None
+		opts = ''
 		if 'min' in kwargs:
 			min = kwargs['min']
 		if 'max' in kwargs:
 			max = kwargs['max']
+		# TODO: opts should be more getopty
+		if 'opts' in kwargs:
+			opts = kwargs['opts']
 		_args = list(_args)
 		def _(self, args):
 			if min and len(args) < min:
@@ -1251,6 +1270,7 @@ class main(object):
 			                        user=self.profile.user,
 			                        keyfile=self.keyfile(),
 			                        password='nopassword',
+			                        repo=os.path.basename(os.getcwd()),
 			                        debug=self.debug)
 
 			if self.remotedir is None:
@@ -1261,7 +1281,7 @@ class main(object):
 			rc = channel.recv_exit_status()
 			session.close()
 			return rc
-		_.__doc__ = '<' + ' '.join(_args) + ' arguments>'
+		_.__doc__ = opts
 		return _
 
 	# These are simple, transparent commands -- no more complexity
@@ -1278,7 +1298,8 @@ class main(object):
 	# These are direct remote procedure calls to server-mode methods.
 	# E.g., if c_xyz = _remoteconnect('abc') then 'connect client xyz'
 	# will invoke s_xyz() at the server.
-	c_list = _remoteconnect('list')
+	c_list = _remoteconnect('list', opts='[-v]')
+	c_where = _remoteconnect('where', max=0)
 
 
 	def s_list(self, args):
@@ -1296,19 +1317,24 @@ class main(object):
 					size += s.st_size
 			return nfiles, size
 
-		for entry in sorted(os.listdir('.')):
+		for entry in sorted(os.listdir(self.basedir)):
+			path = os.path.join(self.basedir, entry)
 			if entry.startswith('.'):
 				continue
-			if os.path.islink(entry):
+			if os.path.islink(path):
 				continue
-			if not os.path.isdir(entry):
+			if not os.path.isdir(path):
 				continue
 			if '-v' in args:
-				nfiles, size = getsize(entry)
+				nfiles, size = getsize(path)
 				print '%s   [%d files, %s total]' % (entry, nfiles, units(size))
 			else:
 				print entry
 			sys.stdout.flush()
+
+
+	def s_where(self, args):
+		print self.repodir
 
 
 # consider using rsync implementation by Isis Lovecruft at
