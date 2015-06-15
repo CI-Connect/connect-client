@@ -3,6 +3,9 @@ def usage():
 	yield '@'
 
 def run(*args, **kwargs):
+	sys.stdout.write('Configuration:\n')
+	config.write(sys.stdout)
+
 	from IPython.Shell import IPShellEmbed as embed
 	if htcondor:
 		import classad
