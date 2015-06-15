@@ -36,9 +36,6 @@ class ConnectException(Exception): pass
 DefaultConfig = '''
 [connect]
 blacklist = /etc/ciconnect/project_blacklist
-
-[server]
-staging = %(home)s
 '''
 
 class ConnectConfig(ConfigParser.SafeConfigParser):
@@ -71,22 +68,20 @@ class PluginProxy(object):
 	exports = 'error debug info usage sh xsh'.split()
 
 	def error(self, *args):
-		agent = self.agent
-		if agent:
-			agent += ' '
-		print >>sys.stderr, ('%s: %serror:' % (self.arg0, agent)), ' '.join(args)
+		self._msg(sys.stderr, 'error', *args)
 
 	def debug(self, *args):
-		agent = self.agent
-		if agent:
-			agent += ' '
-		print >>sys.stdout, ('%s: %sdebug:' % (self.arg0, agent)), ' '.join(args)
+		self._msg(sys.stdout, 'debug', *args)
 
 	def info(self, *args):
+		self._msg(sys.stdout, '', *args)
+
+	def _msg(self, fp, prefix, *args):
 		agent = self.agent
 		if agent:
 			agent += ' '
-		print >>sys.stdout, ('%s %s:' % (self.arg0, agent)), ' '.join(args)
+		print >>fp, ('%s %s%s:' % (self.arg0, agent, prefix)), \
+		            ' '.join([str(x) for x in args])
 
 	def help(self, *args):
 		yield '@ ' + ' '.join(args)
@@ -248,6 +243,10 @@ class pyexttype(commandtype):
 		self.mod.proxy.agent = self.mod.agent
 		self.mod.config = self.config
 
+		if hasattr(self.mod, 'defaults'):
+			fp = StringIO.StringIO(self.mod.defaults)
+			self.config.readfp(fp)
+			fp.close()
 		if hasattr(self.mod, 'help'):
 			self.help = self.mod.help
 		elif hasattr(self.mod, 'usage'):
@@ -395,7 +394,7 @@ class Main(object):
 		self.libraries = Libraries
 
 	def error(self, *args):
-		print >>sys.stderr, self.arg0 + ': ' + ' '.join(args)
+		print >>sys.stderr, self.arg0 + ': ' + ' '.join([str(x) for x in arg])
 
 	def usage(self, *args):
 		print >>sys.stderr, 'usage: %s <subcommand> [args]' % self.arg0
@@ -579,7 +578,7 @@ class Main(object):
 		fp = StringIO.StringIO(DefaultConfig)
 		user = pwd.getpwuid(os.getuid())
 		self.config.set('DEFAULT', 'user', os.environ.get('USER', user.pw_name))
-		self.config.set('DEFAULT', 'home', os.environ.get('USER', user.pw_dir))
+		self.config.set('DEFAULT', 'home', os.environ.get('HOME', user.pw_dir))
 		self.config.readfp(fp)
 		fp.close()
 

@@ -4,28 +4,38 @@ def usage():
 
 def run(*args, **kwargs):
 	sys.stdout.write('Configuration:\n')
-	config.write(sys.stdout)
+	import StringIO
+	buf = StringIO.StringIO()
+	config.write(buf)
+	buf = '    ' + buf.getvalue().replace('\n', '\n    ').strip() + '\n'
+	sys.stdout.write(buf)
+	sys.stdout.write('\n')
+	sys.stdout.flush()
 
-	from IPython.Shell import IPShellEmbed as embed
-	if htcondor:
-		import classad
+	try:
+		from IPython.Shell import IPShellEmbed as embed
+		if htcondor:
+			import classad
 
-	schedd = htcondor.Schedd()
-	r = schedd.query()
+		schedd = htcondor.Schedd()
+		r = schedd.query()
 
-	params = {}
-	for result in r:
-		for k in result.keys():
-			if k in params:
-				params[k] += 1
-			else:
-				params[k] = 1
+		params = {}
+		for result in r:
+			for k in result.keys():
+				if k in params:
+					params[k] += 1
+				else:
+					params[k] = 1
 
-	common = []
-	for k, v in params.items():
-		if v == len(r):
-			common.append(k)
+		common = []
+		for k, v in params.items():
+			if v == len(r):
+				common.append(k)
 
-	common.sort()
+		common.sort()
 
-	embed()()
+		embed()()
+
+	except Exception, e:
+		error('cannot run interactive debugger:\n', e)

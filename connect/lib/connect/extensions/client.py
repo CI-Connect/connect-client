@@ -34,6 +34,11 @@ import stat
 
 version = '@@version@@'
 
+defaults = '''
+[server]
+staging = %(home)s
+'''
+
 def help():
 	m = main()
 	return m._help()
