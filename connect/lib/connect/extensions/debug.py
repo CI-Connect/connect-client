@@ -2,7 +2,7 @@
 def usage():
 	yield '@'
 
-def run(opts, args, **kwargs):
+def run(*args, **kwargs):
 	from IPython.Shell import IPShellEmbed as embed
 	if htcondor:
 		import classad
