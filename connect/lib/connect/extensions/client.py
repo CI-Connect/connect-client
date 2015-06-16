@@ -1329,17 +1329,17 @@ class main(object):
 
 
 	def c_push(self, args):
-		'''[localdir]'''
+		'''[-v|--verbose] [-w|--where] [localdir]'''
 		return self._pushpull(args, mode='push')
 
 
 	def c_pull(self, args):
-		'''[localdir]'''
+		'''[-v|--verbose] [-w|--where] [localdir]'''
 		return self._pushpull(args, mode='pull')
 
 
 	def c_sync(self, args):
-		'''[localdir]'''
+		'''[-v|--verbose] [-w|--where] [localdir]'''
 		return self._pushpull(args, mode='sync')
 
 
