@@ -267,7 +267,7 @@ class ClientSession(object):
 			args = line.split()
 			rcode = int(args.pop(0))
 			if rcode == code:
-				return data
+				return args
 			elif rcode == codes.MULTILINE:
 				if args:
 					until = args[0]
@@ -599,7 +599,7 @@ class main(object):
 		channel.exchange('dir %s create=yes' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
 
-		servercwd = channel.exchange('getcwd', codes.OK)
+		servercwd, = channel.exchange('getcwd', codes.OK)
 		sftp.chdir(servercwd)
 
 		basedir = os.getcwd()
@@ -656,7 +656,7 @@ class main(object):
 		channel.exchange('dir %s' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
 
-		servercwd = channel.exchange('getcwd', codes.OK)
+		servercwd, = channel.exchange('getcwd', codes.OK)
 		sftp.chdir(servercwd)
 
 		basedir = os.getcwd()
