@@ -578,7 +578,6 @@ class main(object):
 			rel = '.'
 			for part in dir.split('/'):
 				rel = os.path.join(rel, part)
-				print 'rel>', rel
 				try:
 					rs = sftp.stat(rel)
 				except:
@@ -586,9 +585,13 @@ class main(object):
 			mdcache.add(dir)
 
 		if verbose:
-			notice = self.notice
+			wanted = self.notice
+			unwanted = self.notice
 		else:
-			def notice(*args):
+			def wanted(*args):
+				sys.stdout.write('+')
+				sys.stdout.flush()
+			def unwanted(*args):
 				sys.stdout.write('.')
 				sys.stdout.flush()
 
@@ -604,42 +607,71 @@ class main(object):
 
 		basedir = os.getcwd()
 		self.chdir(local)
+		sent = 0
+		unsent = 0
+		error = 0
 		for root, dirs, files in os.walk('.'):
 			for file in files + dirs:
 				fn = os.path.join(root, file)
 				fn = cleanfn(fn)
 				# Initiate a push
 				s = os.lstat(fn)
-				channel.pcmd('want %s mtime=%d size=%d mode=0%04o' % (self.fnencode(fn), s.st_mtime, s.st_size, s.st_mode & 07777))
-				args = channel.pgetline(split=True)
-				rcode = int(args.pop(0))
-				if rcode == codes.YES:
-					# send
-					#rfn = os.path.join(self.repo, fn)
-					rfn = fn
-					awfulrecursivemkdir(sftp, os.path.dirname(rfn))
-					if stat.S_ISDIR(s.st_mode):
+				#rfn = os.path.join(self.repo, fn)
+				rfn = fn
+
+				if stat.S_ISDIR(s.st_mode):
+					channel.pcmd('want %s mtime=%d mode=0%04o' % (self.fnencode(fn), s.st_mtime, s.st_mode & 07777))
+					args = channel.pgetline(split=True)
+					rcode = int(args.pop(0))
+
+					if rcode == codes.YES:
+						# send
+						awfulrecursivemkdir(sftp, os.path.dirname(rfn))
+
 						try:
-							notice('sending %s/ as %s/...', fn, rfn)
+							wanted('sending %s/...', fn)
 							rs = sftp.stat(rfn)
+							sent += 1
 						except:
 							sftp.mkdir(rfn)
+							error += 1
 							pass
 					else:
+						unwanted('not sending %s/...', fn)
+						unsent += 1
+
+				else:
+					channel.pcmd('want %s mtime=%d size=%d mode=0%04o' % (self.fnencode(fn), s.st_mtime, s.st_size, s.st_mode & 07777))
+					args = channel.pgetline(split=True)
+					rcode = int(args.pop(0))
+
+					if rcode == codes.YES:
+						# send
+						awfulrecursivemkdir(sftp, os.path.dirname(rfn))
+
 						try:
-							notice('sending %s as %s...', fn, rfn)
+							wanted('sending %s...', fn)
 							sftp.put(fn, rfn)
+							sent += 1
 						except Exception, e:
 							self.notice('while sending %s: %s', rfn, str(e))
-					sftp.utime(rfn, (s.st_atime, s.st_mtime))
-					sftp.chmod(rfn, s.st_mode)
-					# do we need this? doesn't utime() handle it?
-					#channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
+							error += 1
+
+					else:
+						unwanted('not sending %s...', fn)
+						unsent += 1
+
+				sftp.utime(rfn, (s.st_atime, s.st_mtime))
+				sftp.chmod(rfn, s.st_mode)
+				# do we need this? doesn't utime() handle it?
+				#channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
 
 		self.chdir(basedir)
 		if not verbose:
 			sys.stdout.write('\n')
-			sys.stdout.flush()
+		self.output('%d objects sent; %d objects current; %d errors',
+		            sent, unsent, error)
+		sys.stdout.flush()
 
 
 	def pull(self, channel, local=None, verbose=False):
