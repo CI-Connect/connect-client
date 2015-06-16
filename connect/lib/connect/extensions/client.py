@@ -566,7 +566,7 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 
-	def push(self, channel, local=None):
+	def push(self, channel, local=None, verbose=False):
 		def awfulrecursivemkdir(sftp, dir):
 			rel = '.'
 			for part in dir.split('/'):
@@ -575,6 +575,13 @@ class main(object):
 					rs = sftp.stat(rel)
 				except:
 					sftp.mkdir(rel)
+
+		if verbose:
+			notice = self.notice
+		else:
+			def notice(*args):
+				sys.stdout.write('.')
+				sys.stdout.flush()
 
 		if local is None:
 			local = os.getcwd()
@@ -600,14 +607,14 @@ class main(object):
 					awfulrecursivemkdir(sftp, os.path.dirname(rfn))
 					if stat.S_ISDIR(s.st_mode):
 						try:
-							self.notice('sending %s/ as %s/...', fn, rfn)
+							notice('sending %s/ as %s/...', fn, rfn)
 							rs = sftp.stat(rfn)
 						except:
 							sftp.mkdir(rfn)
 							pass
 					else:
 						try:
-							self.notice('sending %s as %s...', fn, rfn)
+							notice('sending %s as %s...', fn, rfn)
 							sftp.put(fn, rfn)
 						except Exception, e:
 							self.notice('while sending %s: %s', rfn, str(e))
@@ -617,9 +624,17 @@ class main(object):
 					channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
 
 		os.chdir(basedir)
+		if not verbose:
+			sys.stdout.write('\n')
+			sys.stdout.flush()
 
 
-	def pull(self, channel, local=None):
+	def pull(self, channel, local=None, verbose=False):
+		if verbose:
+			notice = lambda *args: self.notice(*args)
+		else:
+			notice = lambda *args: sys.stdout.write('.')
+
 		if local is None:
 			local = os.getcwd()
 		if self.repo is None:
@@ -642,13 +657,16 @@ class main(object):
 				rfn = os.path.join(self.repo, fn)
 				dir = os.path.dirname(fn)
 				self.ensure_dir(dir)
-				self.notice('fetching %s as %s...', rfn, fn)
+				notice('fetching %s as %s...', rfn, fn)
 				sftp.get(rfn, fn)
 				if 'mtime' in attrs:
 					t = int(attrs['mtime'])
 					os.utime(fn, (t, t))
 
 		os.chdir(basedir)
+		if not verbose:
+			sys.stdout.write('\n')
+			sys.stdout.flush()
 
 
 	def sreply(self, code, *args):
@@ -1312,36 +1330,34 @@ class main(object):
 
 	def c_push(self, args):
 		'''[localdir]'''
-
-		local = None
-		if len(args) > 1:
-			raise UsageError, 'too many arguments'
-		if len(args) == 1:
-			self.repo, = args
-
-		session = self.sessionsetup()
-		channel = session.handshake()
-		self.push(channel, local=local)
-		channel.exchange('quit', codes.OK)
+		return self._pushpull(args, mode='push')
 
 
 	def c_pull(self, args):
 		'''[localdir]'''
-
-		local = None
-		if len(args) > 1:
-			raise UsageError, 'too many arguments'
-		if len(args) == 1:
-			self.repo, = args
-			
-		session = self.sessionsetup()
-		channel = session.handshake()
-		self.pull(channel, local=local)
-		channel.exchange('quit', codes.OK)
+		return self._pushpull(args, mode='pull')
 
 
 	def c_sync(self, args):
 		'''[localdir]'''
+		return self._pushpull(args, mode='sync')
+
+
+	def _pushpull(self, args, mode=None):
+		try:
+			opts, args = getopt.getopt(args, 'vw', ['verbose', 'where'])
+		except getopt.GetoptError, e:
+			self.error(e)
+			return 2
+
+		verbose = False
+		where = False
+
+		for opt, arg in opts:
+			if opt in ('-v', '--verbose'):
+				verbose = True
+			if opt in ('-w', '--where'):
+				where = True
 
 		local = None
 		if len(args) > 1:
@@ -1349,10 +1365,16 @@ class main(object):
 		if len(args) == 1:
 			self.repo, = args
 
+		if where:
+			# don't pull, just show dir path
+			return self.c_where(args)
+
 		session = self.sessionsetup()
 		channel = session.handshake()
-		self.pull(channel, local=local)
-		self.push(channel, local=local)
+		if mode == 'pull' or mode == 'sync':
+			self.pull(channel, local=local, verbose=verbose)
+		if mode == 'push' or mode == 'sync':
+			self.push(channel, local=local, verbose=verbose)
 		channel.exchange('quit', codes.OK)
 
 
