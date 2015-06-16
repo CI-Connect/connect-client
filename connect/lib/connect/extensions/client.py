@@ -610,7 +610,7 @@ class main(object):
 				fn = cleanfn(fn)
 				# Initiate a push
 				s = os.lstat(fn)
-				channel.pcmd('want %s mtime=%d size=%d mode=0%04o' % (self.fnencode(fn), s.st_mtime, s.st_size, s.st_mode & 0777))
+				channel.pcmd('want %s mtime=%d size=%d mode=0%04o' % (self.fnencode(fn), s.st_mtime, s.st_size, s.st_mode & 07777))
 				args = channel.pgetline(split=True)
 				rcode = int(args.pop(0))
 				if rcode == codes.YES:
