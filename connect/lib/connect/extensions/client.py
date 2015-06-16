@@ -1212,7 +1212,7 @@ class main(object):
 			elif cmd == 'dir':
 				dir = cleanfn(args.pop(0))
 				attrs = self.attrs(args)
-				os.chdir(basedir)
+				os.chdir(self.basedir)
 				try:
 					os.chdir(dir)
 					self.sreply(codes.OK, dir, 'ok')
