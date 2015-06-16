@@ -710,12 +710,15 @@ class main(object):
 			return True
 
 		if 'size' in attrs and s.st_size != int(attrs['size']):
+			self.debug('wanted: size %d != %s' % (s.st_size, attrs['size']))
 			return True
 
 		if 'mtime' in attrs and s.st_mtime < int(attrs['mtime']):
+			self.debug('wanted: mtime %d != %s' % (s.st_mtime, attrs['mtime']))
 			return True
 
 		if 'mode' in attrs and s.st_mode != int(attrs['mode'], base=8):
+			self.debug('wanted: mtime %o != %s' % (s.st_mode, attrs['mode']))
 			return True
 
 		return False
