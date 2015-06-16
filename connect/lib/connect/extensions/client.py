@@ -1481,7 +1481,7 @@ class main(object):
 	# E.g., if c_xyz = _remoteconnect('abc') then 'connect client xyz'
 	# will invoke s_xyz() at the server.
 	c_list = _remoteconnect('list', opts='[-v]')
-	c_where = _remoteconnect('where', max=0)
+	c_where = _remoteconnect('where', max=0, secret=True)
 	c_rconfig = _remoteconnect('rconfig', max=0, secret=True)
 
 
