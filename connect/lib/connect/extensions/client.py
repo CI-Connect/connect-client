@@ -717,8 +717,9 @@ class main(object):
 			self.debug('wanted: mtime %d != %s' % (s.st_mtime, attrs['mtime']))
 			return True
 
-		if 'mode' in attrs and s.st_mode != int(attrs['mode'], base=8):
-			self.debug('wanted: mtime %o != %s' % (s.st_mode, attrs['mode']))
+		mode = s.st_mode & 07777
+		if 'mode' in attrs and mode != int(attrs['mode'], base=8):
+			self.debug('wanted: mode %o != %s' % (mode, attrs['mode']))
 			return True
 
 		return False
