@@ -245,9 +245,21 @@ class pyexttype(commandtype):
 		self.mod.config = self.config
 
 		if hasattr(self.mod, 'defaults'):
+			# !! this needs to be RawConfigParser - we do not want
+			# !! to interpolate vars in this merge operation.
+			tmp = ConfigParser.RawConfigParser()
 			fp = StringIO.StringIO(self.mod.defaults)
-			self.config.readfp(fp)
+			tmp.readfp(fp)
 			fp.close()
+
+			# merge settings
+			for section in tmp.sections():
+				if not self.config.has_section(section):
+					self.config.add_section(section)
+				for option, value in tmp.items(section):
+					if not self.config.has_option(section, option):
+						self.config.set(section, option, value)
+
 		if hasattr(self.mod, 'help'):
 			self.help = self.mod.help
 		elif hasattr(self.mod, 'usage'):
@@ -575,11 +587,13 @@ class Main(object):
 		self.extensions = [os.path.join(x, 'extensions') for x in self.libraries]
 		self.configs = [os.path.join(x, 'config.ini') for x in self.libraries]
 
-		self.config = ConnectConfig()
-		fp = StringIO.StringIO(DefaultConfig)
 		user = pwd.getpwuid(os.getuid())
-		self.config.set('DEFAULT', 'user', os.environ.get('USER', user.pw_name))
-		self.config.set('DEFAULT', 'home', os.environ.get('HOME', user.pw_dir))
+		defaults = {
+			'user': os.environ.get('USER', user.pw_name),
+			'home': os.environ.get('HOME', user.pw_dir),
+		}
+		self.config = ConnectConfig(defaults)
+		fp = StringIO.StringIO(DefaultConfig)
 		self.config.readfp(fp)
 		fp.close()
 

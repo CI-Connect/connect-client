@@ -31,6 +31,7 @@ import stat
 import signal
 import errno
 import stat
+import json
 
 _version = '@@version@@'
 
@@ -156,15 +157,12 @@ class ClientSession(object):
 		self.ssh = None
 
 
-	def rcmd(self, args, server=False, remotedir=None):
+	def rcmd(self, args, server=False):
 		if server:
 			args = self.remotecmd + args
 		if self.repo:
 			args = ['/usr/bin/env', 'JOBREPO=' + self.repo] + args
 		cmd = ' '.join(["'" + x + "'" for x in args])
-
-		if remotedir:
-			cmd = ('[ -d "%s" ] && cd "%s"; ' % (remotedir, remotedir)) + cmd
 
 		channel = self.transport.open_session()
 		self.debug('client command: ' + cmd)
@@ -324,6 +322,12 @@ class Profile(object):
 class main(object):
 	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
 
+	def secret(f):
+		'''decorator to make a client command secret'''
+		f.secret = True
+		return f
+
+
 	def __init__(self):
 		self.name = os.path.basename(sys.argv[0])
 		self.opts = []
@@ -331,11 +335,12 @@ class main(object):
 		self.mode = 'client'
 		self.keybits = 2048
 		self.session = None
+		self.repo = os.path.basename(os.getcwd())
 
+		self.showsecret = False
 		self.debug = lambda *args: True
 		self.isdebug = False
 		self.idletimeout = 5 * 60
-		self.remotedir = None
 		self.verbose = False
 
 		# We'll put all the user/server contextual information
@@ -573,10 +578,9 @@ class main(object):
 
 		if local is None:
 			local = os.getcwd()
-		if self.remotedir is None:
-			self.remotedir = os.path.basename(local)
+		self.repo = os.path.basename(local)
 
-		channel.exchange('dir %s create=yes' % self.remotedir, codes.OK)
+		channel.exchange('dir %s create=yes' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
 
 		basedir = os.getcwd()
@@ -592,7 +596,7 @@ class main(object):
 				rcode = int(args.pop(0))
 				if rcode == codes.YES:
 					# send
-					rfn = os.path.join(self.remotedir, fn)
+					rfn = os.path.join(self.repo, fn)
 					awfulrecursivemkdir(sftp, os.path.dirname(rfn))
 					if stat.S_ISDIR(s.st_mode):
 						try:
@@ -618,10 +622,10 @@ class main(object):
 	def pull(self, channel, local=None):
 		if local is None:
 			local = os.getcwd()
-		if self.remotedir is None:
-			self.remotedir = os.path.basename(local)
+		if self.repo is None:
+			self.repo = os.path.basename(local)
 
-		channel.exchange('dir %s' % self.remotedir, codes.OK)
+		channel.exchange('dir %s' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
 
 		basedir = os.getcwd()
@@ -635,7 +639,7 @@ class main(object):
 			attrs = self.attrs(args)
 			if self.needfile(fn, attrs):
 				# request file
-				rfn = os.path.join(self.remotedir, fn)
+				rfn = os.path.join(self.repo, fn)
 				dir = os.path.dirname(fn)
 				self.ensure_dir(dir)
 				self.notice('fetching %s as %s...', rfn, fn)
@@ -703,7 +707,11 @@ class main(object):
 			if attr.startswith('c_'):
 				subcmd = attr[2:]
 				driver = getattr(self, attr)
-				yield '       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__)
+				if hasattr(driver, 'secret') and driver.secret:
+					if self.showsecret:
+						yield '      -%s [opts] %s %s' % (self.local, subcmd, driver.__doc__)
+				else:
+					yield '       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__)
 		yield ''
 		yield 'opts:'
 		yield '    -s|--server hostname       set connect server name'
@@ -717,7 +725,7 @@ class main(object):
 		try:
 			r = getopt.getopt(args, 'u:ds:r:vh',
 			                  ['server-mode', 'user=', 'debug', 'server=',
-			                   'remote=', 'repo=', 'verbose', 'help'])
+			                   'show-secret', 'verbose', 'help'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
@@ -728,6 +736,9 @@ class main(object):
 			if opt in ('--server-mode',):
 				self.mode = 'server'
 
+			if opt in ('--show-secret',):
+				self.showsecret = True
+
 			if opt in ('-u', '--user'):
 				self.profile.user = arg
 
@@ -737,9 +748,6 @@ class main(object):
 
 			if opt in ('-s', '--server'):
 				self.profile.server = arg
-
-			if opt in ('-r', '--remote', '--repo'):
-				self.remotedir = arg
 
 			if opt in ('-v', '--verbose'):
 				self.verbose = True
@@ -753,6 +761,9 @@ class main(object):
 			self.platforminfo()
 			print
 
+		if self.mode != 'server':
+			self.createaliases(cacheonly=True)
+
 		if len(self.args) == 0:
 			self.usage()
 			return 2
@@ -762,6 +773,10 @@ class main(object):
 			           self.name, __name__, sys.version_info[0], sys.version_info[1])
 			self.error('(try "pip install paramiko")')
 			sys.exit(5)
+
+		# Update alias stubs
+		if self.mode != 'server':
+			self.createaliases(cacheonly=False)
 
 		subcmd = self.args.pop(0)
 		if self.mode == 'client':
@@ -784,11 +799,8 @@ class main(object):
 				self.repodir = os.path.join(self.basedir, os.environ['JOBREPO'])
 			else:
 				raise ValueError, 'JOBREPO not set in environment'
-			try:
-				os.makedirs(self.basedir)
-				os.makedirs(self.repodir)
-			except:
-				pass
+			self.ensure_dir(self.basedir)
+			self.ensure_dir(self.repodir)
 			os.chdir(self.repodir)
 
 		try:
@@ -801,6 +813,157 @@ class main(object):
 		if self.session:
 			self.session.close()
 		return rc
+
+
+	def _aliascache(self, *args):
+		fp = None
+		dir = os.path.expanduser('~/.ciconnect/aliases')
+		file = os.path.join(dir, self.profile.server)
+
+		if args:
+			try:
+				# store aliases
+				aliases, = args
+				self.ensure_dir(dir)
+				fp = open(file, 'w')
+				json.dump(aliases, fp)
+				fp.close()
+			except:
+				pass
+			
+		else:
+			try:
+				# check cache age
+				s = os.stat(file)
+				if s.st_mtime - time.time() > 86400:
+					raise Exception, 'cache too old'
+				# retrieve aliases
+				fp = open(file, 'r')
+				aliases = json.load(fp)
+				fp.close()
+			except:
+				aliases = None
+
+		if fp:
+			fp.close()
+		return aliases
+
+
+	def _serveraliases(self, cacheonly=False):
+		aliases = self._aliascache()
+		if aliases is not None:
+			return aliases
+
+		# no cached results
+
+		if cacheonly:
+			return {}
+
+		try:
+			session = self.sessionsetup()
+			channel = session.rcmd(['aliases'], server=True)
+			data = ''
+			for line in channel.fp:
+				data += line
+			aliases = json.loads(data)
+			self._aliascache(aliases)
+		except:
+			# Most likely error is paramiko.client.GeneralException
+			# But regardless, we don't want to cache failure.
+			aliases = {}
+
+		return aliases
+
+
+	def createaliases(self, cacheonly=False):
+		# create stubs for server aliases
+		aliases = self._serveraliases(cacheonly=cacheonly)
+		for alias in aliases.keys():
+			setattr(self, 'c_' + alias,
+			        new.instancemethod(self.serveralias(aliases[alias]), self))
+
+
+	def serveralias(self, alias):
+		name = alias['alias']
+		help = alias['help']
+		usage = alias['usage']
+		def _(self, args):
+			session = ClientSession(self.profile.server,
+			                        user=self.profile.user,
+			                        keyfile=self.keyfile(),
+			                        password='nopassword',
+			                        repo=os.path.basename(os.getcwd()),
+			                        debug=self.debug)
+
+			if self.repo is None:
+				self.repo = os.path.basename(os.getcwd())
+
+			channel = session.rcmd(['runalias', name] + args, server=True)
+			channel.rio()
+			rc = channel.recv_exit_status()
+			session.close()
+			return rc
+		_.__doc__ = usage
+		_.isalias = True
+		if alias.get('secret'):
+			_.secret = True
+		return _
+
+
+
+	@secret
+	def c_aliases(self, args):
+		''''''
+		aliases = self._serveraliases()
+
+		for alias in sorted(aliases.keys()):
+			if aliases[alias]['secret']:
+				continue
+			print '%s %s' % (aliases[alias]['alias'], aliases[alias]['usage'])
+			print '  -', aliases[alias]['help']
+			print
+
+
+	def _readaliases(self, args, action=True):
+		if not config.has_section('server-alias'):
+			return
+		data = {}
+		aliases = config.options('server-alias')
+		aliases = [x[:-6] for x in aliases if x.endswith('.alias')]
+		for alias in aliases:
+			item = {'alias': alias}
+
+			try:
+				item['help'] = config.get('server-alias', alias + '.help')
+			except:
+				item['help'] = ''
+
+			try:
+				item['usage'] = config.get('server-alias', alias + '.usage')
+			except:
+				item['usage'] = ''
+
+			try:
+				item['secret'] = config.getboolean('server-alias', alias + '.secret')
+			except:
+				item['secret'] = False
+
+			if action:
+				item['action'] = config.get('server-alias', alias + '.alias')
+			data[alias] = item
+		return data
+
+
+	def s_aliases(self, args):
+		aliases = self._readaliases(args, action=False)
+		print json.dumps(aliases)
+
+
+	def s_runalias(self, args):
+		aliases = self._readaliases(args, action=True)
+		action = aliases[args[0]]['action']
+		cmd = ' '.join([action] + args[1:])
+		os.system(cmd)
 
 
 	def c_setup(self, args):
@@ -867,7 +1030,7 @@ class main(object):
 		except SSHError, e:
 			raise GeneralException, e.args
 
-		channel = session.rcmd(['setup'], server=True, remotedir=self.remotedir)
+		channel = session.rcmd(['setup'], server=True)
 		channel.send(pub + '\n')
 		channel.send('.\n')
 		channel.rio(stdin=False)
@@ -904,11 +1067,12 @@ class main(object):
 		return 0
 
 
+	@secret
 	def c_echo(self, args):
 		''' '''
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['echo'], server=True, remotedir=self.remotedir)
+		channel = session.rcmd(['echo'], server=True)
 		# we will do an echo test here later. For now, just echo at both ends.
 		while True:
 			buf = channel.recv(1024)
@@ -945,7 +1109,7 @@ class main(object):
 		code = str(random.randint(0, 1000))
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['test', code, _verbose], server=True, remotedir=self.remotedir)
+		channel = session.rcmd(['test', code, _verbose], server=True)
 		test = ''
 		while True:
 			buf = channel.recv(1024)
@@ -1113,8 +1277,8 @@ class main(object):
 
 		session = self.sessionsetup()
 
-		if self.remotedir is None:
-			self.remotedir = os.path.basename(os.getcwd())
+		if self.repo is None:
+			self.repo = os.path.basename(os.getcwd())
 
 		# First push all files
 		channel = session.handshake()
@@ -1122,7 +1286,7 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 		# Now run a submit
-		channel = session.rcmd([command] + args, remotedir=self.remotedir)
+		channel = session.rcmd([command] + args)
 		channel.rio()
 		rc = channel.recv_exit_status()
 
@@ -1147,15 +1311,13 @@ class main(object):
 
 
 	def c_push(self, args):
-		'''[[localdir] remotedir]'''
+		'''[localdir]'''
 
 		local = None
-		if len(args) > 2:
+		if len(args) > 1:
 			raise UsageError, 'too many arguments'
-		if len(args) == 2:
-			local, self.remotedir = args
 		if len(args) == 1:
-			self.remotedir, = args
+			self.repo, = args
 
 		session = self.sessionsetup()
 		channel = session.handshake()
@@ -1164,15 +1326,13 @@ class main(object):
 
 
 	def c_pull(self, args):
-		'''[[localdir] remotedir]'''
+		'''[localdir]'''
 
 		local = None
-		if len(args) > 2:
+		if len(args) > 1:
 			raise UsageError, 'too many arguments'
-		if len(args) == 2:
-			local, self.remotedir = args
 		if len(args) == 1:
-			self.remotedir, = args
+			self.repo, = args
 			
 		session = self.sessionsetup()
 		channel = session.handshake()
@@ -1181,15 +1341,13 @@ class main(object):
 
 
 	def c_sync(self, args):
-		'''[[localdir] remotedir]'''
+		'''[localdir]'''
 
 		local = None
-		if len(args) > 2:
+		if len(args) > 1:
 			raise UsageError, 'too many arguments'
-		if len(args) == 2:
-			local, self.remotedir = args
 		if len(args) == 1:
-			self.remotedir, = args
+			self.repo, = args
 
 		session = self.sessionsetup()
 		channel = session.handshake()
@@ -1236,10 +1394,10 @@ class main(object):
 			                        repo=os.path.basename(os.getcwd()),
 			                        debug=self.debug)
 
-			if self.remotedir is None:
-				self.remotedir = os.path.basename(os.getcwd())
+			if self.repo is None:
+				self.repo = os.path.basename(os.getcwd())
 
-			channel = session.rcmd(_args + args, remotedir=self.remotedir)
+			channel = session.rcmd(_args + args)
 			channel.rio()
 			rc = channel.recv_exit_status()
 			session.close()
@@ -1273,15 +1431,17 @@ class main(object):
 			                        repo=os.path.basename(os.getcwd()),
 			                        debug=self.debug)
 
-			if self.remotedir is None:
-				self.remotedir = os.path.basename(os.getcwd())
+			if self.repo is None:
+				self.repo = os.path.basename(os.getcwd())
 
-			channel = session.rcmd(_args + args, remotedir=self.remotedir, server=True)
+			channel = session.rcmd(_args + args, server=True)
 			channel.rio()
 			rc = channel.recv_exit_status()
 			session.close()
 			return rc
 		_.__doc__ = opts
+		if 'secret' in kwargs:
+			_.secret = kwargs['secret']
 		return _
 
 	# These are simple, transparent commands -- no more complexity
@@ -1300,6 +1460,7 @@ class main(object):
 	# will invoke s_xyz() at the server.
 	c_list = _remoteconnect('list', opts='[-v]')
 	c_where = _remoteconnect('where', max=0)
+	c_rconfig = _remoteconnect('rconfig', max=0, secret=True)
 
 
 	def s_list(self, args):
@@ -1335,6 +1496,10 @@ class main(object):
 
 	def s_where(self, args):
 		print self.repodir
+
+
+	def s_rconfig(self, args):
+		config.write(sys.stdout)
 
 
 # consider using rsync implementation by Isis Lovecruft at
