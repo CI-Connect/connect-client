@@ -571,14 +571,19 @@ class main(object):
 		os.chdir(dir)
 
 	def push(self, channel, local=None, verbose=False):
+		mdcache = set()
 		def awfulrecursivemkdir(sftp, dir):
+			if dir in mdcache:
+				return
 			rel = '.'
 			for part in dir.split('/'):
 				rel = os.path.join(rel, part)
+				print 'rel>', rel
 				try:
 					rs = sftp.stat(rel)
 				except:
 					sftp.mkdir(rel)
+			mdcache.add(dir)
 
 		if verbose:
 			notice = self.notice
@@ -593,6 +598,9 @@ class main(object):
 
 		channel.exchange('dir %s create=yes' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
+
+		servercwd = channel.exchange('getcwd', codes.OK)
+		sftp.chdir(servercwd)
 
 		basedir = os.getcwd()
 		self.chdir(local)
@@ -647,6 +655,9 @@ class main(object):
 
 		channel.exchange('dir %s' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
+
+		servercwd = channel.exchange('getcwd', codes.OK)
+		sftp.chdir(servercwd)
 
 		basedir = os.getcwd()
 		self.chdir(local)
@@ -1214,6 +1225,17 @@ class main(object):
 
 			elif cmd == 'ping':
 				self.sreply(codes.OK, 'pong', args[0])
+
+			elif cmd == 'getcwd':
+				# n.b. SFTP has no real notion of a cwd. It can appear
+				# to place relative files relative to the process
+				# cwd, but it doesn't really. Relative files are located
+				# relative to the home dir, no matter what the cwd actually
+				# is.
+				#
+				# To work around this the CLIENT needs to know the server's
+				# cwd. This method gives a way to communicate that.
+				self.sreply(codes.OK, os.getcwd())
 
 			elif cmd == 'dir':
 				dir = cleanfn(args.pop(0))
