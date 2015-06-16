@@ -75,6 +75,7 @@ status ... tutorial command
 # it just runs git in a subprocess.
 #sh scripts/tutorial/bundle-prereqs "$base" 2>&1 | sed -e 's/^/ | /'
 copyfiles scripts/tutorial/tutorial "$base/bin/"
+copyfiles scripts/distribution "$base/bin/"
 
 # Install switch-module functions?
 if $siteinstall; then
