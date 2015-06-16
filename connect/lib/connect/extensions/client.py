@@ -607,7 +607,8 @@ class main(object):
 				rcode = int(args.pop(0))
 				if rcode == codes.YES:
 					# send
-					rfn = os.path.join(self.repo, fn)
+					#rfn = os.path.join(self.repo, fn)
+					rfn = fn
 					awfulrecursivemkdir(sftp, os.path.dirname(rfn))
 					if stat.S_ISDIR(s.st_mode):
 						try:
@@ -658,7 +659,8 @@ class main(object):
 			attrs = self.attrs(args)
 			if self.needfile(fn, attrs):
 				# request file
-				rfn = os.path.join(self.repo, fn)
+				#rfn = os.path.join(self.repo, fn)
+				rfn = fn
 				dir = os.path.dirname(fn)
 				self.ensure_dir(dir)
 				notice('fetching %s as %s...', rfn, fn)
