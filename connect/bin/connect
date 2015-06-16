@@ -567,7 +567,7 @@ class Main(object):
 		# We'll read options -before- config, since options may
 		# affect where we find configs.
 		try:
-			opts, args = getopt.getopt(args, 'h', ['help', 'nolocal'])
+			opts, args = getopt.getopt(args, 'h', ['help', 'nolocal', 'full'])
 		except getopt.GetoptError, e:
 			self.error(str(e))
 			return 10
@@ -601,17 +601,18 @@ class Main(object):
 		for path in self.configs:
 			self.config.read(os.path.expanduser(path))
 
-		# If connect.client = true, we have a very restricted subset
-		# of functionality.
-		#
-		# For now this will mean that ONLY the client subcommand is
-		# available.  Later it will also mean that the client subcommand
-		# is _implied_.
 		self.cmds, self.cmddict = self.discovercommands()
 		self.cmds.sort(lambda a, b: cmp(a.name, b.name))
+
+		# If connect.client = true, we have a very restricted subset
+		# of functionality.  Use of the 'client' subcommand is implied,
+		# whatever other subcommands are installed.
+		#
+		# --full allows us to escape this implication and use the full
+		# connect command.  It is not documented for public use.
 		if self.config.getboolean('connect', 'client'):
-			self.cmds = [cmd for cmd in self.cmds if cmd.name == 'client']
-			# (But we will sneakily not delete the cmddict entries)
+			if (not args or args[0] != 'client') and '--full' not in [x[0] for x in opts]:
+				args = ['client'] + args
 
 		# Check usage
 		if not args:

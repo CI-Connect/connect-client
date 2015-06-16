@@ -320,8 +320,6 @@ class Profile(object):
 
 
 class main(object):
-	local = ' '.join([os.path.basename(sys.argv[0]), __name__])
-
 	def secret(f):
 		'''decorator to make a client command secret'''
 		f.secret = True
@@ -342,6 +340,11 @@ class main(object):
 		self.isdebug = False
 		self.idletimeout = 5 * 60
 		self.verbose = False
+
+		if config.getboolean('connect', 'client'):
+			self.local = os.path.basename(sys.argv[0])
+		else:
+			self.local = ' '.join([os.path.basename(sys.argv[0]), __name__])
 
 		# We'll put all the user/server contextual information
 		# into a profile object:
