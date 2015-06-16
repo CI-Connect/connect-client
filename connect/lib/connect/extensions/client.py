@@ -566,6 +566,10 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 
+	def chdir(self, dir):
+		self.debug('chdir(%s)' % dir)
+		os.chdir(dir)
+
 	def push(self, channel, local=None, verbose=False):
 		def awfulrecursivemkdir(sftp, dir):
 			rel = '.'
@@ -591,7 +595,7 @@ class main(object):
 		sftp = channel.session.sftp()
 
 		basedir = os.getcwd()
-		os.chdir(local)
+		self.chdir(local)
 		for root, dirs, files in os.walk('.'):
 			for file in files + dirs:
 				fn = os.path.join(root, file)
@@ -621,9 +625,9 @@ class main(object):
 					sftp.utime(rfn, (s.st_atime, s.st_mtime))
 					sftp.chmod(rfn, s.st_mode)
 					# do we need this? doesn't utime() handle it?
-					channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
+					#channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
 
-		os.chdir(basedir)
+		self.chdir(basedir)
 		if not verbose:
 			sys.stdout.write('\n')
 			sys.stdout.flush()
@@ -644,7 +648,7 @@ class main(object):
 		sftp = channel.session.sftp()
 
 		basedir = os.getcwd()
-		os.chdir(local)
+		self.chdir(local)
 
 		# Request file list from server, and individual files
 		data = channel.exchange('list', codes.OK)
@@ -663,7 +667,7 @@ class main(object):
 					t = int(attrs['mtime'])
 					os.utime(fn, (t, t))
 
-		os.chdir(basedir)
+		self.chdir(basedir)
 		if not verbose:
 			sys.stdout.write('\n')
 			sys.stdout.flush()
@@ -819,7 +823,7 @@ class main(object):
 				raise ValueError, 'JOBREPO not set in environment'
 			self.ensure_dir(self.basedir)
 			self.ensure_dir(self.repodir)
-			os.chdir(self.repodir)
+			self.chdir(self.repodir)
 
 		try:
 			rc = driver(self.args)
@@ -1212,15 +1216,15 @@ class main(object):
 			elif cmd == 'dir':
 				dir = cleanfn(args.pop(0))
 				attrs = self.attrs(args)
-				os.chdir(self.basedir)
+				self.chdir(self.basedir)
 				try:
-					os.chdir(dir)
+					self.chdir(dir)
 					self.sreply(codes.OK, dir, 'ok')
 				except:
 					if 'create' in attrs and attrs['create'] == 'yes':
 						try:
 							os.makedirs(dir)
-							os.chdir(dir)
+							self.chdir(dir)
 							self.sreply(codes.OK, dir, 'created')
 						except:
 							self.sreply(codes.FAILED, dir, 'cannot create')
