@@ -32,6 +32,7 @@ import signal
 import errno
 import stat
 import json
+import subprocess
 
 _version = '@@version@@'
 
@@ -96,6 +97,10 @@ def cleanfn(fn):
 	return fn
 
 
+def quote(s, chr='"'):
+	return chr + s + chr
+
+
 class ClientSession(object):
 	remotecmd = ['connect', 'client', '--server-mode']
 
@@ -157,12 +162,26 @@ class ClientSession(object):
 		self.ssh = None
 
 
-	def rcmd(self, args, server=False):
-		if server:
-			args = self.remotecmd + args
+	def rcmd(self, args, shell=False):
+		# To manage metainformation, all remote commands run
+		# through self.remotecmd (connect client --server-mode).
+		#
+		# If shell=False, then args are arguments to connect
+		# client.  If shell=True, then connect client executes
+		# them as a shell command.
+		opts = []
+
 		if self.repo:
-			args = ['/usr/bin/env', 'JOBREPO=' + self.repo] + args
-		cmd = ' '.join(["'" + x + "'" for x in args])
+			# insert a --repo option
+			opts += ['--repo', self.repo]
+
+		if shell:
+			# shrun (s_shrun) is how we run shell commands
+			args = ['shrun'] + args
+
+		# sequence and quote the command for paramiko
+		args = self.remotecmd + opts + args
+		cmd = ' '.join([quote(arg) for arg in args])
 
 		channel = self.transport.open_session()
 		self.debug('client command: ' + cmd)
@@ -195,9 +214,9 @@ class ClientSession(object):
 
 	def handshake(self):
 		if self.isdebug:
-			channel = self.rcmd(['server', '-debug'], server=True)
+			channel = self.rcmd(['server', '-debug'], shell=False)
 		else:
-			channel = self.rcmd(['server'], server=True)
+			channel = self.rcmd(['server'], shell=False)
 		banner = channel.pgetline()
 		if not banner.startswith('connect client protocol'):
 			channel.close()
@@ -799,7 +818,7 @@ class main(object):
 		try:
 			r = getopt.getopt(args, 'u:ds:r:vh',
 			                  ['server-mode', 'user=', 'debug', 'server=',
-			                   'show-secret', 'verbose', 'help'])
+			                   'show-secret', 'repo=', 'verbose', 'help'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
@@ -825,6 +844,9 @@ class main(object):
 
 			if opt in ('-v', '--verbose'):
 				self.verbose = True
+
+			if opt in ('-r', '--repo'):
+				self.repo = arg
 
 			if opt in ('-h', '--help'):
 				self.usage()
@@ -868,11 +890,7 @@ class main(object):
 		if self.mode == 'server':
 			# chdir to repo staging dir
 			self.basedir = config.get('server', 'staging')
-			self.repodir = None
-			if 'JOBREPO' in os.environ:
-				self.repodir = os.path.join(self.basedir, os.environ['JOBREPO'])
-			else:
-				raise ValueError, 'JOBREPO not set in environment'
+			self.repodir = os.path.join(self.basedir, self.repo)
 			self.ensure_dir(self.basedir)
 			self.ensure_dir(self.repodir)
 			self.chdir(self.repodir)
@@ -935,7 +953,7 @@ class main(object):
 
 		try:
 			session = self.sessionsetup()
-			channel = session.rcmd(['aliases'], server=True)
+			channel = session.rcmd(['aliases'], shell=False)
 			data = ''
 			for line in channel.fp:
 				data += line
@@ -972,7 +990,7 @@ class main(object):
 			if self.repo is None:
 				self.repo = os.path.basename(os.getcwd())
 
-			channel = session.rcmd(['runalias', name] + args, server=True)
+			channel = session.rcmd(['runalias', name] + args, shell=False)
 			channel.rio()
 			rc = channel.recv_exit_status()
 			session.close()
@@ -1104,7 +1122,7 @@ class main(object):
 		except SSHError, e:
 			raise GeneralException, e.args
 
-		channel = session.rcmd(['setup'], server=True)
+		channel = session.rcmd(['setup'], shell=False)
 		channel.send(pub + '\n')
 		channel.send('.\n')
 		channel.rio(stdin=False)
@@ -1146,7 +1164,7 @@ class main(object):
 		''' '''
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['echo'], server=True)
+		channel = session.rcmd(['echo'], shell=False)
 		# we will do an echo test here later. For now, just echo at both ends.
 		while True:
 			buf = channel.recv(1024)
@@ -1183,7 +1201,7 @@ class main(object):
 		code = str(random.randint(0, 1000))
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['test', code, _verbose], server=True)
+		channel = session.rcmd(['test', code, _verbose], shell=False)
 		test = ''
 		while True:
 			buf = channel.recv(1024)
@@ -1345,6 +1363,14 @@ class main(object):
 		return 0
 
 
+	def s_shrun(self, args):
+		os.environ['JOBREPO'] = self.repo
+		cmd = ' '.join([quote(x, chr="'") for x in args])
+		proc = subprocess.Popen(cmd, shell=True, stdin=sys.stdin,
+		                        stdout=sys.stdout, stderr=sys.stdout)
+		proc.communicate()
+
+
 	#@decorator
 	#def sync(f):
 	#	'''Decorator that performs file sync before executing
@@ -1371,7 +1397,7 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 		# Now run a submit
-		channel = session.rcmd([command] + args)
+		channel = session.rcmd([command] + args, shell=True)
 		channel.rio()
 		rc = channel.recv_exit_status()
 
@@ -1486,7 +1512,7 @@ class main(object):
 			if self.repo is None:
 				self.repo = os.path.basename(os.getcwd())
 
-			channel = session.rcmd(_args + args)
+			channel = session.rcmd(_args + args, shell=True)
 			channel.rio()
 			rc = channel.recv_exit_status()
 			session.close()
@@ -1523,7 +1549,7 @@ class main(object):
 			if self.repo is None:
 				self.repo = os.path.basename(os.getcwd())
 
-			channel = session.rcmd(_args + args, server=True)
+			channel = session.rcmd(_args + args, shell=False)
 			channel.rio()
 			rc = channel.recv_exit_status()
 			session.close()
