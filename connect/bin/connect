@@ -566,11 +566,20 @@ class Main(object):
 
 		# We'll read options -before- config, since options may
 		# affect where we find configs.
-		try:
-			opts, args = getopt.getopt(args, 'h', ['help', 'nolocal', 'full'])
-		except getopt.GetoptError, e:
-			self.error(str(e))
-			return 10
+
+		passargs = []
+		opts = []
+		while args:
+			try:
+				opts, args = getopt.getopt(args, 'h', ['help', 'nolocal', 'full'])
+				break
+			except getopt.GetoptError, e:
+				# Unknown options may be options for the subcommand.
+				# Reinsert them to the args list by saving in passargs.
+				passargs += ['--' + e.opt]
+				args = args[1:]
+
+		args = passargs + args
 
 		# In particular we want to check for this option. Other
 		# options can/should be handled later.
