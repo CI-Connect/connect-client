@@ -348,6 +348,10 @@ class main(object):
 		return f
 
 
+	@property
+	def joburl(self):
+		return 'connect://%s@%s/%s' % (self.profile.user, self.profile.server, self.repo)
+
 	def __init__(self):
 		self.name = os.path.basename(sys.argv[0])
 		self.opts = []
@@ -1576,6 +1580,7 @@ class main(object):
 		else:
 			channel = session.rcmd(['/bin/sh', '-ri'], shell=True, pty=True)
 
+		self.output('\n[connected to %s]' % self.joburl)
 		try:
 			tty.setraw(sys.stdin.fileno())
 			tty.setcbreak(sys.stdin.fileno())
@@ -1601,7 +1606,7 @@ class main(object):
 		finally:
 			termios.tcsetattr(sys.stdin, termios.TCSADRAIN, ldisc)
 
-		self.output('\n[disconnected from job %s]' % self.repo)
+		self.output('\n[disconnected from %s]' % self.joburl)
 		return
 
 
