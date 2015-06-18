@@ -101,6 +101,25 @@ def quote(s, chr='"'):
 	return chr + s + chr
 
 
+def ttysize():
+	'''return (rows, columns) of controlling terminal'''
+	import termios, fcntl, struct, os
+
+	def ioctl(fd):
+		try:
+			r = fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234')
+			yx = struct.unpack('hh', r)
+			return yx
+		except:
+			return (None, None)
+
+	fd = os.open(os.ctermid(), os.O_RDONLY)
+	y, x = ioctl(fd)
+	os.close(fd)
+
+	return os.environ.get('LINES', y), os.environ.get('COLS', x)
+
+
 class ClientSession(object):
 	remotecmd = ['connect', 'client', '--server-mode']
 
@@ -187,31 +206,47 @@ class ClientSession(object):
 		channel = self.transport.open_session()
 		self.debug('client command: ' + cmd)
 		if pty:
-			channel.get_pty()
+			term = os.environ.get('TERM', 'vt100')
+			rows, cols = ttysize()
+			channel.get_pty(term=term, width=cols, height=rows)
 		channel.exec_command(cmd)
 		channel.fp = channel.makefile()
+		self.channels.append(channel)
+
+		# Set some additional methods on the channel object
+		# for convenience to the receiver.
+
+		def _(sig, action):
+			'''SIGWINCH handler'''
+			rows, cols = ttysize()
+			channel.resize_pty(width=cols, height=rows)
+		channel.winch = _
 
 		def _(**kwargs):
+			'''remote i/o proxy'''
 			return self.rio(channel, **kwargs)
 		channel.rio = _
 
 		def _(message, code, **kwargs):
+			'''protocol message exchange proxy'''
 			return self.exchange(channel, message, code, **kwargs)
 		channel.exchange = _
 
 		def _(*args, **kwargs):
+			'''protocol command proxy'''
 			return self.pcmd(channel, *args, **kwargs)
 		channel.pcmd = _
 
 		def _(*args, **kwargs):
+			'''protocol response receiver proxy'''
 			return self.pgetline(channel, *args, **kwargs)
 		channel.pgetline = _
 
 		def _(*args, **kwargs):
+			'''protocol response reply proxy'''
 			return self.preply(channel, *args, **kwargs)
 		channel.preply = _
 
-		self.channels.append(channel)
 		return channel
 
 
@@ -1371,6 +1406,7 @@ class main(object):
 
 
 	def s_shrun(self, args):
+		os.environ['HOME'] = self.repodir
 		os.environ['JOBREPO'] = self.repo
 		os.environ['PS1'] = '%s> ' % self.repo
 		cmd = ' '.join([quote(x, chr="'") for x in args])
@@ -1575,37 +1611,45 @@ class main(object):
 
 		ldisc = termios.tcgetattr(sys.stdin.fileno())
 		session = self.sessionsetup()
-		if args:
-			channel = session.rcmd(args, shell=True, pty=True)
-		else:
-			channel = session.rcmd(['/bin/sh', '-ri'], shell=True, pty=True)
+		if not args:
+			args = ['/bin/sh', '-i']
+
+		channel = session.rcmd(args, shell=True, pty=True)
+
+		# set a SIGWINCH handler to propagate terminal resizes to server
+		signal.signal(signal.SIGWINCH, channel.winch)
 
 		self.output('\n[connected to %s]' % self.joburl)
 		try:
 			tty.setraw(sys.stdin.fileno())
 			tty.setcbreak(sys.stdin.fileno())
-			#channel.settimeout(0.0)
+			channel.settimeout(0.0)
 
 			while True:
-				rset, wset, eset = select.select([channel, sys.stdin], [], [])
-				if channel in rset:
-					try:
-						buf = channel.recv(1024)
+				try:
+					rset, wset, eset = select.select([channel, sys.stdin], [], [])
+					if channel in rset:
+						try:
+							buf = channel.recv(1024)
+							if len(buf) == 0:
+								break
+							sys.stdout.write(buf)
+							sys.stdout.flush()
+						except socket.timeout:
+							pass
+					if sys.stdin in rset:
+						buf = sys.stdin.read(1)
 						if len(buf) == 0:
 							break
-						sys.stdout.write(buf)
-						sys.stdout.flush()
-					except socket.timeout:
-						pass
-				if sys.stdin in rset:
-					buf = sys.stdin.read(1)
-					if len(buf) == 0:
-						break
-					channel.send(buf)
+						channel.send(buf)
+				except select.error, e:
+					if e.args[0] != errno.EINTR:
+						raise
 
 		finally:
 			termios.tcsetattr(sys.stdin, termios.TCSADRAIN, ldisc)
 
+		signal.signal(signal.SIGWINCH, signal.SIG_DFL)
 		self.output('\n[disconnected from %s]' % self.joburl)
 		return
 
