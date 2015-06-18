@@ -6,13 +6,6 @@
 #    * ${dir}/.uuid?
 #    * store in a ~/.ciconnect/client/dirs.db?
 #    * name remote dirs for the uuid itself? ~/connect-client/<uuid>
-#
-# 2. exchange() needs to handle multiple responses:
-#    exchange('bla bla', {
-#             403: handle_403,
-#             200: handle_200,
-#    })
-#
 
 import os
 import sys
@@ -62,6 +55,7 @@ class GeneralException(Exception):
 
 class SSHError(GeneralException): pass
 class UsageError(GeneralException): pass
+class NotPresentError(GeneralException): pass
 
 
 class codes(object):
@@ -306,7 +300,7 @@ class ClientSession(object):
 			sys.stdout.flush()
 
 
-	def exchange(self, channel, message, code):
+	def exchange(self, channel, message, responses):
 		channel.pcmd(message)
 		data = []
 		until = None
@@ -323,8 +317,35 @@ class ClientSession(object):
 
 			args = line.split()
 			rcode = int(args.pop(0))
-			if rcode == code:
+
+			# Responses may be a dict or an int.
+			#
+			# If responses is an int, it's a termination condition. If
+			# the code matches it, we return the args and iteration of
+			# the exchange is interrupted.
+			#
+			# If responses is a dict and rcode is a key in responses,
+			# the value should be a callable that accepts a list of
+			# args, and returns a (bool, list) tuple. The list replaces
+			# args, and if the bool is true then the exchange halts.
+			# Otherwise the exchange continues iterating.
+			#
+			# Alternatively the value may be None; in this case the
+			# args are returned and the exchange is interrupted.
+			#
+			# In yet another option that I just thought of, the value
+			# may be an Exception instance, in which case it will be raised.
+			if rcode == responses:
 				return args
+			elif hasattr(responses, '__getitem__') and rcode in responses:
+				if responses[rcode] and isinstance(responses[rcode], Exception):
+					raise responses[rcode]
+				elif responses[rcode]:
+					stop, args = responses[rcode](args)
+					if stop:
+						return args
+				else:
+					return args
 			elif rcode == codes.MULTILINE:
 				if args:
 					until = args[0]
@@ -395,6 +416,7 @@ class main(object):
 		self.keybits = 2048
 		self.session = None
 		self.repo = os.path.basename(os.getcwd())
+		self.implicit = True
 
 		self.showsecret = False
 		self.debug = lambda *args: True
@@ -739,15 +761,21 @@ class main(object):
 
 
 	def pull(self, channel, local=None, verbose=False):
-		if verbose:
-			notice = lambda *args: self.notice(*args)
-		else:
-			notice = lambda *args: sys.stdout.write('.')
-
 		if local is None:
 			local = os.getcwd()
 		if self.repo is None:
 			self.repo = os.path.basename(local)
+
+		if verbose:
+			wanted = self.notice
+			unwanted = self.notice
+		else:
+			def wanted(*args):
+				sys.stdout.write('+')
+				sys.stdout.flush()
+			def unwanted(*args):
+				sys.stdout.write('.')
+				sys.stdout.flush()
 
 		channel.exchange('dir %s' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
@@ -756,10 +784,21 @@ class main(object):
 		sftp.chdir(servercwd)
 
 		basedir = os.getcwd()
+		# sketchy
 		self.chdir(local)
 
 		# Request file list from server, and individual files
-		data = channel.exchange('list', codes.OK)
+		if self.implicit:
+			cmd = 'list'
+		else:
+			cmd = 'list %s' % self.fnencode(servercwd)
+		data = channel.exchange(cmd, {
+			codes.OK: None,
+			codes.NOTPRESENT: NotPresentError('%s not found' % self.joburl),
+		})
+		sent = 0
+		unsent = 0
+		error = 0
 		for line in data:
 			args = line.strip().split()
 			fn = self.fndecode(args.pop(0))
@@ -770,16 +809,23 @@ class main(object):
 				rfn = fn
 				dir = os.path.dirname(fn)
 				self.ensure_dir(dir)
-				notice('fetching %s as %s...', rfn, fn)
+				wanted('fetching %s...', rfn)
 				sftp.get(rfn, fn)
+				sent += 1
 				if 'mtime' in attrs:
 					t = int(attrs['mtime'])
 					os.utime(fn, (t, t))
+			else:
+				rfn = fn
+				unwanted('not fetching %s...', rfn)
+				unsent += 1
 
 		self.chdir(basedir)
 		if not verbose:
 			sys.stdout.write('\n')
-			sys.stdout.flush()
+		self.output('%d objects sent; %d objects current; %d errors',
+					sent, unsent, error)
+		sys.stdout.flush()
 
 
 	def sreply(self, code, *args):
@@ -1364,6 +1410,13 @@ class main(object):
 				sys.stdout.write(endtag + '\n')
 
 			elif cmd == 'list':
+				if args:
+					try:
+						self.chdir(self.fndecode(args.pop(0)))
+					except OSError:
+						self.sreply(codes.NOTPRESENT)
+						break
+
 				self.sreply(codes.MULTILINE)
 				for root, dirs, files in os.walk('.'):
 					for file in files:
@@ -1496,11 +1549,18 @@ class main(object):
 			if opt in ('-w', '--where'):
 				where = True
 
+		if self.isdebug:
+			verbose = True
+
 		local = None
 		if len(args) > 1:
 			raise UsageError, 'too many arguments'
 		if len(args) == 1:
+			self.implicit = False
 			self.repo, = args
+			# chdir into the named location
+			self.ensure_dir(self.repo)
+			os.chdir(self.repo)
 
 		if where:
 			# don't pull, just show dir path
@@ -1509,10 +1569,14 @@ class main(object):
 		session = self.sessionsetup()
 		channel = session.handshake()
 		if mode == 'pull' or mode == 'sync':
-			self.pull(channel, local=local, verbose=verbose)
+			try:
+				self.pull(channel, local=local, verbose=verbose)
+				channel.exchange('quit', codes.OK)
+			except GeneralException, e:
+				self.error(e)
 		if mode == 'push' or mode == 'sync':
 			self.push(channel, local=local, verbose=verbose)
-		channel.exchange('quit', codes.OK)
+			channel.exchange('quit', codes.OK)
 
 
 	def c_revoke(self, args):
