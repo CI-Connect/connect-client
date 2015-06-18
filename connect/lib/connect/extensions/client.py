@@ -104,8 +104,9 @@ def quote(s, chr='"'):
 class ClientSession(object):
 	remotecmd = ['connect', 'client', '--server-mode']
 
-	def __init__(self, hostname, user=None, keyfile=None, password=None, debug=None, repo=None):
+	def __init__(self, hostname, port=22, user=None, keyfile=None, password=None, debug=None, repo=None):
 		self.hostname = hostname
+		self.port = port
 		self.ssh = None
 		self.version = 0
 		self.transport = None
@@ -141,7 +142,7 @@ class ClientSession(object):
 		self.ssh.load_system_host_keys()
 		self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 		try:
-			self.ssh.connect(self.hostname, username=self.user,
+			self.ssh.connect(self.hostname, username=self.user, port=self.port,
 			                 password=self.password, key_filename=self.keyfile)
 			return None
 		except paramiko.AuthenticationException, e:
@@ -162,7 +163,7 @@ class ClientSession(object):
 		self.ssh = None
 
 
-	def rcmd(self, args, shell=False):
+	def rcmd(self, args, shell=False, pty=False):
 		# To manage metainformation, all remote commands run
 		# through self.remotecmd (connect client --server-mode).
 		#
@@ -185,6 +186,8 @@ class ClientSession(object):
 
 		channel = self.transport.open_session()
 		self.debug('client command: ' + cmd)
+		if pty:
+			channel.get_pty()
 		channel.exec_command(cmd)
 		channel.fp = channel.makefile()
 
@@ -1365,6 +1368,7 @@ class main(object):
 
 	def s_shrun(self, args):
 		os.environ['JOBREPO'] = self.repo
+		os.environ['PS1'] = '%s> ' % self.repo
 		cmd = ' '.join([quote(x, chr="'") for x in args])
 		proc = subprocess.Popen(cmd, shell=True, stdin=sys.stdin,
 		                        stdout=sys.stdout, stderr=sys.stdout)
@@ -1558,6 +1562,48 @@ class main(object):
 		if 'secret' in kwargs:
 			_.secret = kwargs['secret']
 		return _
+
+	def c_shell(self, args):
+		'''[command]'''
+		import termios
+		import tty
+		import select
+
+		ldisc = termios.tcgetattr(sys.stdin.fileno())
+		session = self.sessionsetup()
+		if args:
+			channel = session.rcmd(args, shell=True, pty=True)
+		else:
+			channel = session.rcmd(['/bin/sh', '-ri'], shell=True, pty=True)
+
+		try:
+			tty.setraw(sys.stdin.fileno())
+			tty.setcbreak(sys.stdin.fileno())
+			#channel.settimeout(0.0)
+
+			while True:
+				rset, wset, eset = select.select([channel, sys.stdin], [], [])
+				if channel in rset:
+					try:
+						buf = channel.recv(1024)
+						if len(buf) == 0:
+							break
+						sys.stdout.write(buf)
+						sys.stdout.flush()
+					except socket.timeout:
+						pass
+				if sys.stdin in rset:
+					buf = sys.stdin.read(1)
+					if len(buf) == 0:
+						break
+					channel.send(buf)
+
+		finally:
+			termios.tcsetattr(sys.stdin, termios.TCSADRAIN, ldisc)
+
+		self.output('\n[disconnected from job %s]' % self.repo)
+		return
+
 
 	# These are simple, transparent commands -- no more complexity
 	# than 'ssh server cmd args'.
