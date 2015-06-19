@@ -26,6 +26,7 @@ import errno
 import stat
 import json
 import subprocess
+import hashlib
 
 _version = '@@version@@'
 
@@ -408,6 +409,15 @@ class main(object):
 	def joburl(self):
 		return 'connect://%s@%s/%s' % (self.profile.user, self.profile.server, self.repo)
 
+
+	def mkjuid(self):
+		sha = hashlib.sha1()
+		sha.update(self.repo)
+		sha.update(str(time.time()))
+		hashstr = ''.join(['%02x' % ord(c) for c in sha.digest()[:4]])
+		return self.repo + '-' + hashstr
+
+
 	def __init__(self):
 		self.name = os.path.basename(sys.argv[0])
 		self.opts = []
@@ -417,6 +427,7 @@ class main(object):
 		self.session = None
 		self.repo = os.path.basename(os.getcwd())
 		self.implicit = True
+		self.juid = None
 
 		self.showsecret = False
 		self.debug = lambda *args: True
@@ -656,7 +667,8 @@ class main(object):
 		self.debug('chdir(%s)' % dir)
 		os.chdir(dir)
 
-	def push(self, channel, local=None, verbose=False):
+
+	def push(self, channel, verbose=False, noop=False):
 		mdcache = set()
 		def awfulrecursivemkdir(sftp, dir):
 			if dir in mdcache:
@@ -673,6 +685,7 @@ class main(object):
 		if verbose:
 			wanted = self.notice
 			unwanted = self.notice
+			error = self.notice
 		else:
 			def wanted(*args):
 				sys.stdout.write('+')
@@ -680,10 +693,9 @@ class main(object):
 			def unwanted(*args):
 				sys.stdout.write('.')
 				sys.stdout.flush()
-
-		if local is None:
-			local = os.getcwd()
-		self.repo = os.path.basename(local)
+			def error(*args):
+				sys.stdout.write('!')
+				sys.stdout.flush()
 
 		channel.exchange('dir %s create=yes' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
@@ -691,8 +703,6 @@ class main(object):
 		servercwd, = channel.exchange('getcwd', codes.OK)
 		sftp.chdir(servercwd)
 
-		basedir = os.getcwd()
-		self.chdir(local)
 		sent = 0
 		unsent = 0
 		error = 0
@@ -717,11 +727,14 @@ class main(object):
 						try:
 							wanted('sending %s/...', fn)
 							rs = sftp.stat(rfn)
-							sent += 1
 						except:
-							sftp.mkdir(rfn)
-							error += 1
-							pass
+							try:
+								if not noop:
+									sftp.mkdir(rfn)
+								sent += 1
+							except:
+								error('cannot send %s/...', fn)
+								error += 1
 					else:
 						unwanted('not sending %s/...', fn)
 						unsent += 1
@@ -733,26 +746,28 @@ class main(object):
 
 					if rcode == codes.YES:
 						# send
-						awfulrecursivemkdir(sftp, os.path.dirname(rfn))
+						if not noop:
+							awfulrecursivemkdir(sftp, os.path.dirname(rfn))
 
 						try:
 							wanted('sending %s...', fn)
-							sftp.put(fn, rfn)
+							if not noop:
+								sftp.put(fn, rfn)
 							sent += 1
 						except Exception, e:
-							self.notice('while sending %s: %s', rfn, str(e))
+							error('error sending %s: %s', rfn, str(e))
 							error += 1
 
 					else:
 						unwanted('not sending %s...', fn)
 						unsent += 1
 
-				sftp.utime(rfn, (s.st_atime, s.st_mtime))
-				sftp.chmod(rfn, s.st_mode)
-				# do we need this? doesn't utime() handle it?
-				#channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
+				if not noop:
+					sftp.utime(rfn, (s.st_atime, s.st_mtime))
+					sftp.chmod(rfn, s.st_mode)
+					# do we need this? doesn't utime() handle it?
+					#channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
 
-		self.chdir(basedir)
 		if not verbose:
 			sys.stdout.write('\n')
 		self.output('%d objects sent; %d objects current; %d errors',
@@ -760,15 +775,11 @@ class main(object):
 		sys.stdout.flush()
 
 
-	def pull(self, channel, local=None, verbose=False):
-		if local is None:
-			local = os.getcwd()
-		if self.repo is None:
-			self.repo = os.path.basename(local)
-
+	def pull(self, channel, verbose=False, noop=False):
 		if verbose:
 			wanted = self.notice
 			unwanted = self.notice
+			error = self.notice
 		else:
 			def wanted(*args):
 				sys.stdout.write('+')
@@ -776,16 +787,15 @@ class main(object):
 			def unwanted(*args):
 				sys.stdout.write('.')
 				sys.stdout.flush()
+			def error(*args):
+				sys.stdout.write('!')
+				sys.stdout.flush()
 
 		channel.exchange('dir %s' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
 
 		servercwd, = channel.exchange('getcwd', codes.OK)
 		sftp.chdir(servercwd)
-
-		basedir = os.getcwd()
-		# sketchy
-		self.chdir(local)
 
 		# Request file list from server, and individual files
 		if self.implicit:
@@ -796,6 +806,7 @@ class main(object):
 			codes.OK: None,
 			codes.NOTPRESENT: NotPresentError('%s not found' % self.joburl),
 		})
+
 		sent = 0
 		unsent = 0
 		error = 0
@@ -808,19 +819,19 @@ class main(object):
 				#rfn = os.path.join(self.repo, fn)
 				rfn = fn
 				dir = os.path.dirname(fn)
-				self.ensure_dir(dir)
 				wanted('fetching %s...', rfn)
-				sftp.get(rfn, fn)
+				if not noop:
+					self.ensure_dir(dir)
+					sftp.get(rfn, fn)
+					if 'mtime' in attrs:
+						t = int(attrs['mtime'])
+						os.utime(fn, (t, t))
 				sent += 1
-				if 'mtime' in attrs:
-					t = int(attrs['mtime'])
-					os.utime(fn, (t, t))
 			else:
 				rfn = fn
 				unwanted('not fetching %s...', rfn)
 				unsent += 1
 
-		self.chdir(basedir)
 		if not verbose:
 			sys.stdout.write('\n')
 		self.output('%d objects sent; %d objects current; %d errors',
@@ -982,6 +993,21 @@ class main(object):
 			self.ensure_dir(self.basedir)
 			self.ensure_dir(self.repodir)
 			self.chdir(self.repodir)
+			self.checkjuid(create=True)
+
+		elif self.repo and os.path.exists(self.repo):
+			os.chdir(self.repo)
+			self.repodir = os.getcwd()
+			self.repo = os.path.basename(self.repodir)
+			self.checkjuid(create=True)
+
+		else:
+			# client, no repo dir specified. Use cwd.
+			self.repodir = os.getcwd()
+			self.repo = os.path.basename(self.repodir)
+			self.checkjuid()
+			# checkjuid will load juid if present, or leave blank
+			# if not, deferring creation to push/pull operation.
 
 		try:
 			rc = driver(self.args)
@@ -994,6 +1020,28 @@ class main(object):
 			self.session.close()
 		return rc
 
+
+	def checkjuid(self, create=False):
+		dir = os.path.join(self.repodir, '.connect')
+		file = os.path.join(dir, 'juid')
+		try:
+			fp = open(file, 'r')
+			self.juid = fp.read().strip()
+			fp.close()
+			return self.juid
+		except:
+			pass
+
+		if create:
+			self.ensure_dir(dir)
+			fp = open(file, 'w')
+			self.juid = self.mkjuid()
+			fp.write(self.juid)
+			fp.close()
+			return juid
+
+		# no juid
+		return None
 
 	def _aliascache(self, *args):
 		fp = None
@@ -1519,48 +1567,44 @@ class main(object):
 
 
 	def c_push(self, args):
-		'''[-v|--verbose] [-w|--where] [localdir]'''
+		'''[-v|--verbose] [-w|--where]'''
 		return self._pushpull(args, mode='push')
 
 
 	def c_pull(self, args):
-		'''[-v|--verbose] [-w|--where] [localdir]'''
+		'''[-v|--verbose] [-w|--where]'''
 		return self._pushpull(args, mode='pull')
 
 
 	def c_sync(self, args):
-		'''[-v|--verbose] [-w|--where] [localdir]'''
+		'''[-v|--verbose] [-w|--where]'''
 		return self._pushpull(args, mode='sync')
 
 
 	def _pushpull(self, args, mode=None):
 		try:
-			opts, args = getopt.getopt(args, 'vw', ['verbose', 'where'])
+			opts, args = getopt.getopt(args, 'nvw', ['noop', 'verbose', 'where'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
 
 		verbose = False
 		where = False
+		noop = False
 
 		for opt, arg in opts:
 			if opt in ('-v', '--verbose'):
 				verbose = True
 			if opt in ('-w', '--where'):
 				where = True
+			if opt in ('-n', '--noop'):
+				noop = True
 
 		if self.isdebug:
 			verbose = True
 
-		local = None
-		if len(args) > 1:
+		if args:
 			raise UsageError, 'too many arguments'
-		if len(args) == 1:
-			self.implicit = False
-			self.repo, = args
-			# chdir into the named location
-			self.ensure_dir(self.repo)
-			os.chdir(self.repo)
 
 		if where:
 			# don't pull, just show dir path
@@ -1570,12 +1614,12 @@ class main(object):
 		channel = session.handshake()
 		if mode == 'pull' or mode == 'sync':
 			try:
-				self.pull(channel, local=local, verbose=verbose)
+				self.pull(channel, verbose=verbose, noop=noop)
 				channel.exchange('quit', codes.OK)
 			except GeneralException, e:
 				self.error(e)
 		if mode == 'push' or mode == 'sync':
-			self.push(channel, local=local, verbose=verbose)
+			self.push(channel, verbose=verbose, noop=noop)
 			channel.exchange('quit', codes.OK)
 
 
