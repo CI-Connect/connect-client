@@ -1001,7 +1001,7 @@ class main(object):
 			self.error('no job repository was specified')
 			return 30
 
-		elif self.mode == 'client':
+		elif self.mode == 'client' and self.repo is None:
 			# client, no repo dir specified. Use cwd.
 			self.setrepo()
 			# checkjuid will load juid if present, or leave blank
