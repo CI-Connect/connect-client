@@ -845,7 +845,7 @@ class main(object):
 		if not verbose:
 			sys.stdout.write('\n')
 		note = noop and '(no-op) ' or ''
-		self.output('%s%d objects sent; %d objects up to date; %d errors',
+		self.output('%s%d objects retrieved; %d objects up to date; %d errors',
 					note, sent, unsent, error)
 		sys.stdout.flush()
 
