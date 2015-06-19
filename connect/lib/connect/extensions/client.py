@@ -779,8 +779,9 @@ class main(object):
 
 		if not verbose:
 			sys.stdout.write('\n')
-		self.output('%d objects sent; %d objects current; %d errors',
-		            sent, unsent, errors)
+		note = noop and '(no-op) ' or ''
+		self.output('%s%d objects sent; %d objects up to date; %d errors',
+		            note, sent, unsent, errors)
 		sys.stdout.flush()
 
 
@@ -843,8 +844,9 @@ class main(object):
 
 		if not verbose:
 			sys.stdout.write('\n')
-		self.output('%d objects sent; %d objects current; %d errors',
-					sent, unsent, error)
+		note = noop and '(no-op) ' or ''
+		self.output('%s%d objects sent; %d objects up to date; %d errors',
+					note, sent, unsent, error)
 		sys.stdout.flush()
 
 
