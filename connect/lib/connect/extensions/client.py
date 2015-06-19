@@ -3,9 +3,17 @@
 # XXX TODO
 #
 # 1. use a uuid file to verify that local and remote project dirs match
-#    * ${dir}/.uuid?
-#    * store in a ~/.ciconnect/client/dirs.db?
-#    * name remote dirs for the uuid itself? ~/connect-client/<uuid>
+#    * now stores client-side in .connect/juid
+#    * how to ensure that we're dealing with the right remote?
+#      - name remote dir ~ juid
+#      - but how to map canonical repo name to juid? (this only
+#        matters for clone operations - i.e. pull when no local
+#        juid present)
+#      - store canonical name in .connect also?
+#    OR
+#      - name remote dir ~ canonical
+#      - compare juid files in protocol
+#      - can't have two remote with same name
 
 import os
 import sys
@@ -57,6 +65,7 @@ class GeneralException(Exception):
 class SSHError(GeneralException): pass
 class UsageError(GeneralException): pass
 class NotPresentError(GeneralException): pass
+class NoRepoError(GeneralException): pass
 
 
 class codes(object):
@@ -705,7 +714,7 @@ class main(object):
 
 		sent = 0
 		unsent = 0
-		error = 0
+		errors = 0
 		for root, dirs, files in os.walk('.'):
 			for file in files + dirs:
 				fn = os.path.join(root, file)
@@ -734,7 +743,7 @@ class main(object):
 								sent += 1
 							except:
 								error('cannot send %s/...', fn)
-								error += 1
+								errors += 1
 					else:
 						unwanted('not sending %s/...', fn)
 						unsent += 1
@@ -756,7 +765,7 @@ class main(object):
 							sent += 1
 						except Exception, e:
 							error('error sending %s: %s', rfn, str(e))
-							error += 1
+							errors += 1
 
 					else:
 						unwanted('not sending %s...', fn)
@@ -771,7 +780,7 @@ class main(object):
 		if not verbose:
 			sys.stdout.write('\n')
 		self.output('%d objects sent; %d objects current; %d errors',
-		            sent, unsent, error)
+		            sent, unsent, errors)
 		sys.stdout.flush()
 
 
@@ -945,7 +954,8 @@ class main(object):
 				self.verbose = True
 
 			if opt in ('-r', '--repo'):
-				self.repo = arg
+				self.setrepo(arg)
+				self.checkjuid(create=True)
 
 			if opt in ('-h', '--help'):
 				self.usage()
@@ -986,28 +996,17 @@ class main(object):
 			           subcmd, self.local)
 			return 10
 
-		if self.mode == 'server':
-			# chdir to repo staging dir
-			self.basedir = config.get('server', 'staging')
-			self.repodir = os.path.join(self.basedir, self.repo)
-			self.ensure_dir(self.basedir)
-			self.ensure_dir(self.repodir)
-			self.chdir(self.repodir)
-			self.checkjuid(create=True)
+		if self.mode == 'server' and self.repo is None:
+			# server mode with no --repo is an error
+			self.error('no job repository was specified')
+			return 30
 
-		elif self.repo and os.path.exists(self.repo):
-			os.chdir(self.repo)
-			self.repodir = os.getcwd()
-			self.repo = os.path.basename(self.repodir)
-			self.checkjuid(create=True)
-
-		else:
+		elif self.mode == 'client':
 			# client, no repo dir specified. Use cwd.
-			self.repodir = os.getcwd()
-			self.repo = os.path.basename(self.repodir)
-			self.checkjuid()
+			self.setrepo()
 			# checkjuid will load juid if present, or leave blank
 			# if not, deferring creation to push/pull operation.
+			self.checkjuid()
 
 		try:
 			rc = driver(self.args)
@@ -1019,6 +1018,43 @@ class main(object):
 		if self.session:
 			self.session.close()
 		return rc
+
+
+	def setrepo(self, *args):
+		if args:
+			self.repo = args[0]
+
+		if self.mode == 'server':
+			# basedir must only be used by server
+			self.basedir = config.get('server', 'staging')
+
+			if self.repo:
+				self.repodir = os.path.join(self.basedir, self.repo)
+				self.ensure_dir(self.repodir)
+
+			else:
+				# no declared repo; error
+				raise NoRepoError, 'no repository was declared'
+
+		else:
+			# client
+			if self.repo and os.path.exists(self.repo):
+				# client --repo was likely used, and is a local path
+				os.chdir(self.repo)
+				self.repodir = os.getcwd()
+				self.repo = os.path.basename(self.repodir)
+
+			elif self.repo:
+				# does not exist, client
+				self.repodir = os.path.realpath(self.repo)
+				self.ensure_dir(self.repodir)
+
+			else:
+				# no declared repo; use current dir
+				self.repodir = os.getcwd()
+				self.repo = os.path.basename(self.repodir)
+
+		self.chdir(self.repodir)
 
 
 	def checkjuid(self, create=False):
@@ -1038,10 +1074,11 @@ class main(object):
 			self.juid = self.mkjuid()
 			fp.write(self.juid)
 			fp.close()
-			return juid
+			return self.juid
 
 		# no juid
 		return None
+
 
 	def _aliascache(self, *args):
 		fp = None
@@ -1567,21 +1604,19 @@ class main(object):
 
 
 	def c_push(self, args):
-		'''[-v|--verbose] [-w|--where]'''
 		return self._pushpull(args, mode='push')
 
 
 	def c_pull(self, args):
-		'''[-v|--verbose] [-w|--where]'''
 		return self._pushpull(args, mode='pull')
 
 
 	def c_sync(self, args):
-		'''[-v|--verbose] [-w|--where]'''
 		return self._pushpull(args, mode='sync')
 
 
 	def _pushpull(self, args, mode=None):
+		'''[-v|--verbose] [-w|--where] [repository-dir]'''
 		try:
 			opts, args = getopt.getopt(args, 'nvw', ['noop', 'verbose', 'where'])
 		except getopt.GetoptError, e:
@@ -1603,8 +1638,11 @@ class main(object):
 		if self.isdebug:
 			verbose = True
 
-		if args:
+		if len(args) > 1:
 			raise UsageError, 'too many arguments'
+		elif len(args) == 1:
+			self.setrepo(args[0])
+			self.checkjuid(create=True)
 
 		if where:
 			# don't pull, just show dir path
@@ -1621,6 +1659,8 @@ class main(object):
 		if mode == 'push' or mode == 'sync':
 			self.push(channel, verbose=verbose, noop=noop)
 			channel.exchange('quit', codes.OK)
+
+	c_push.__doc__ = c_pull.__doc__ = c_sync.__doc__ = _pushpull.__doc__
 
 
 	def c_revoke(self, args):
