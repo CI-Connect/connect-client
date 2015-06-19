@@ -898,7 +898,7 @@ class main(object):
 
 
 	def usage(self):
-		self.output('This is Connect Client v%s.' % _version)
+		self.output('This is Connect Client %s.' % _version)
 		for line in self._help():
 			if line.startswith('@ '):
 				line = 'usage: %s %s' % (self.local, line[2:])
