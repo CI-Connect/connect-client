@@ -127,13 +127,13 @@ We expect to provide an RPM-based installation in the near future.
 Each user must perform this setup step once before using Connect Client
 for the first time.  
 
-    $ connect client setup
+    $ connect setup
     <enter your OSG Connect username and password when prompted>
 
 The Connect Client should be set up, with the OSG Connect site
 added. Test the setup with:
 
-    $ connect client test
+    $ connect test
 
 
 ## Updating
@@ -150,7 +150,7 @@ these instructions from the beginning.
 If you need to revoke your access to the Connect server, either permanently
 or for testing purposes:
 
-    $ connect client revoke
+    $ connect revoke
 
 
 ## User Guide 
