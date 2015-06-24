@@ -157,33 +157,37 @@ or for testing purposes:
 
 ### Connect Client commands
 
-For a list of available commands, enter `connect client` from the command line:
+For a list of available commands, enter `connect` from the command line:
+```
+	$ connect 
+This is Connect Client v0.3-1-g59c218.
+usage: connect [opts] <subcommand> [args]
+       connect [opts] dag <dagfile>
+       connect [opts] history <condor_history arguments>
+       connect [opts] list [-v]
+       connect [opts] modules 
+       connect [opts] pull [-v|--verbose] [-w|--where] [repository-dir]
+       connect [opts] push [-v|--verbose] [-w|--where] [repository-dir]
+       connect [opts] q <condor_q arguments>
+       connect [opts] revoke 
+       connect [opts] rm <condor_rm arguments>
+       connect [opts] run <condor_run arguments>
+       connect [opts] setup [--replace-keys] [--update-keys] [servername]
+       connect [opts] shell [command]
+       connect [opts] status <condor_status arguments>
+       connect [opts] submit <submitfile>
+       connect [opts] sync [-v|--verbose] [-w|--where] [repository-dir]
+       connect [opts] test  
+       connect [opts] wait <condor_wait arguments>
 
-	$ connect client
-       	usage: 	connect client [opts] <subcommand> [args]
-       		connect client [opts] dag <dagfile>
-       		connect client [opts] history <condor_history arguments>
-       		connect client [opts] pull [[localdir] remotedir]
-       		connect client [opts] push [[localdir] remotedir]
-       		connect client [opts] q <condor_q arguments>
-       		connect client [opts] rm <condor_rm arguments>
-       		connect client [opts] revoke
-       		connect client [opts] run <condor_run arguments>
-       		connect client [opts] setup [--replace-keys] [servername]
-       		connect client [opts] status <condor_status arguments>
-       		connect client [opts] submit <submitfile>
-       		connect client [opts] sync [[localdir] remotedir]
-       		connect client [opts] test [servername]
-       		connect client [opts] wait <condor_wait arguments>
+opts:
+    -s|--server hostname       set connect server name
+    -u|--user username         set connect server user name
+    -r|--remote directory      set connect server directory name
+    -v|--verbose               show additional information
+```
 
-        opts:
-    	        -s|--server hostname       set connect server name
-    	        -u|--user username         set connect server user name
-    	        -r|--remote directory      set connect server directory name
-                -v|--verbose               show additional information
-
-	
-To run any of these commands, just enter `connect client [opts] [command name]`.
+To run any of these commands, just enter `connect [opts] [command name]`.
 
 
 ### Example submission
