@@ -70,10 +70,10 @@ module description information.  A reasonable choice for this is
 module looks for personal modules.
 
 Then run `./install.sh` with these two directories and a version
-number (e.g. 0.2.1):
+number (e.g. 0.3.0):
 
     $ cd connect-client
-    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2.1
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.3.0
 
 
 ### Installation by a site administrator
@@ -82,7 +82,7 @@ Typically this would be quite similar, only system paths would be used.
 For example:
 
     $ cd connect-client
-    $ ./install.sh -site /software/connect-client /software/modulefiles 0.2.1
+    $ ./install.sh -site /software/connect-client /software/modulefiles 0.3.0
 
 Note the `-site` option.
 
@@ -141,7 +141,7 @@ To update your connect client installation, it's necessary to re-install.
 There are two paths. You can update using git:
 
     $ git pull
-    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2.1
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.3.0
 
 Alternatively, you can delete your installation directory and restart
 these instructions from the beginning.
