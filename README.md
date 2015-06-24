@@ -1,9 +1,35 @@
+
+    * [Introduction](#introduction)
+      * [Contact us](#contact-us)
+    * [Installation](#installation)
+      * [Obtaining the Connect Client distribution](#obtaining-the-connect-client-distribution)
+      * [Installation by an individual user](#installation-by-an-individual-user)
+      * [Installation by a site administrator](#installation-by-a-site-administrator)
+    * [Setting up Connect Client](#setting-up-connect-client)
+      * [Using environment modules](#using-environment-modules)
+      * [Without environment modules](#without-environment-modules)
+      * [Other](#other)
+      * [First-time setup](#first-time-setup)
+    * [Updating](#updating)
+    * [User Guide](#user-guide)
+      * [Connect Client commands](#connect-client-commands)
+      * [Example submission](#example-submission)
+        * [Create the HTCondor submit description file](#create-the-htcondor-submit-description-file)
+        * [Submit the script](#submit-the-script)
+        * [Check job queue](#check-job-queue)
+        * [Job history](#job-history)
+        * [Retrieve outputs](#retrieve-outputs)
+        * [Check the job output](#check-the-job-output)
+    * [Getting Help](#getting-help)
+
+
 ## Introduction
 
 Connect Client is the set of programs and files for linking a campus
 research computing cluster to a [CI Connect] instance (such as [OSG Connect])
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
-example below assumes one has already [signed up for an account] on OSG Connect.
+example below assumes one has already [signed up for an account] on OSG Connect.  If you don't have 
+an account on OSG Connect, apply now(https://confluence.grid.iu.edu/display/CON/Registration+and+login+instructions). 
 
 ### Contact us
 
