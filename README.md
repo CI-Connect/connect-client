@@ -1,6 +1,6 @@
 Connect Client 
 ==============
-
+  * [Connect Client ](#connect-client-)
     * [Introduction](#introduction)
       * [Contact us](#contact-us)
     * [Installation](#installation)
@@ -23,7 +23,6 @@ Connect Client
         * [Retrieve outputs](#retrieve-outputs)
         * [Check the job output](#check-the-job-output)
     * [Getting Help](#getting-help)
-
 
 ## Introduction
 
