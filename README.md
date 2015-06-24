@@ -1,3 +1,5 @@
+Connect Client 
+==============
 
     * [Introduction](#introduction)
       * [Contact us](#contact-us)
@@ -29,7 +31,7 @@ Connect Client is the set of programs and files for linking a campus
 research computing cluster to a [CI Connect] instance (such as [OSG Connect])
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
 example below assumes one has already [signed up for an account] on OSG Connect.  If you don't have 
-an account on OSG Connect, apply now(https://confluence.grid.iu.edu/display/CON/Registration+and+login+instructions). 
+an account on OSG Connect, [apply now](https://confluence.grid.iu.edu/display/CON/Registration+and+login+instructions). 
 
 ### Contact us
 
