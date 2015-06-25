@@ -186,7 +186,7 @@ class ClientSession(object):
 		self.ssh = None
 
 
-	def rcmd(self, args, shell=False, pty=False):
+	def rcmd(self, args, shell=False, pty=False, userepo=True):
 		# To manage metainformation, all remote commands run
 		# through self.remotecmd (connect client --server-mode).
 		#
@@ -195,7 +195,7 @@ class ClientSession(object):
 		# them as a shell command.
 		opts = []
 
-		if self.repo:
+		if userepo and self.repo:
 			# insert a --repo option
 			opts += ['--repo', self.repo]
 
@@ -1234,7 +1234,7 @@ class main(object):
 
 
 	def c_setup(self, args):
-		'''[--replace-keys] [--update-keys] [servername]'''
+		'''[--replace-keys] [--update-keys] [user][@servername]'''
 
 		overwrite = False
 		update = False
@@ -1297,7 +1297,7 @@ class main(object):
 		except SSHError, e:
 			raise GeneralException, e.args
 
-		channel = session.rcmd(['setup'], shell=False)
+		channel = session.rcmd(['setup'], shell=False, userepo=False)
 		channel.send(pub + '\n')
 		channel.send('.\n')
 		channel.rio(stdin=False)
@@ -1339,7 +1339,7 @@ class main(object):
 		''' '''
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['echo'], shell=False)
+		channel = session.rcmd(['echo'], shell=False, userepo=False)
 		# we will do an echo test here later. For now, just echo at both ends.
 		while True:
 			buf = channel.recv(1024)
@@ -1376,7 +1376,7 @@ class main(object):
 		code = str(random.randint(0, 1000))
 
 		session = self.sessionsetup()
-		channel = session.rcmd(['test', code, _verbose], shell=False)
+		channel = session.rcmd(['test', code, _verbose], shell=False, userepo=False)
 		test = ''
 		while True:
 			buf = channel.recv(1024)
