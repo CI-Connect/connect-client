@@ -1,9 +1,36 @@
+Connect Client 
+==============
+  * [Connect Client ](#connect-client-)
+    * [Introduction](#introduction)
+      * [Contact us](#contact-us)
+    * [Installation](#installation)
+      * [Obtaining the Connect Client distribution](#obtaining-the-connect-client-distribution)
+      * [Installation by an individual user](#installation-by-an-individual-user)
+      * [Installation by a site administrator](#installation-by-a-site-administrator)
+    * [Setting up Connect Client](#setting-up-connect-client)
+      * [Using environment modules](#using-environment-modules)
+      * [Without environment modules](#without-environment-modules)
+      * [Other](#other)
+      * [First-time setup](#first-time-setup)
+    * [Updating](#updating)
+    * [User Guide](#user-guide)
+      * [Connect Client commands](#connect-client-commands)
+      * [Example submission](#example-submission)
+        * [Create the HTCondor submit description file](#create-the-htcondor-submit-description-file)
+        * [Submit the script](#submit-the-script)
+        * [Check job queue](#check-job-queue)
+        * [Job history](#job-history)
+        * [Retrieve outputs](#retrieve-outputs)
+        * [Check the job output](#check-the-job-output)
+    * [Getting Help](#getting-help)
+
 ## Introduction
 
 Connect Client is the set of programs and files for linking a campus
 research computing cluster to a [CI Connect] instance (such as [OSG Connect])
 which uses [HTCondor] to submit jobs to the [Open Science Grid].  The 
-example below assumes one has already [signed up for an account] on OSG Connect.
+example below assumes one has already [signed up for an account] on OSG Connect.  If you don't have 
+an account on OSG Connect, [apply now](https://confluence.grid.iu.edu/display/CON/Registration+and+login+instructions). 
 
 ### Contact us
 
@@ -44,10 +71,10 @@ module description information.  A reasonable choice for this is
 module looks for personal modules.
 
 Then run `./install.sh` with these two directories and a version
-number (e.g. 0.2.1):
+number (e.g. 0.3.0):
 
     $ cd connect-client
-    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2.1
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.3.0
 
 
 ### Installation by a site administrator
@@ -56,7 +83,7 @@ Typically this would be quite similar, only system paths would be used.
 For example:
 
     $ cd connect-client
-    $ ./install.sh -site /software/connect-client /software/modulefiles 0.2.1
+    $ ./install.sh -site /software/connect-client /software/modulefiles 0.3.0
 
 Note the `-site` option.
 
@@ -100,13 +127,13 @@ We expect to provide an RPM-based installation in the near future.
 Each user must perform this setup step once before using Connect Client
 for the first time.  
 
-    $ connect client setup
+    $ connect setup
     <enter your OSG Connect username and password when prompted>
 
 The Connect Client should be set up, with the OSG Connect site
 added. Test the setup with:
 
-    $ connect client test
+    $ connect test
 
 
 ## Updating
@@ -115,7 +142,7 @@ To update your connect client installation, it's necessary to re-install.
 There are two paths. You can update using git:
 
     $ git pull
-    $ ./install.sh ~/software/connect-client ~/privatemodules 0.2.1
+    $ ./install.sh ~/software/connect-client ~/privatemodules 0.3.0
 
 Alternatively, you can delete your installation directory and restart
 these instructions from the beginning.
@@ -123,40 +150,44 @@ these instructions from the beginning.
 If you need to revoke your access to the Connect server, either permanently
 or for testing purposes:
 
-    $ connect client revoke
+    $ connect revoke
 
 
 ## User Guide 
 
 ### Connect Client commands
 
-For a list of available commands, enter `connect client` from the command line:
+For a list of available commands, enter `connect` from the command line:
+```
+$ connect 
+This is Connect Client v0.3-1-g59c218.
+usage: connect [opts] <subcommand> [args]
+       connect [opts] dag <dagfile>
+       connect [opts] history <condor_history arguments>
+       connect [opts] list [-v]
+       connect [opts] modules 
+       connect [opts] pull [-v|--verbose] [-w|--where] [repository-dir]
+       connect [opts] push [-v|--verbose] [-w|--where] [repository-dir]
+       connect [opts] q <condor_q arguments>
+       connect [opts] revoke 
+       connect [opts] rm <condor_rm arguments>
+       connect [opts] run <condor_run arguments>
+       connect [opts] setup [--replace-keys] [--update-keys] [servername]
+       connect [opts] shell [command]
+       connect [opts] status <condor_status arguments>
+       connect [opts] submit <submitfile>
+       connect [opts] sync [-v|--verbose] [-w|--where] [repository-dir]
+       connect [opts] test  
+       connect [opts] wait <condor_wait arguments>
 
-	$ connect client
-       	usage: 	connect client [opts] <subcommand> [args]
-       		connect client [opts] dag <dagfile>
-       		connect client [opts] history <condor_history arguments>
-       		connect client [opts] pull [[localdir] remotedir]
-       		connect client [opts] push [[localdir] remotedir]
-       		connect client [opts] q <condor_q arguments>
-       		connect client [opts] rm <condor_rm arguments>
-       		connect client [opts] revoke
-       		connect client [opts] run <condor_run arguments>
-       		connect client [opts] setup [--replace-keys] [servername]
-       		connect client [opts] status <condor_status arguments>
-       		connect client [opts] submit <submitfile>
-       		connect client [opts] sync [[localdir] remotedir]
-       		connect client [opts] test [servername]
-       		connect client [opts] wait <condor_wait arguments>
+opts:
+    -s|--server hostname       set connect server name
+    -u|--user username         set connect server user name
+    -r|--remote directory      set connect server directory name
+    -v|--verbose               show additional information
+```
 
-        opts:
-    	        -s|--server hostname       set connect server name
-    	        -u|--user username         set connect server user name
-    	        -r|--remote directory      set connect server directory name
-                -v|--verbose               show additional information
-
-	
-To run any of these commands, just enter `connect client [opts] [command name]`.
+To run any of these commands, just enter `connect [opts] [command name]`.
 
 
 ### Example submission
