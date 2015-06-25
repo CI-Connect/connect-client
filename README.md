@@ -159,7 +159,7 @@ or for testing purposes:
 
 For a list of available commands, enter `connect` from the command line:
 ```
-	$ connect 
+$ connect 
 This is Connect Client v0.3-1-g59c218.
 usage: connect [opts] <subcommand> [args]
        connect [opts] dag <dagfile>
