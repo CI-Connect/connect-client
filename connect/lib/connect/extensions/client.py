@@ -1655,6 +1655,10 @@ class main(object):
 		if mode == 'pull' or mode == 'sync':
 			try:
 				self.pull(channel, verbose=verbose, noop=noop)
+			except GeneralException, e:
+				self.error(e)
+		if mode == 'pull':
+			try:
 				channel.exchange('quit', codes.OK)
 			except GeneralException, e:
 				self.error(e)
