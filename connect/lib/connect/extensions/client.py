@@ -413,6 +413,35 @@ class main(object):
 		f.secret = True
 		return f
 
+	def clientcmd(shorts, longs):
+		'''decorator to make a function a client subcommand with
+		pre-parsed options.'''
+		def _outer(f):
+			def _inner(self, opts, args, **kwargs):
+				sopts = shorts
+				lopts = longs
+				sopts += 'h'
+				lopts += ['help']
+				try:
+					nopts, nargs = getopt.getopt(args, sopts, lopts)
+				except getopt.GetoptError, e:
+					self.error(e)
+					return 2
+				for opt, arg in nopts:
+					if opt in ('-h', '--help'):
+						print '>>', f.__name__
+						self.usage(commands=[f.__name__.replace('c_', '')])
+						return 2
+					else:
+						opts += [(opt, arg)]
+				args = nargs
+				return f(self, opts, args, **kwargs)
+			_inner.__doc__ = f.__doc__
+			return _inner
+		return _outer
+
+	# server commands aren't really any different
+	servercmd = clientcmd
 
 	@property
 	def joburl(self):
@@ -930,18 +959,20 @@ class main(object):
 		return urllib.unquote_plus(fn)
 
 
-	def usage(self):
+	def usage(self, commands=[]):
 		self.output('This is Connect Client %s.' % _version)
-		for line in self._help():
+		for line in self._help(commands=commands):
 			if line.startswith('@ '):
 				line = 'usage: %s %s' % (self.local, line[2:])
 			self.output(line)
 
-	def _help(self):
+	def _help(self, commands=[]):
 		yield '@ [opts] <subcommand> [args]'
 		for attr in sorted(dir(self)):
 			if attr.startswith('c_'):
 				subcmd = attr[2:]
+				if commands and subcmd not in commands:
+					continue
 				driver = getattr(self, attr)
 				if hasattr(driver, 'secret') and driver.secret:
 					if self.showsecret:
@@ -1044,7 +1075,7 @@ class main(object):
 			self.checkjuid()
 
 		try:
-			rc = driver(self.args)
+			rc = driver(self.opts, self.args)
 		except SSHError, e:
 			e.bubble('Did you run "%s setup"?' % self.local)
 		except UsageError, e:
@@ -1212,7 +1243,8 @@ class main(object):
 
 
 	@secret
-	def c_aliases(self, args):
+	@clientcmd('', [])
+	def c_aliases(self, opts, args):
 		''''''
 		aliases = self._serveraliases()
 
@@ -1254,29 +1286,26 @@ class main(object):
 		return data
 
 
-	def s_aliases(self, args):
+	@servercmd('', [])
+	def s_aliases(self, opts, args):
 		aliases = self._readaliases(args, action=False)
 		print json.dumps(aliases)
 
 
-	def s_runalias(self, args):
+	@servercmd('', [])
+	def s_runalias(self, opts, args):
 		aliases = self._readaliases(args, action=True)
 		action = aliases[args[0]]['action']
 		cmd = ' '.join([action] + args[1:])
 		os.system(cmd)
 
 
-	def c_setup(self, args):
+	@clientcmd('', ['replace-keys', 'update-keys'])
+	def c_setup(self, opts, args):
 		'''[--replace-keys] [--update-keys] [user][@servername]'''
 
 		overwrite = False
 		update = False
-
-		try:
-			opts, args = getopt.getopt(args, '', ['replace-keys', 'update-keys'])
-		except getopt.GetoptError, e:
-			self.error(e)
-			return 2
 
 		for opt, arg in opts:
 			if opt in ('--replace-keys',):
@@ -1342,7 +1371,8 @@ class main(object):
 		return 0
 
 
-	def s_setup(self, args):
+	@servercmd('', [])
+	def s_setup(self, opts, args):
 		'''--server-mode setup'''
 		self.ensure_dir(self.path('.ssh'))
 		fn = os.path.join('.ssh', 'authorized_keys')
@@ -1368,7 +1398,8 @@ class main(object):
 
 
 	@secret
-	def c_echo(self, args):
+	@clientcmd('', [])
+	def c_echo(self, opts, args):
 		''' '''
 
 		session = self.sessionsetup()
@@ -1384,7 +1415,8 @@ class main(object):
 		return 0
 
 
-	def s_echo(self, args):
+	@servercmd('', [])
+	def s_echo(self, opts, args):
 		'''Echo everything in a loop.'''
 		sys.stdout.write('Echo mode.\n')
 		sys.stdout.flush()
@@ -1396,7 +1428,8 @@ class main(object):
 			sys.stdout.flush()
 
 
-	def c_test(self, args):
+	@clientcmd('', [])
+	def c_test(self, opts, args):
 		''' '''
 
 		if self.verbose:
@@ -1430,7 +1463,8 @@ class main(object):
 		return 0
 
 
-	def s_test(self, args):
+	@servercmd('', [])
+	def s_test(self, opts, args):
 		'''Just an echo test to verify access to server.
 		With verbose, print additional info.'''
 
@@ -1441,7 +1475,8 @@ class main(object):
 		return 0
 
 
-	def s_server(self, args):
+	@servercmd('', [])
+	def s_server(self, opts, args):
 		debugfp = None
 		if args and args[0] == '-debug':
 			debugfp = open(os.path.expanduser('~/connect-server.log'), 'w')
@@ -1578,7 +1613,8 @@ class main(object):
 		return 0
 
 
-	def s_shrun(self, args):
+	@servercmd('', [])
+	def s_shrun(self, opts, args):
 		os.environ['HOME'] = self.repodir
 		os.environ['JOBREPO'] = self.repo
 		os.environ['PS1'] = '%s> ' % self.repo
@@ -1628,35 +1664,35 @@ class main(object):
 		return rc
 
 
-	def c_submit(self, args):
+	@clientcmd('', [])
+	def c_submit(self, opts, args):
 		'''<submitfile>'''
 		return self._submit(args, command='condor_submit')
 
 
-	def c_dag(self, args):
+	@clientcmd('', [])
+	def c_dag(self, opts, args):
 		'''<dagfile>'''
 		return self._submit(args, command='condor_submit_dag')
 
 
-	def c_push(self, args):
-		return self._pushpull(args, mode='push')
+	@clientcmd('tnvw', ['time', 'noop', 'verbose', 'where'])
+	def c_push(self, opts, args):
+		return self._pushpull(opts, args, mode='push')
 
 
-	def c_pull(self, args):
-		return self._pushpull(args, mode='pull')
+	@clientcmd('tnvw', ['time', 'noop', 'verbose', 'where'])
+	def c_pull(self, opts, args):
+		return self._pushpull(opts, args, mode='pull')
 
 
-	def c_sync(self, args):
-		return self._pushpull(args, mode='sync')
+	@clientcmd('tnvw', ['time', 'noop', 'verbose', 'where'])
+	def c_sync(self, opts, args):
+		return self._pushpull(opts, args, mode='sync')
 
 
-	def _pushpull(self, args, mode=None):
+	def _pushpull(self, opts, args, mode=None):
 		'''[-t|--time] [-v|--verbose] [-w|--where] [repository-dir]'''
-		try:
-			opts, args = getopt.getopt(args, 'tnvw', ['time', 'noop', 'verbose', 'where'])
-		except getopt.GetoptError, e:
-			self.error(e)
-			return 2
 
 		verbose = False
 		where = False
@@ -1684,7 +1720,7 @@ class main(object):
 
 		if where:
 			# don't pull, just show dir path
-			return self.c_where(args)
+			return self.c_where([], args)
 
 		session = self.sessionsetup()
 		channel = session.handshake()
@@ -1705,7 +1741,8 @@ class main(object):
 	c_push.__doc__ = c_pull.__doc__ = c_sync.__doc__ = _pushpull.__doc__
 
 
-	def c_revoke(self, args):
+	@clientcmd('', [])
+	def c_revoke(self, opts, args):
 		''''''
 		self.output('')
 		self.output('This command -permanently- deletes the key used to authorize')
@@ -1735,7 +1772,7 @@ class main(object):
 	# indicated by _args.
 	def _remoteshell(*_args):
 		_args = list(_args)
-		def _(self, args):
+		def _(self, opts, args):
 			session = ClientSession(self.profile.server,
 			                        user=self.profile.user,
 			                        keyfile=self.keyfile(),
@@ -1767,7 +1804,7 @@ class main(object):
 		if 'opts' in kwargs:
 			opts = kwargs['opts']
 		_args = list(_args)
-		def _(self, args):
+		def _(self, opts, args):
 			if min and len(args) < min:
 				raise UsageError, 'not enough arguments'
 			if max and len(args) > max:
@@ -1793,7 +1830,8 @@ class main(object):
 			_.secret = kwargs['secret']
 		return _
 
-	def c_shell(self, args):
+	@clientcmd('', [])
+	def c_shell(self, opts, args):
 		'''[command]'''
 		import termios
 		import tty
@@ -1809,7 +1847,7 @@ class main(object):
 		# set a SIGWINCH handler to propagate terminal resizes to server
 		signal.signal(signal.SIGWINCH, channel.winch)
 
-		self.output('\n[connected to %s]' % self.joburl)
+		self.output('\n[connected to %s; ^D to disconnect]' % self.joburl)
 		try:
 			tty.setraw(sys.stdin.fileno())
 			tty.setcbreak(sys.stdin.fileno())
@@ -1863,7 +1901,8 @@ class main(object):
 	c_rconfig = _remoteconnect('rconfig', max=0, secret=True)
 
 
-	def s_list(self, args):
+	@servercmd('', [])
+	def s_list(self, opts, args):
 		# List job repos in this dir
 		# TODO: should check for job uuid (juid)
 		# TODO: some interactive logic to flag out-of-sync repos
@@ -1894,11 +1933,13 @@ class main(object):
 			sys.stdout.flush()
 
 
-	def s_where(self, args):
+	@servercmd('', [])
+	def s_where(self, opts, args):
 		print self.repodir
 
 
-	def s_rconfig(self, args):
+	@servercmd('', [])
+	def s_rconfig(self, opts, args):
 		config.write(sys.stdout)
 
 
