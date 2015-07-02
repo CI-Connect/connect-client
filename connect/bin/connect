@@ -621,6 +621,14 @@ class Main(object):
 		# connect command.  It is not documented for public use.
 		if self.config.getboolean('connect', 'client'):
 			if (not args or args[0] != 'client') and '--full' not in [x[0] for x in opts]:
+				nopts = []
+				for opt, arg in opts:
+					# move help to client
+					if opt in ('-h', '--help'):
+						args = ['--help'] + args
+					else:
+						nopts += (opt, arg)
+				opts = nopts
 				args = ['client'] + args
 
 		# Check usage
