@@ -677,7 +677,7 @@ class main(object):
 		os.chdir(dir)
 
 
-	def push(self, channel, verbose=False, noop=False):
+	def push(self, channel, verbose=False, noop=False, timings=False):
 		mdcache = set()
 		def awfulrecursivemkdir(sftp, dir):
 			if dir in mdcache:
@@ -705,6 +705,10 @@ class main(object):
 			def error(*args):
 				sys.stdout.write('!')
 				sys.stdout.flush()
+
+		start = time.time()
+		cumulative = 0.0
+		size = 0.0
 
 		channel.exchange('dir %s create=yes' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
@@ -761,7 +765,10 @@ class main(object):
 						try:
 							wanted('sending %s...', fn)
 							if not noop:
+								_ = time.time()
 								sftp.put(fn, rfn)
+								cumulative += time.time() - _
+								size += s.st_size
 							sent += 1
 						except Exception, e:
 							error('error sending %s: %s', rfn, str(e))
@@ -777,15 +784,24 @@ class main(object):
 					# do we need this? doesn't utime() handle it?
 					#channel.exchange('stime %s %d' % (self.fnencode(fn), s.st_mtime), codes.OK)
 
+		end = time.time()
+
 		if not verbose:
 			sys.stdout.write('\n')
 		note = noop and '(no-op) ' or ''
 		self.output('%s%d objects sent; %d objects up to date; %d errors',
 		            note, sent, unsent, errors)
+		if timings:
+			if cumulative:
+				self.output('time: real %.3fs, net %.3fs, rate %.3fK/s' %
+				            (end - start, cumulative, size / (1024*cumulative)))
+			else:
+				self.output('time: real %.3fs, net %.3fs' %
+				            (end - start, cumulative))
 		sys.stdout.flush()
 
 
-	def pull(self, channel, verbose=False, noop=False):
+	def pull(self, channel, verbose=False, noop=False, timings=False):
 		if verbose:
 			wanted = self.notice
 			unwanted = self.notice
@@ -800,6 +816,10 @@ class main(object):
 			def error(*args):
 				sys.stdout.write('!')
 				sys.stdout.flush()
+
+		start = time.time()
+		cumulative = 0.0
+		size = 0.0
 
 		channel.exchange('dir %s' % self.repo, codes.OK)
 		sftp = channel.session.sftp()
@@ -832,7 +852,11 @@ class main(object):
 				wanted('fetching %s...', rfn)
 				if not noop:
 					self.ensure_dir(dir)
+					_ = time.time()
 					sftp.get(rfn, fn)
+					cumulative += time.time() - _
+					s = os.stat(fn)
+					size += s.st_size
 					if 'mtime' in attrs:
 						t = int(attrs['mtime'])
 						os.utime(fn, (t, t))
@@ -842,11 +866,20 @@ class main(object):
 				unwanted('not fetching %s...', rfn)
 				unsent += 1
 
+		end = time.time()
+
 		if not verbose:
 			sys.stdout.write('\n')
 		note = noop and '(no-op) ' or ''
 		self.output('%s%d objects retrieved; %d objects up to date; %d errors',
 					note, sent, unsent, error)
+		if timings:
+			if cumulative:
+				self.output('time: real %.3fs, net %.3fs, rate %.3fK/s' %
+				            (end - start, cumulative, size / (1024*cumulative)))
+			else:
+				self.output('time: real %.3fs, net %.3fs' %
+				            (end - start, cumulative))
 		sys.stdout.flush()
 
 
@@ -1618,9 +1651,9 @@ class main(object):
 
 
 	def _pushpull(self, args, mode=None):
-		'''[-v|--verbose] [-w|--where] [repository-dir]'''
+		'''[-t|--time] [-v|--verbose] [-w|--where] [repository-dir]'''
 		try:
-			opts, args = getopt.getopt(args, 'nvw', ['noop', 'verbose', 'where'])
+			opts, args = getopt.getopt(args, 'tnvw', ['time', 'noop', 'verbose', 'where'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
@@ -1628,6 +1661,7 @@ class main(object):
 		verbose = False
 		where = False
 		noop = False
+		timings = False
 
 		for opt, arg in opts:
 			if opt in ('-v', '--verbose'):
@@ -1636,6 +1670,8 @@ class main(object):
 				where = True
 			if opt in ('-n', '--noop'):
 				noop = True
+			if opt in ('-t', '--time'):
+				timings = True
 
 		if self.isdebug:
 			verbose = True
@@ -1654,7 +1690,7 @@ class main(object):
 		channel = session.handshake()
 		if mode == 'pull' or mode == 'sync':
 			try:
-				self.pull(channel, verbose=verbose, noop=noop)
+				self.pull(channel, verbose=verbose, noop=noop, timings=timings)
 			except GeneralException, e:
 				self.error(e)
 		if mode == 'pull':
@@ -1663,7 +1699,7 @@ class main(object):
 			except GeneralException, e:
 				self.error(e)
 		if mode == 'push' or mode == 'sync':
-			self.push(channel, verbose=verbose, noop=noop)
+			self.push(channel, verbose=verbose, noop=noop, timings=timings)
 			channel.exchange('quit', codes.OK)
 
 	c_push.__doc__ = c_pull.__doc__ = c_sync.__doc__ = _pushpull.__doc__
