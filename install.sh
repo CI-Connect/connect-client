@@ -25,10 +25,18 @@ fi
 
 base="$1"
 modlib="$2"
-version="$3"
+
+if [ -d "$from"/.git ]; then
+	version=$(git describe --exact-match 2>/dev/null || git describe)
+elif [ -f .version ]; then
+	version=$(cat .version)
+else
+	echo >&2 "No version string available!"
+	exit 2
+fi
 
 if [ -z "$base" -o "$base" = "-h" -o "$base" = "--help" ]; then
-	echo >&2 "usage: $0 software-install-directory modulefiles-directory version"
+	echo >&2 "usage: $0 software-install-directory modulefiles-directory"
 	echo >&2
 	echo >&2 "A software installation directory is required. If no modulefiles library"
 	echo >&2 "is provided, a modulefile will be created in the installation directory."
