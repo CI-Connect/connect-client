@@ -14,6 +14,10 @@
 #      - name remote dir ~ canonical
 #      - compare juid files in protocol
 #      - can't have two remote with same name
+#
+# 2. keyfile should be part of profile
+#    - path to the profile's key stored anywhere, path in the profile def'n
+
 
 import os
 import sys
@@ -35,6 +39,7 @@ import stat
 import json
 import subprocess
 import hashlib
+import ConfigParser
 
 _version = '@@version@@'
 
@@ -66,7 +71,7 @@ class SSHError(GeneralException): pass
 class UsageError(GeneralException): pass
 class NotPresentError(GeneralException): pass
 class NoRepoError(GeneralException): pass
-
+class InvalidProfile(GeneralException): pass
 
 class codes(object):
 	OK = 200
@@ -122,6 +127,29 @@ def ttysize():
 	os.close(fd)
 
 	return os.environ.get('LINES', y), os.environ.get('COLS', x)
+
+
+def mergeconfig(into, *args, **kwargs):
+	if 'overwrite' in kwargs:
+		overwrite = kwargs['overwrite']
+	else:
+		overwrite = True
+
+	if 'sections' in kwargs:
+		sections = kwargs['sections']
+	else:
+		sections = []
+
+	for cfg in args:
+		for section in cfg.sections():
+			if sections and section not in sections:
+				continue
+			if not into.has_section(section):
+				into.add_section(section)
+			for option, value in cfg.items(section):
+				if overwrite or (not into.has_option(section, option)):
+					into.set(section, option, value)
+	return into
 
 
 class ClientSession(object):
@@ -395,16 +423,88 @@ class ClientSession(object):
 
 
 class Profile(object):
-	def __init__(self, **kwargs):
-		self.name = None
+	def __init__(self, *args, **kwargs):
+		self._name = None
 		self.user = None
 		self.server = None
+
+		if args:
+			self.split(args[0])
+
 		for k, v in kwargs.items():
 			setattr(self, k, v)
 
 	def __str__(self):
 		return '[%s: user=%s, server=%s]' % \
 		       (self.name, self.user, self.server)
+
+	@property
+	def name(self):
+		if self._name:
+			return self._name
+		return self.join()
+
+	@name.setter
+	def name(self, value):
+		self._name = value
+
+	def split(self, value):
+		if '@' in value:
+			self.user, self.server = value.strip().split('@', 1)
+			# leave it alone if already set
+			#if self.user == '':
+			#	self.user = None
+		else:
+			self.user = value
+			# leave it alone if already set
+			#self.server = None
+
+
+	def join(self):
+		if self.user and self.server:
+			return self.user + '@' + self.server
+		elif self.user:
+			return self.user
+		elif self.server:
+			return self.server
+		else:
+			raise InvalidProfile, 'no user, server, or name in profile'
+
+
+	@classmethod
+	def fromconfig(cls, cfg):
+		profiles = {}
+		if not cfg.has_section('clientprofiles'):
+			return profiles
+
+		defaults = cfg.defaults()
+		for option, value in cfg.items('clientprofiles'):
+			if option in defaults:
+				continue
+			if value == '':
+				value = option
+			p = Profile()
+			p.split(value)
+			p.name = option
+			profiles[p.name] = p
+
+		return profiles
+
+
+	def toconfig(self, *args):
+		if args:
+			cfg = args[0]
+		else:
+			cfg = ConfigParser.ConfigParser()
+
+		if not cfg.has_section('clientprofiles'):
+			cfg.add_section('clientprofiles')
+
+		value = self.join()
+		option = self.name
+		cfg.set('clientprofiles', option, value)
+
+		return cfg
 
 
 class main(object):
@@ -420,14 +520,17 @@ class main(object):
 			def _inner(self, opts, args, **kwargs):
 				sopts = shorts
 				lopts = longs
-				sopts += 'h'
-				lopts += ['help']
+				sopts += 'hd'
+				lopts += ['help', 'debug']
 				try:
 					nopts, nargs = getopt.getopt(args, sopts, lopts)
 				except getopt.GetoptError, e:
 					self.error(e)
 					return 2
 				for opt, arg in nopts:
+					if opt in ('-d', '--debug'):
+						self.isdebug = True
+						self.debug = self._debug
 					if opt in ('-h', '--help'):
 						print '>>', f.__name__
 						self.usage(commands=[f.__name__.replace('c_', '')])
@@ -463,7 +566,7 @@ class main(object):
 		self.mode = 'client'
 		self.keybits = 2048
 		self.session = None
-		self.repo = os.path.basename(os.getcwd())
+		self.repo = None #os.path.basename(os.getcwd())
 		self.implicit = True
 		self.juid = None
 
@@ -480,39 +583,44 @@ class main(object):
 
 		# We'll put all the user/server contextual information
 		# into a profile object:
-		self.profile = Profile(name='builtin', server=None, user=None)
+		self.profile = Profile(name=None, server=None, user=None)
 
-		# Go through some options for figuring out desired profile.
+		# try to load local config (it may not exist)
+		self.lconfig = ConfigParser.ConfigParser()
+		self.lconfig.read(os.path.expanduser('~/.connect/client.ini'))
+		self.lconfig.read('.connect/config.ini')
+		mergeconfig(config, self.lconfig)
+		profiles = Profile.fromconfig(config)
+
+
+		# check for preferred profile
+		if self.lconfig.has_section('client'):
+			if self.lconfig.has_option('client', 'profile'):
+				self.profile = profiles[self.lconfig.get('client', 'profile')]
+			elif self.lconfig.has_option('client', 'lastprofile'):
+				self.profile = profiles[self.lconfig.get('client', 'lastprofile')]
+
+
+		# Go through some options for updating the de facto profile.
 		# These are in PRIORITY ORDER. The first match wins.
+		# If any override is used -- i.e. if we didn't read the profile
+		# from user settings -- then null out the profile name so that
+		# it will be reconstructed.
 		if self.profile.server is None:
 			self.profile.server = os.environ.get('CONNECT_CLIENT_SERVER', None)
+			self.profile.name = None
 
 		if self.profile.user is None:
 			self.profile.user = os.environ.get('CONNECT_CLIENT_USER', None)
-
-		try:
-			self.profile.name = config.get('client', 'profile')
-			if self.profile.server is None:
-				self.profile.server = config.get('clientprofiles',
-				                                 self.profile.name + '.server')
-			if self.profile.user is None:
-				self.profile.user = config.get('clientprofiles',
-				                               self.profile.name + '.user')
-		except:
-			# if anything went wrong, that's ok - we'll try the next thing
-			pass
-
-		if self.profile.server and '@' in self.profile.server:
-			user, server = self.profile.server.split('@', 1)
-			self.profile.server = server
-			if self.profile.user is None:
-				self.profile.user = user
+			self.profile.name = None
 
 		if self.profile.server is None:
 			self.profile.server = DEFAULT_CLIENT_SERVER
+			self.profile.name = None
 
 		if self.profile.user is None:
 			self.profile.user = getpass.getuser()
+			self.profile.name = None
 
 		# end profile stuff
 
@@ -979,6 +1087,7 @@ class main(object):
 						yield '      -%s [opts] %s %s' % (self.local, subcmd, driver.__doc__)
 				else:
 					yield '       %s [opts] %s %s' % (self.local, subcmd, driver.__doc__)
+
 		yield ''
 		yield 'opts:'
 		yield '    -s|--server hostname       set connect server name'
@@ -987,17 +1096,28 @@ class main(object):
 		yield '    -v|--verbose               show additional information'
 
 
+	def saveconf(self, config, file=None):
+		if file:
+			file = os.path.expanduser(file)
+			dir = os.path.dirname(file)
+		else:
+			dir = os.path.join(self.repodir, '.connect')
+			file = os.path.join(dir, 'config.ini')
+		self.ensure_dir(dir)
+		fp = open(file, 'w')
+		config.write(fp)
+		fp.close()
+
+
 	def __call__(self, args):
 		args = list(args)
 		try:
-			r = getopt.getopt(args, 'u:ds:r:vh',
-			                  ['server-mode', 'user=', 'debug', 'server=',
-			                   'show-secret', 'repo=', 'verbose', 'help'])
+			self.opts, self.args = getopt.getopt(args, 'u:ds:r:vh',
+			        ['server-mode', 'user=', 'debug', 'server=',
+			         'show-secret', 'repo=', 'verbose', 'help'])
 		except getopt.GetoptError, e:
 			self.error(e)
 			return 2
-
-		self.opts, self.args = r
 
 		for opt, arg in self.opts:
 			if opt in ('--server-mode',):
@@ -1010,7 +1130,6 @@ class main(object):
 				self.profile.user = arg
 
 			if opt in ('-d', '--debug'):
-				self.debug = self._debug
 				self.isdebug = True
 
 			if opt in ('-s', '--server'):
@@ -1026,6 +1145,9 @@ class main(object):
 			if opt in ('-h', '--help'):
 				self.usage()
 				return 0
+
+		if self.isdebug:
+			self.debug = self._debug
 
 		if self.verbose:
 			self.output('\nAdditional information:')
@@ -1073,6 +1195,13 @@ class main(object):
 			# checkjuid will load juid if present, or leave blank
 			# if not, deferring creation to push/pull operation.
 			self.checkjuid()
+
+		# save final user profile
+		self.profile.toconfig(self.lconfig)
+		if not self.lconfig.has_section('client'):
+			self.lconfig.add_section('client')
+		self.lconfig.set('client', 'lastprofile', self.profile.name)
+		self.saveconf(self.lconfig)
 
 		try:
 			rc = driver(self.opts, self.args)
@@ -1241,6 +1370,13 @@ class main(object):
 		return _
 
 
+	@clientcmd('', [])
+	def c_version(self, opts, args):
+		''''''
+		self.output('Client information:')
+		self.platforminfo()
+		print
+
 
 	@secret
 	@clientcmd('', [])
@@ -1314,7 +1450,7 @@ class main(object):
 				update = True
 
 		if args:
-			self.profile.server = args.pop(0)
+			self.profile.split(args.pop(0))
 
 		self.ensure_dir(self.path('.ssh/connect'))
 		ident, key, pub = self.ssh_keygen()
@@ -1364,6 +1500,13 @@ class main(object):
 		channel.send('.\n')
 		channel.rio(stdin=False)
 		channel.close()
+
+		# save this user profile
+		pconfig = self.profile.toconfig()
+		if not pconfig.has_section('client'):
+			pconfig.add_section('client')
+		pconfig.set('client', 'lastprofile', self.profile.name)
+		self.saveconf(pconfig, file='~/.connect/client.ini')
 
 		self.notice('Ongoing client access has been authorized at %s.',
 		            self.profile.server)
