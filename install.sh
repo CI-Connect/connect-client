@@ -27,7 +27,7 @@ base="$1"
 modlib="$2"
 
 if [ -d "$from"/.git ]; then
-	version=$(git describe --exact-match 2>/dev/null || git describe)
+	version=$(git describe --exact-match 2>/dev/null || git describe --abbrev=6 --always --tags --dirty)
 elif [ -f .version ]; then
 	version=$(cat .version)
 else
