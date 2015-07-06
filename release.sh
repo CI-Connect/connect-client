@@ -25,5 +25,5 @@ rel="$1"
 dir=$(dirname "$0")
 cd "$dir"
 echo "$rel" >.version
-git ci -a "tag release $rel" .version
+git ci -m "tag release $rel" .version
 git tag -a "release tag $rel" $rel
