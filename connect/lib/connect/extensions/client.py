@@ -1982,15 +1982,21 @@ class main(object):
 
 		ldisc = termios.tcgetattr(sys.stdin.fileno())
 		session = self.sessionsetup()
+		interactive = False
 		if not args:
 			args = ['/bin/sh', '-i']
+			interactive = True
 
+		term = open('/dev/tty', 'w')
 		channel = session.rcmd(args, shell=True, pty=True)
 
 		# set a SIGWINCH handler to propagate terminal resizes to server
 		signal.signal(signal.SIGWINCH, channel.winch)
 
-		self.output('\n[connected to %s; ^D to disconnect]' % self.joburl)
+		if interactive:
+			term.write('\n[connected to %s; ^D to disconnect]\n' % self.joburl)
+			term.flush()
+
 		try:
 			tty.setraw(sys.stdin.fileno())
 			tty.setcbreak(sys.stdin.fileno())
@@ -2021,7 +2027,9 @@ class main(object):
 			termios.tcsetattr(sys.stdin, termios.TCSADRAIN, ldisc)
 
 		signal.signal(signal.SIGWINCH, signal.SIG_DFL)
-		self.output('\n[disconnected from %s]' % self.joburl)
+		if interactive:
+			term.write('\n[disconnected from %s]\n' % self.joburl)
+			term.flush()
 		return
 
 
