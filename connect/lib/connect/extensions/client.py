@@ -606,19 +606,22 @@ class main(object):
 		# If any override is used -- i.e. if we didn't read the profile
 		# from user settings -- then null out the profile name so that
 		# it will be reconstructed.
-		if self.profile.server is None:
+		if not self.profile.server:
 			self.profile.server = os.environ.get('CONNECT_CLIENT_SERVER', None)
 			self.profile.name = None
 
-		if self.profile.user is None:
+		if not self.profile.user:
 			self.profile.user = os.environ.get('CONNECT_CLIENT_USER', None)
 			self.profile.name = None
 
-		if self.profile.server is None:
+		if 'default' in profiles:
+			self.profile = profiles['default']
+
+		if not self.profile.server:
 			self.profile.server = DEFAULT_CLIENT_SERVER
 			self.profile.name = None
 
-		if self.profile.user is None:
+		if not self.profile.user:
 			self.profile.user = getpass.getuser()
 			self.profile.name = None
 
