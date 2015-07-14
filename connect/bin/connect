@@ -55,9 +55,11 @@ class ConnectConfig(ConfigParser.SafeConfigParser):
 				yield((key, self.get(section, option)))
 
 	def toShell(self):
+		yield '''q="'" '''
+		yield '''qq='"' '''
 		for key, val in self.toEnv():
-			val = val.replace('\\', '\\\\').replace("'", "\\'")
-			yield "%s='%s'" % (key, val)
+			val = val.replace('\\', '\\\\').replace("'", "$q")
+			yield "%s=\"%s\"" % (key, val)
 			yield('export ' + key)
 
 
