@@ -9,9 +9,10 @@ modules=$(
 	done
 )
 
+modversion=$(echo "$version" | sed -e 's/^v//')
 sed <connect.in \
 	-e "s!@CONNECTDIR@!$base!g" \
 	-e "s!@MODULES@!$modules!g" \
-	| tr '~' '\012' >"$dst/$version"
+	| tr '~' '\012' >"$dst/$modversion"
 
 echo "Connect modulefile is in $dst/connect-client"
