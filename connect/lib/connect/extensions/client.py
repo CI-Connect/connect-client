@@ -41,7 +41,7 @@ import subprocess
 import hashlib
 import ConfigParser
 
-_version = '@@version@@'
+_version = 'v0.4.2'
 
 defaults = '''
 [server]
@@ -425,8 +425,8 @@ class ClientSession(object):
 class Profile(object):
 	def __init__(self, *args, **kwargs):
 		self._name = None
-		self.user = None
-		self.server = None
+		self._user = None
+		self._server = None
 
 		if args:
 			self.split(args[0])
@@ -448,6 +448,28 @@ class Profile(object):
 	def name(self, value):
 		self._name = value
 
+	@property
+	def user(self):
+		return self._user
+
+	@user.setter
+	def user(self, value):
+		self._user = value
+		self._invalidate()
+
+	@property
+	def server(self):
+		return self._server
+
+	@server.setter
+	def server(self, value):
+		self._server = value
+		self._invalidate()
+
+	def _invalidate(self):
+		if self._name and '@' in self._name:
+			self._name = None
+
 	def split(self, value):
 		if '@' in value:
 			self.user, self.server = value.strip().split('@', 1)
@@ -466,7 +488,7 @@ class Profile(object):
 		elif self.user:
 			return self.user
 		elif self.server:
-			return self.server
+			return '@' + self.server
 		else:
 			raise InvalidProfile, 'no user, server, or name in profile'
 
@@ -532,7 +554,6 @@ class main(object):
 						self.isdebug = True
 						self.debug = self._debug
 					if opt in ('-h', '--help'):
-						print '>>', f.__name__
 						self.usage(commands=[f.__name__.replace('c_', '')])
 						return 2
 					else:
@@ -589,41 +610,35 @@ class main(object):
 		self.lconfig = ConfigParser.ConfigParser()
 		self.lconfig.read(os.path.expanduser('~/.connect/client.ini'))
 		self.lconfig.read('.connect/config.ini')
-		mergeconfig(config, self.lconfig)
+		mergeconfig(config, self.lconfig, overwrite=True)
 		profiles = Profile.fromconfig(config)
-
 
 		# check for preferred profile
 		if self.lconfig.has_section('client'):
 			if self.lconfig.has_option('client', 'profile'):
 				self.profile = profiles[self.lconfig.get('client', 'profile')]
+				print 'p>', self.profile
 			elif self.lconfig.has_option('client', 'lastprofile'):
 				self.profile = profiles[self.lconfig.get('client', 'lastprofile')]
+				print 'l>', self.profile
 
+		if not self.profile.server and not self.profile.user and 'default' in profiles:
+			self.profile = profiles['default']
+			self.profile.name = None
 
 		# Go through some options for updating the de facto profile.
-		# These are in PRIORITY ORDER. The first match wins.
-		# If any override is used -- i.e. if we didn't read the profile
-		# from user settings -- then null out the profile name so that
-		# it will be reconstructed.
-		if not self.profile.server:
-			self.profile.server = os.environ.get('CONNECT_CLIENT_SERVER', None)
-			self.profile.name = None
-
-		if not self.profile.user:
-			self.profile.user = os.environ.get('CONNECT_CLIENT_USER', None)
-			self.profile.name = None
-
-		if 'default' in profiles:
-			self.profile = profiles['default']
 
 		if not self.profile.server:
 			self.profile.server = DEFAULT_CLIENT_SERVER
-			self.profile.name = None
 
 		if not self.profile.user:
-			self.profile.user = getpass.getuser()
-			self.profile.name = None
+			self.profile.user = os.environ.get('USER') or getpass.getuser()
+
+		if 'CONNECT_CLIENT_SERVER' in os.environ:
+			self.profile.server = os.environ.get('CONNECT_CLIENT_SERVER')
+
+		if 'CONNECT_CLIENT_USER' in os.environ:
+			self.profile.user = os.environ.get('CONNECT_CLIENT_USER')
 
 		# end profile stuff
 
@@ -1199,19 +1214,19 @@ class main(object):
 			# if not, deferring creation to push/pull operation.
 			self.checkjuid()
 
-		# save final user profile
-		self.profile.toconfig(self.lconfig)
-		if not self.lconfig.has_section('client'):
-			self.lconfig.add_section('client')
-		self.lconfig.set('client', 'lastprofile', self.profile.name)
-		self.saveconf(self.lconfig)
-
 		try:
 			rc = driver(self.opts, self.args)
 		except SSHError, e:
 			e.bubble('Did you run "%s setup"?' % self.local)
 		except UsageError, e:
 			e.bubble('usage: %s %s %s' % (self.local, subcmd, driver.__doc__))
+
+		# save final user profile
+		self.profile.toconfig(self.lconfig)
+		if not self.lconfig.has_section('client'):
+			self.lconfig.add_section('client')
+		self.lconfig.set('client', 'lastprofile', self.profile.name)
+		self.saveconf(self.lconfig)
 
 		if self.session:
 			self.session.close()
@@ -1489,6 +1504,13 @@ class main(object):
 			self.error('No keys could be updated.')
 			return 21
 
+		# save this user profile
+		pconfig = self.profile.toconfig()
+		if not pconfig.has_section('client'):
+			pconfig.add_section('client')
+		pconfig.set('client', 'lastprofile', self.profile.name)
+		self.saveconf(pconfig, file='~/.connect/client.ini')
+
 		# expressly do not use a keyfile (prompt instead)
 		try:
 			session = ClientSession(self.profile.server,
@@ -1503,13 +1525,6 @@ class main(object):
 		channel.send('.\n')
 		channel.rio(stdin=False)
 		channel.close()
-
-		# save this user profile
-		pconfig = self.profile.toconfig()
-		if not pconfig.has_section('client'):
-			pconfig.add_section('client')
-		pconfig.set('client', 'lastprofile', self.profile.name)
-		self.saveconf(pconfig, file='~/.connect/client.ini')
 
 		self.notice('Ongoing client access has been authorized at %s.',
 		            self.profile.server)
