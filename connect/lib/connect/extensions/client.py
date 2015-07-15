@@ -1363,7 +1363,7 @@ class main(object):
 		name = alias['alias']
 		help = alias['help']
 		usage = alias['usage']
-		def _(self, args):
+		def _(self, opts, args):
 			session = ClientSession(self.profile.server,
 			                        user=self.profile.user,
 			                        keyfile=self.keyfile(),
