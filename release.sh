@@ -25,5 +25,13 @@ rel="$1"
 dir=$(dirname "$0")
 cd "$dir"
 echo "$rel" >.version
+
+if git tag -l "$rel" >/dev/null 2>&1; then
+	# tag exists; remove current
+	git tag -d "$rel"
+	git push origin :refs/tags/$rel
+fi
+
 git ci -m "tag release $rel" .version
 git tag -a -m "release tag $rel" $rel
+git push --tags
