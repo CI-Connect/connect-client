@@ -617,10 +617,8 @@ class main(object):
 		if self.lconfig.has_section('client'):
 			if self.lconfig.has_option('client', 'profile'):
 				self.profile = profiles[self.lconfig.get('client', 'profile')]
-				print 'p>', self.profile
 			elif self.lconfig.has_option('client', 'lastprofile'):
 				self.profile = profiles[self.lconfig.get('client', 'lastprofile')]
-				print 'l>', self.profile
 
 		if not self.profile.server and not self.profile.user and 'default' in profiles:
 			self.profile = profiles['default']
