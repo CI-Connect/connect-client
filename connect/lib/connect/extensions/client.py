@@ -1201,9 +1201,11 @@ class main(object):
 			return 10
 
 		if self.mode == 'server' and self.repo is None:
-			# server mode with no --repo is an error
-			self.error('no job repository was specified')
-			return 30
+			## server mode with no --repo is an error
+			#self.error('no job repository was specified')
+			#return 30
+			self.repodir = os.getcwd()
+			self.repo = os.path.basename(self.repodir)
 
 		elif self.mode == 'client' and self.repo is None:
 			# client, no repo dir specified. Use cwd.
@@ -1238,14 +1240,14 @@ class main(object):
 		if self.mode == 'server':
 			# basedir must only be used by server
 			self.basedir = config.get('server', 'staging')
-
 			if self.repo:
 				self.repodir = os.path.join(self.basedir, self.repo)
 				self.ensure_dir(self.repodir)
 
 			else:
+                                self.repo = "/stash/user/{0}/connect-client".format(self.profile.user)
 				# no declared repo; error
-				raise NoRepoError, 'no repository was declared'
+				#raise NoRepoError, 'no repository was declared'
 
 		else:
 			# client
@@ -1676,7 +1678,7 @@ class main(object):
 				continue
 			args = line.split()
 			cmd = args.pop(0).lower()
-			self.debug('server: <<', cmd, args)
+			#self.debug('server: <<', cmd, args)
 
 			if cmd == 'quit':
 				self.sreply(codes.OK, 'bye')
