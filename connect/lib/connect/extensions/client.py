@@ -284,7 +284,7 @@ class ClientSession(object):
 
 	def handshake(self):
 		if self.isdebug:
-			channel = self.rcmd(['server', '-debug'], shell=False)
+                        channel = self.rcmd(['server', '--debug'], shell=False)
 		else:
 			channel = self.rcmd(['server'], shell=False)
 		banner = channel.pgetline()
