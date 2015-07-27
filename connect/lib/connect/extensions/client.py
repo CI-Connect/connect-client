@@ -1177,10 +1177,13 @@ class main(object):
 			self.usage()
 			return 2
 
-		if self.mode != 'server' and paramiko is None:
+		if self.mode != 'server' and not hasattr(paramiko, '__file__'):
 			self.error('%s %s requires the "paramiko" module for python%d.%d',
 			           self.name, __name__, sys.version_info[0], sys.version_info[1])
 			self.error('(try "pip install paramiko")')
+			if paramiko:
+				# paramiko is an exception or string indicating error
+				self.debug(paramiko)
 			sys.exit(5)
 
 		# Update alias stubs
@@ -2144,8 +2147,8 @@ try:
 	with warnings.catch_warnings():
 		warnings.simplefilter("ignore")
 		import paramiko
-except ImportError:
-	paramiko = None
+except ImportError, e:
+	paramiko = e
 
 
 if __name__ == '__main__':
