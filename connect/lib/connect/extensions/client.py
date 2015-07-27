@@ -1120,9 +1120,13 @@ class main(object):
 			dir = os.path.join(self.repodir, '.connect')
 			file = os.path.join(dir, 'config.ini')
 		self.ensure_dir(dir)
-		fp = open(file, 'w')
-		config.write(fp)
-		fp.close()
+		try:
+			fp = open(file, 'w')
+			config.write(fp)
+			fp.close()
+			return True
+		except:
+			return False
 
 
 	def __call__(self, args):
