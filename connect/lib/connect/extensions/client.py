@@ -1988,7 +1988,7 @@ class main(object):
 			if self.repo is None:
 				self.repo = os.path.basename(os.getcwd())
 
-			channel = session.rcmd(_args + args, shell=False)
+			channel = session.rcmd(_args + ['--'] + args, shell=False)
 			channel.rio()
 			rc = channel.recv_exit_status()
 			session.close()
