@@ -2132,6 +2132,9 @@ def run(*args, **kwargs):
 		sys.exit(1)
 
 	except Exception, e:
+		if isinstance(e, IOError) and e.errno == errno.EPIPE:
+			sys.exit(0)
+
 		if m.isdebug:
 			raise
 		#m.error('%s ("%s --debug" to diagnose):',
