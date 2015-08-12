@@ -16,10 +16,10 @@
 #module load python
 
 from=$(dirname "$0")
-siteinstall=false; export siteinstall
+oasisinstall=false; export oasisinstall
 
-if [ "$1" = "-site" -o "$1" = "--site" ]; then
-	siteinstall=true
+if [ "$1" = "-oasis" -o "$1" = "--oasis" ]; then
+	oasisinstall=true
 	shift
 fi
 
@@ -86,6 +86,6 @@ copyfiles scripts/tutorial/tutorial "$base/bin/"
 copyfiles scripts/distribution "$base/bin/"
 
 # Install switch-module functions?
-if $siteinstall; then
+if $oasisinstall; then
 	subinstall switch-module
 fi
