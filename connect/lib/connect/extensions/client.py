@@ -2086,7 +2086,7 @@ class main(object):
 		def getsize(path):
 			size = 0
 			nfiles = 0
-			for root, files, dirs in os.walk(path):
+			for root, dirs, files in os.walk(path):
 				nfiles += len(files)
 				for file in files:
 					s = os.stat(os.path.join(root, file))
