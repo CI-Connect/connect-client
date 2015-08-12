@@ -115,16 +115,17 @@ def ttysize():
 	import termios, fcntl, struct, os
 
 	def ioctl(fd):
-		try:
-			r = fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234')
-			yx = struct.unpack('hh', r)
-			return yx
-		except:
-			return (24, 80)
+		r = fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234')
+		yx = struct.unpack('hh', r)
+		return yx
 
-	fd = os.open(os.ctermid(), os.O_RDONLY)
-	y, x = ioctl(fd)
-	os.close(fd)
+	try:
+		fd = os.open(os.ctermid(), os.O_RDONLY)
+		y, x = ioctl(fd)
+		os.close(fd)
+
+	except:
+		y, x = 24, 80
 
 	return os.environ.get('LINES', y), os.environ.get('COLS', x)
 
