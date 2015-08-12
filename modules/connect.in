@@ -74,12 +74,13 @@ if { [string compare $compiler ""] != 0 } {
       set    appdir   $appdir+$compiler
 }
 
-# module dependencies
-#module load python
-#module load git
+# Module dependencies 
+#
 # The following were inferred from the build environment: The
 # person who prepared this module had these modules loaded at
-# time of build.
+# time of build.  All are commented out, because they might not
+# be actual dependencies.  If one is (Python, in particular,
+# is likely) then uncomment it.
 @MODULES@
 
 if { [ file isdirectory @CONNECTDIR@/bin ] } {
