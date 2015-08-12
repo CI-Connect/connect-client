@@ -40,7 +40,7 @@ import json
 import subprocess
 import hashlib
 import ConfigParser
-
+import textwrap
 _version = '@@version@@'
 
 defaults = '''
@@ -597,6 +597,8 @@ class main(object):
 		self.idletimeout = 5 * 60
 		self.verbose = False
 
+		self.rows, self.cols = ttysize()
+
 		if config.getboolean('connect', 'client'):
 			self.local = os.path.basename(sys.argv[0])
 		else:
@@ -663,6 +665,7 @@ class main(object):
 
 	def output(self, *args):
 		# XXX may want to use textwrap here (but not in error, notice).
+		args = [textwrap.fill(arg, width=self.cols*0.9) for arg in args]
 		return self._msg(sys.stdout, '', *args)
 
 	def _example_deco_without_args(f):
