@@ -120,7 +120,7 @@ def ttysize():
 			yx = struct.unpack('hh', r)
 			return yx
 		except:
-			return (None, None)
+			return (24, 80)
 
 	fd = os.open(os.ctermid(), os.O_RDONLY)
 	y, x = ioctl(fd)
@@ -664,7 +664,7 @@ class main(object):
 	debug = lambda *args: True
 
 	def output(self, *args):
-		args = [textwrap.fill(arg, width=self.cols*0.9) for arg in args]
+		args = [textwrap.fill(str(arg), width=self.cols*0.9) for arg in args]
 		return self._msg(sys.stdout, '', *args)
 
 	def _example_deco_without_args(f):
