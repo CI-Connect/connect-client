@@ -1492,25 +1492,6 @@ class main(object):
 		# does no harm.
 		overwrite = True
 
-		try:
-			self.savefile(keyfile, key, overwrite=overwrite)
-			self.savefile(pubfile, pub, overwrite=overwrite)
-		except IOError, e:
-			self.error(e)
-			self.error('(You may wish to run "%s setup --replace-keys" .)', self.local)
-			return 20
-
-		if update:
-			oldkeyfile = self.keyfile().replace(self.profile.server, self.hostname())
-			oldpubfile = oldkeyfile + '.pub'
-			if os.path.exists(oldkeyfile) and os.path.exists(oldpubfile):
-				os.rename(oldkeyfile, keyfile)
-				os.rename(oldpubfile, pubfile)
-				self.output('Keys updated.')
-				return 0
-			self.error('No keys could be updated.')
-			return 21
-
 		# save this user profile
 		pconfig = self.profile.toconfig()
 		if not pconfig.has_section('client'):
@@ -1532,6 +1513,25 @@ class main(object):
 		channel.send('.\n')
 		channel.rio(stdin=False)
 		channel.close()
+
+		if update:
+			oldkeyfile = self.keyfile().replace(self.profile.server, self.hostname())
+			oldpubfile = oldkeyfile + '.pub'
+			if os.path.exists(oldkeyfile) and os.path.exists(oldpubfile):
+				os.rename(oldkeyfile, keyfile)
+				os.rename(oldpubfile, pubfile)
+				self.output('Keys updated.')
+				return 0
+			self.error('No keys could be updated.')
+			return 21
+
+		try:
+			self.savefile(keyfile, key, overwrite=overwrite)
+			self.savefile(pubfile, pub, overwrite=overwrite)
+		except IOError, e:
+			self.error(e)
+			self.error('(You may wish to run "%s setup --replace-keys" .)', self.local)
+			return 20
 
 		self.notice('Ongoing client access has been authorized at %s.',
 		            self.profile.server)
