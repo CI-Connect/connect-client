@@ -664,7 +664,6 @@ class main(object):
 	debug = lambda *args: True
 
 	def output(self, *args):
-		# XXX may want to use textwrap here (but not in error, notice).
 		args = [textwrap.fill(arg, width=self.cols*0.9) for arg in args]
 		return self._msg(sys.stdout, '', *args)
 
@@ -1479,6 +1478,23 @@ class main(object):
 
 		if args:
 			self.profile.split(args.pop(0))
+		else:
+			self.output('Please enter the user name that you created during Connect registration.  When you visit http://osgconnect.net/ and log in, your user name appears in the upper right corner: note that it consists only of letters and numbers, with no @ symbol.')
+			self.output('')
+			self.output('You will be connecting via the %s server.' % self.profile.server)
+			try:
+				user = raw_input('Enter your Connect username: ')
+				if user == '':
+					self.output('')
+					self.output('Setup cancelled.')
+					return 0
+			except:
+				self.output('')
+				self.output('')
+				self.output('Setup cancelled.')
+				return 0
+
+			self.profile.user = user
 
 		self.ensure_dir(self.path('.ssh/connect'))
 		ident, key, pub = self.ssh_keygen()
