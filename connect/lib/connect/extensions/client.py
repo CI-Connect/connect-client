@@ -1506,6 +1506,10 @@ class main(object):
 			                        repo=os.path.basename(os.getcwd()),
 			                        debug=self.debug)
 		except SSHError, e:
+			# Not sure of a better way to detect this
+			if e.args[0] == 'Client authentication failed':
+				self.error('Incorrect password for %s' % self.profile.join())
+				return 22
 			raise GeneralException, e.args
 
 		channel = session.rcmd(['setup'], shell=False, userepo=False)
