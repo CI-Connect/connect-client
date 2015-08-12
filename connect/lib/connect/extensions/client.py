@@ -649,9 +649,12 @@ class main(object):
 			prefix = ' ' * len(prefix)
 
 		if len(args) > 1:
-			print >>fp, prefix + args[0] % args[1:]
+			text = prefix + args[0] % args[1:]
 		else:
-			print >>fp, prefix + str(args[0])
+			text = prefix + str(args[0])
+		if 'wrap' in kwargs and kwargs['wrap']:
+			text = textwrap.fill(text, width=self.cols*0.9)
+		print >>fp, text
 		fp.flush()
 
 	def error(self, *args, **kwargs):
@@ -664,9 +667,10 @@ class main(object):
 		return self._msg(sys.stderr, '%s: ' % self.mode, *args, **kwargs)
 	debug = lambda *args: True
 
-	def output(self, *args):
-		args = [textwrap.fill(str(arg), width=self.cols*0.9) for arg in args]
-		return self._msg(sys.stdout, '', *args)
+	def output(self, *args, **kwargs):
+		if 'wrap' not in kwargs:
+			kwargs['wrap'] = True
+		return self._msg(sys.stdout, '', *args, **kwargs)
 
 	def _example_deco_without_args(f):
 		def _(self, args):
