@@ -1390,7 +1390,7 @@ class main(object):
 			if self.repo is None:
 				self.repo = os.path.basename(os.getcwd())
 
-			channel = session.rcmd(['runalias', name] + args, shell=False)
+			channel = session.rcmd(['runalias', name] + args, shell=False, pty=True)
 			channel.rio()
 			rc = channel.recv_exit_status()
 			session.close()
