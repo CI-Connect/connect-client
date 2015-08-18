@@ -1309,7 +1309,7 @@ class main(object):
 
 	def _aliascache(self, *args):
 		fp = None
-		dir = os.path.expanduser('~/.ciconnect/aliases')
+		dir = os.path.expanduser('~/.connect/aliases')
 		file = os.path.join(dir, self.profile.server)
 
 		if args:
