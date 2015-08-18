@@ -1328,6 +1328,7 @@ class main(object):
 				# check cache age
 				s = os.stat(file)
 				if s.st_mtime - time.time() > 86400:
+					self.debug('expiring the server alias cache')
 					raise Exception, 'cache too old'
 				# retrieve aliases
 				fp = open(file, 'r')
