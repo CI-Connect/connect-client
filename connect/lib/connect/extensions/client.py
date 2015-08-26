@@ -127,7 +127,7 @@ def ttysize():
 	except:
 		y, x = 24, 80
 
-	return os.environ.get('LINES', y), os.environ.get('COLS', x)
+	return map(int, (os.environ.get('LINES', y), os.environ.get('COLS', x)))
 
 
 def mergeconfig(into, *args, **kwargs):
