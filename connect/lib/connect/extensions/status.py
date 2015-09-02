@@ -40,8 +40,8 @@ def run(*args, **kwargs):
 		else:
 			name = 'LOCAL'
 
-		if config.has_option('poolnames', pool):
-			name = config.get('poolnames', pool)
+		if config.has_option('poolnames', name):
+			name = config.get('poolnames', name)
 		print '===', name, '==='
 
 		if full:
