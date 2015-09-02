@@ -63,19 +63,19 @@ class ConnectConfig(ConfigParser.SafeConfigParser):
 			yield('export ' + key)
 
 	def include(self, section, recurse=True):
-		while self.config.has_section('include'):
+		while self.has_section('include'):
 			found = False
-			for option in self.config.options('include'):
+			for option in self.options('include'):
 				# if it's really from [DEFAULT], ignore
-				value = self.config.get('include', option)
+				value = self.get('include', option)
 				try:
-					if self.config.get('DEFAULT', option) == value:
+					if self.get('DEFAULT', option) == value:
 						continue
 				except ConfigParser.NoOptionError:
 					pass
 				found = True
-				self.config.remove_option('include', option)
-				self.config.read(value)
+				self.remove_option('include', option)
+				self.read(value)
 			if not found:
 				break
 			if not recurse:
