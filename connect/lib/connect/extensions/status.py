@@ -33,12 +33,13 @@ def run(*args, **kwargs):
 	pools = [x.strip() for x in param['flock_to'].split(',')]
 
 	map = {}
-	for opt, value in config.items('poolnames'):
-		try:
-			key, value = value.split(',', 1)
-		except ValueError:
-			continue
-		map[key.strip()] = value.strip()
+	if config.has_section('poolnames'):
+		for opt, value in config.items('poolnames'):
+			try:
+				key, value = value.split(',', 1)
+			except ValueError:
+				continue
+			map[key.strip()] = value.strip()
 
 
 	print 'Summary of available resources for all HTCondor pools:'
