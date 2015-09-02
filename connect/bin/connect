@@ -612,6 +612,23 @@ class Main(object):
 		for path in self.configs:
 			self.config.read(os.path.expanduser(path))
 
+		# Search for config inclusions, recursively
+		while self.config.has_section('include'):
+			found = False
+			for option in self.config.options('include'):
+				# if it's really from [DEFAULT], ignore
+				value = self.config.get('include', option)
+				try:
+					if self.config.get('DEFAULT', option) == value:
+						continue
+				except ConfigParser.NoOptionError:
+					pass
+				found = True
+				self.config.remove_option('include', option)
+				self.config.read(value)
+			if not found:
+				break
+
 		self.cmds, self.cmddict = self.discovercommands()
 		self.cmds.sort(lambda a, b: cmp(a.name, b.name))
 
