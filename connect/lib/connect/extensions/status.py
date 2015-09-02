@@ -35,14 +35,14 @@ def run(*args, **kwargs):
 	print 'Summary of available resources for all HTCondor pools:'
 	print '    Total  Owner  Claimed  Unclaimed  Matched  Preempting'
 	for pool in [None] + pools:
-		name = pool
+		if pool:
+			name = pool
+		else:
+			name = 'LOCAL'
+
 		if config.has_option('poolnames', pool):
 			name = config.get('poolnames', pool)
-
-		if pool:
-			print '===', name, '==='
-		else:
-			print '=== LOCAL ==='
+		print '===', name, '==='
 
 		if full:
 			for line in status(pool):
