@@ -32,6 +32,15 @@ def run(*args, **kwargs):
 	# htcondor bindings, param object needs more dict methods :p
 	pools = [x.strip() for x in param['flock_to'].split(',')]
 
+	map = {}
+	for opt, value in config.items('poolnames'):
+		try:
+			key, value = value.split(',', 1)
+		except ValueError:
+			continue
+		map[key.strip()] = value.strip()
+
+
 	print 'Summary of available resources for all HTCondor pools:'
 	print '    Total  Owner  Claimed  Unclaimed  Matched  Preempting'
 	for pool in [None] + pools:
@@ -40,8 +49,8 @@ def run(*args, **kwargs):
 		else:
 			name = 'LOCAL'
 
-		if config.has_option('poolnames', name):
-			name = config.get('poolnames', name)
+		if name in map:
+			name = map[name]
 		print '===', name, '==='
 
 		if full:
