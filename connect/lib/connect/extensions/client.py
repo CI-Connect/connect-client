@@ -1485,7 +1485,7 @@ class main(object):
 		if args:
 			self.profile.split(args.pop(0))
 		else:
-			self.output('Please enter the user name that you created during Connect registration.  When you visit http://osgconnect.net/ and log in, your user name appears in the upper right corner: note that it consists only of letters and numbers, with no @ symbol.')
+			self.output('Please enter the user name that you created during Connect registration.  Note that it consists only of letters and numbers, with no @ symbol.')
 			self.output('')
 			self.output('You will be connecting via the %s server.' % self.profile.server)
 			try:
