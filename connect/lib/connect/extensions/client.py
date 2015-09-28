@@ -1967,8 +1967,9 @@ class main(object):
 
 	# Creates a standard method that runs a remote shell command
 	# indicated by _args.
-	def _remoteshell(*_args):
+	def _remoteshell(*_args, **kwargs):
 		_args = list(_args)
+		defaultargs = kwargs.get('defaultargs') or []
 		def _(self, opts, args):
 			session = ClientSession(self.profile.server,
 			                        user=self.profile.user,
@@ -1979,6 +1980,15 @@ class main(object):
 
 			if self.repo is None:
 				self.repo = os.path.basename(os.getcwd())
+
+			def interpolate(s):
+				# this function might need to evolve at some point.
+				if s == '%%me%%':
+					return self.profile.user
+				return s
+
+			if not args:
+				args += [interpolate(x) for x in defaultargs]
 
 			channel = session.rcmd(_args + args, shell=True)
 			channel.rio()
@@ -2089,10 +2099,10 @@ class main(object):
 
 	# These are simple, transparent commands -- no more complexity
 	# than 'ssh server cmd args'.
-	c_q = _remoteshell('condor_q')
-	c_rm = _remoteshell('condor_rm')
-	c_history = _remoteshell('condor_history')
-	c_release = _remoteshell('condor_release')
+	c_q = _remoteshell('condor_q', defaultargs=['%%me%%'])
+	c_rm = _remoteshell('condor_rm', defaultargs=['%%me%%'])
+	c_history = _remoteshell('condor_history', defaultargs=['%%me%%'])
+	c_release = _remoteshell('condor_release', defaultargs=['%%me%%'])
 	c_run = _remoteshell('condor_run')
 	c_wait = _remoteshell('condor_wait')
 
