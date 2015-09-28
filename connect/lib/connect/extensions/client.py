@@ -1403,6 +1403,18 @@ class main(object):
 		return _
 
 
+	# generate classads for identifying the client
+	def client_classads(self):
+		return {
+			'ConnectClientVersion': _version,
+			'ConnectClientServer': self.profile.server,
+			'ConnectClientUser': self.profile.user,
+			'ConnectClientLocalUser': getpass.getuser(),
+			'ConnectClientLocalNode': self.hostname(),
+			'ConnectClientLocalDir': os.getcwd(),
+		}
+
+
 	@clientcmd('', [])
 	def c_version(self, opts, args):
 		''''''
@@ -1847,7 +1859,9 @@ class main(object):
 		channel.exchange('quit', codes.OK)
 
 		# Now run a submit
-		channel = session.rcmd([command] + args, shell=True)
+		classads = self.client_classads()
+		classads = ['-append +%s="%s"' % (k, v) for k, v in classads.items()]
+		channel = session.rcmd([command] + classads + args, shell=True)
 		channel.rio()
 		rc = channel.recv_exit_status()
 
@@ -1871,6 +1885,20 @@ class main(object):
 	def c_dag(self, opts, args):
 		'''<dagfile>'''
 		return self._submit(args, command='condor_submit_dag')
+
+
+	@clientcmd('', [])
+	def c_run(self, opts, args):
+		'''<command>'''
+
+		classads = self.client_classads()
+		classads = ['-a +%s="%s"' % (k, v) for k, v in classads.items()]
+		session = self.sessionsetup()
+		channel = session.rcmd(['condor_run'] + classads + args, shell=True)
+		channel.rio()
+		rc = channel.recv_exit_status()
+		session.close()
+		return rc
 
 
 	@clientcmd('tnvw', ['time', 'noop', 'verbose', 'where'])
@@ -1971,6 +1999,7 @@ class main(object):
 		_args = list(_args)
 		defaultargs = kwargs.get('defaultargs') or []
 		def _(self, opts, args):
+			# why not use self.sessionsetup() here?
 			session = ClientSession(self.profile.server,
 			                        user=self.profile.user,
 			                        keyfile=self.keyfile(),
@@ -2103,7 +2132,7 @@ class main(object):
 	c_rm = _remoteshell('condor_rm', defaultargs=['%%me%%'])
 	c_history = _remoteshell('condor_history', defaultargs=['%%me%%'])
 	c_release = _remoteshell('condor_release', defaultargs=['%%me%%'])
-	c_run = _remoteshell('condor_run')
+	#c_run = _remoteshell('condor_run')
 	c_wait = _remoteshell('condor_wait')
 
 	# XXX need to store default pool name in local config for status
