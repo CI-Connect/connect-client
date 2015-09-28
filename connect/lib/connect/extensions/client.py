@@ -2092,6 +2092,7 @@ class main(object):
 	c_q = _remoteshell('condor_q')
 	c_rm = _remoteshell('condor_rm')
 	c_history = _remoteshell('condor_history')
+	c_release = _remoteshell('condor_release')
 	c_run = _remoteshell('condor_run')
 	c_wait = _remoteshell('condor_wait')
 
