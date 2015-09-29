@@ -2136,7 +2136,7 @@ class main(object):
 	c_wait = _remoteshell('condor_wait')
 
 	# XXX need to store default pool name in local config for status
-	c_status = _remoteshell('condor_status')
+	c_status = _remoteshell('connect status')
 
 	# These are direct remote procedure calls to server-mode methods.
 	# E.g., if c_xyz = _remoteconnect('abc') then 'connect client xyz'
