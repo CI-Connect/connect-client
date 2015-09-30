@@ -1860,8 +1860,10 @@ class main(object):
 
 		# Now run a submit
 		classads = self.client_classads()
-		classads = ['-append +%s="%s"' % (k, v) for k, v in classads.items()]
-		channel = session.rcmd([command] + classads + args, shell=True)
+		classargs = []
+		for k, v in classads.items():
+			classargs += ['-append', '+%s = \\"%s\\"' % (k, v)]
+		channel = session.rcmd([command] + classargs + args, shell=True)
 		channel.rio()
 		rc = channel.recv_exit_status()
 
