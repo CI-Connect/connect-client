@@ -35,9 +35,9 @@ class Menu(list):
 	def display(self, scr, *args):
 		result = (None, None)
 		if args:
-			y, x = args
+			y, x, color = args
 		else:
-			y, x = 0, 0
+			y, x, color = 0, 0, curses.A_NORMAL
 		window = scr.subwin(y, x)
 		window.keypad(1)
 		panel = curses.panel.new_panel(window)
@@ -49,9 +49,9 @@ class Menu(list):
 			curses.doupdate()
 			for index, item in enumerate(self):
 				if index == self.position:
-					mode = curses.A_REVERSE | curses.color_pair(1)
+					mode = curses.A_REVERSE | color
 				else:
-					mode = curses.A_NORMAL | curses.color_pair(1)
+					mode = curses.A_NORMAL | color
 				msg = '%d. %s' % (index + 1, item)
 				window.addstr(1 + index, 1, msg, mode)
 			key = window.getch()
@@ -60,7 +60,11 @@ class Menu(list):
 				break
 			elif key == curses.KEY_UP:
 				self.navigate(-1)
+			elif key == 16: # ^P
+				self.navigate(-1)
 			elif key == curses.KEY_DOWN:
+				self.navigate(1)
+			elif key == 14: # ^N
 				self.navigate(1)
 			elif key == 27:		# ESCAPE
 				break
@@ -105,16 +109,19 @@ def app(scr, user, projs, prompt=None):
 	if prompt is None:
 		prompt = 'Select a project to be your default %s project.' % name
 
-	curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
-	scr.addstr(0, 0, '%s Project Selector - %s' % (name, user.pw_name), curses.color_pair(1))
-	scr.addstr(2, 0, prompt, curses.color_pair(1))
-	scr.addstr(3, 0, 'Press ESCAPE or "Q" to quit without changes.', curses.color_pair(1))
+	if curses.has_colors():
+		curses.use_default_colors()
+	color = curses.A_NORMAL
+
+	scr.addstr(0, 0, '%s Project Selector - %s' % (name, user.pw_name), color)
+	scr.addstr(2, 0, prompt, color)
+	scr.addstr(3, 0, 'Press ESCAPE or "Q" to quit without changes.', color)
 	scr.refresh()
 
 	menu = Menu()
 	menu.extend(projs)
 
-	index, name = menu.display(scr, 5, 2)
+	index, name = menu.display(scr, 5, 2, color)
 	return index, name
 
 

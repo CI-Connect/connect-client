@@ -29,9 +29,9 @@ class Watch(object):
 
 		result = (None, None)
 		if args:
-			y, x = args
+			y, x, color = args
 		else:
-			y, x = 0, 0
+			y, x, color = 0, 0, curses.A_NORMAL
 		window = scr.subwin(y, x)
 		window.keypad(1)
 		panel = curses.panel.new_panel(window)
@@ -43,8 +43,9 @@ class Watch(object):
 		window.timeout(timeout * 1000)
 
 		while True:
+			h, w = window.getmaxyx()
 			ts = time.strftime('%a, %d %b %Y at %H:%M:%S')
-			scr.addstr(0, 60, ts, curses.A_NORMAL | curses.color_pair(1))
+			scr.addstr(0, w - len(ts), ts, curses.A_NORMAL | color)
 			scr.refresh()
 			window.refresh()
 			curses.doupdate()
@@ -57,7 +58,7 @@ class Watch(object):
 					continue
 				anything = True
 				index += 1
-				mode = curses.A_NORMAL | curses.color_pair(1)
+				mode = curses.A_NORMAL | color
 				msg = line
 				try:
 					window.addstr(index, 1, msg, mode)
@@ -86,14 +87,17 @@ class Watch(object):
 
 def app(scr, user):
 
-	curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
-	scr.addstr(0, 0, 'Connect Watch - %s' % user, curses.color_pair(1))
-	scr.addstr(1, 0, 'Press ESCAPE or "Q" to quit.', curses.color_pair(1))
+	if curses.has_colors():
+		curses.use_default_colors()
+	color = curses.A_NORMAL
+
+	scr.addstr(0, 0, 'Connect Watch - %s' % user, color)
+	scr.addstr(1, 0, 'Press ESCAPE or "Q" to quit.', color)
 	scr.refresh()
 
 	watch = Watch('condor_q %s' % user)
 
-	index, name = watch.display(scr, 2, 2, timeout=2.0)
+	index, name = watch.display(scr, 2, 2, color, timeout=2.0)
 	return index, name
 
 
