@@ -260,6 +260,11 @@ class ClientSession(object):
 			return self.rio(channel, **kwargs)
 		channel.rio = _
 
+		def _(**kwargs):
+			'''terminal i/o proxy'''
+			return self.termio(channel, **kwargs)
+		channel.termio = _
+
 		def _(message, code, **kwargs):
 			'''protocol message exchange proxy'''
 			return self.exchange(channel, message, code, **kwargs)
@@ -337,6 +342,51 @@ class ClientSession(object):
 						ready = False
 						break
 			sys.stdout.flush()
+
+
+	def termio(self, channel):
+		import termios
+		import tty
+		import select
+
+		ldisc = termios.tcgetattr(sys.stdin.fileno())
+		term = open('/dev/tty', 'w')
+
+		# set a SIGWINCH handler to propagate terminal resizes to server
+		signal.signal(signal.SIGWINCH, channel.winch)
+
+		try:
+			tty.setraw(sys.stdin.fileno())
+			tty.setcbreak(sys.stdin.fileno())
+			channel.settimeout(0.0)
+
+			while True:
+				try:
+					rset, wset, eset = select.select([channel, sys.stdin], [], [])
+					if channel in rset:
+						try:
+							buf = channel.recv(1024)
+							if len(buf) == 0:
+								break
+							sys.stdout.write(buf)
+							sys.stdout.flush()
+						except socket.timeout:
+							raise
+					if sys.stdin in rset:
+						buf = sys.stdin.read(1)
+						if len(buf) == 0:
+							break
+						channel.send(buf)
+				except select.error, e:
+					if e.args[0] != errno.EINTR:
+						raise
+
+		finally:
+			termios.tcsetattr(sys.stdin, termios.TCSADRAIN, ldisc)
+
+		signal.signal(signal.SIGWINCH, signal.SIG_DFL)
+
+		return channel.recv_exit_status()
 
 
 	def exchange(self, channel, message, responses):
@@ -1381,19 +1431,13 @@ class main(object):
 		help = alias['help']
 		usage = alias['usage']
 		def _(self, opts, args):
-			session = ClientSession(self.profile.server,
-			                        user=self.profile.user,
-			                        keyfile=self.keyfile(),
-			                        password='nopassword',
-			                        repo=os.path.basename(os.getcwd()),
-			                        debug=self.debug)
+			session = self.sessionsetup()
 
 			if self.repo is None:
 				self.repo = os.path.basename(os.getcwd())
 
 			channel = session.rcmd(['runalias', name] + args, shell=False, pty=True)
-			channel.rio()
-			rc = channel.recv_exit_status()
+			rc = channel.termio()
 			session.close()
 			return rc
 		_.__doc__ = usage
@@ -2068,64 +2112,28 @@ class main(object):
 			_.secret = kwargs['secret']
 		return _
 
+
 	@clientcmd('', [])
 	def c_shell(self, opts, args):
 		'''[command]'''
-		import termios
-		import tty
-		import select
 
-		ldisc = termios.tcgetattr(sys.stdin.fileno())
 		session = self.sessionsetup()
+
 		interactive = False
 		if not args:
 			args = ['/bin/sh', '-i']
 			interactive = True
 
-		term = open('/dev/tty', 'w')
+		if interactive:
+			sys.stderr.write('\n[connected to %s; ^D to disconnect]\n' % self.joburl)
+			sys.stderr.flush()
+
 		channel = session.rcmd(args, shell=True, pty=True)
-
-		# set a SIGWINCH handler to propagate terminal resizes to server
-		signal.signal(signal.SIGWINCH, channel.winch)
+		session.termio(channel)
 
 		if interactive:
-			term.write('\n[connected to %s; ^D to disconnect]\n' % self.joburl)
-			term.flush()
-
-		try:
-			tty.setraw(sys.stdin.fileno())
-			tty.setcbreak(sys.stdin.fileno())
-			channel.settimeout(0.0)
-
-			while True:
-				try:
-					rset, wset, eset = select.select([channel, sys.stdin], [], [])
-					if channel in rset:
-						try:
-							buf = channel.recv(1024)
-							if len(buf) == 0:
-								break
-							sys.stdout.write(buf)
-							sys.stdout.flush()
-						except socket.timeout:
-							pass
-					if sys.stdin in rset:
-						buf = sys.stdin.read(1)
-						if len(buf) == 0:
-							break
-						channel.send(buf)
-				except select.error, e:
-					if e.args[0] != errno.EINTR:
-						raise
-
-		finally:
-			termios.tcsetattr(sys.stdin, termios.TCSADRAIN, ldisc)
-
-		signal.signal(signal.SIGWINCH, signal.SIG_DFL)
-		if interactive:
-			term.write('\n[disconnected from %s]\n' % self.joburl)
-			term.flush()
-		return
+			sys.stderr.write('\n[disconnected from %s]\n' % self.joburl)
+			sys.stderr.flush()
 
 
 	# These are simple, transparent commands -- no more complexity
