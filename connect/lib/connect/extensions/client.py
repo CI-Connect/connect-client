@@ -1912,9 +1912,10 @@ class main(object):
 		rc = channel.recv_exit_status()
 
 		# Now pull all files
-		channel = session.handshake()
-		self.push(channel)
-		channel.exchange('quit', codes.OK)
+		# No, let's not
+		#channel = session.handshake()
+		#self.push(channel)
+		#channel.exchange('quit', codes.OK)
 
 		# and close
 		session.close()
