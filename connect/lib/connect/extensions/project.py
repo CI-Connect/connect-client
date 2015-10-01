@@ -66,8 +66,10 @@ class Menu(list):
 				self.navigate(1)
 			elif key == 14: # ^N
 				self.navigate(1)
-			elif key == 27:		# ESCAPE
-				break
+			# We can't quit on ESC because cursor movements
+			# involve ESC on many terminals.
+			#elif key == 27:		# ESCAPE
+			#	break
 			elif key == ord('Q'):
 				break
 			elif chr(key) in string.digits:
@@ -115,7 +117,7 @@ def app(scr, user, projs, prompt=None):
 
 	scr.addstr(0, 0, '%s Project Selector - %s' % (name, user.pw_name), color)
 	scr.addstr(2, 0, prompt, color)
-	scr.addstr(3, 0, 'Press ESCAPE or "Q" to quit without changes.', color)
+	scr.addstr(3, 0, 'Press "Q" to quit without changes.', color)
 	scr.refresh()
 
 	menu = Menu()
