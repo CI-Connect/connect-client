@@ -32,6 +32,7 @@ import select
 import uuid
 import new
 import urllib
+import urllib2
 import stat
 import signal
 import errno
@@ -46,6 +47,9 @@ _version = '@@version@@'
 defaults = '''
 [server]
 staging = %(home)s
+
+[geoip]
+server = http://geoip.ci-connect.net/json
 '''
 
 def help():
@@ -1449,7 +1453,7 @@ class main(object):
 
 	# generate classads for identifying the client
 	def client_classads(self):
-		return {
+		ads = {
 			'ConnectClientVersion': _version,
 			'ConnectClientServer': self.profile.server,
 			'ConnectClientUser': self.profile.user,
@@ -1457,6 +1461,20 @@ class main(object):
 			'ConnectClientLocalNode': self.hostname(),
 			'ConnectClientLocalDir': os.getcwd(),
 		}
+
+		# Try to get geoip data, if it doesn't take long
+		try:
+			url = config.get('geoip', 'server')
+			fp = urllib2.urlopen(url, timeout=10.0)
+			data = fp.read()
+			fp.close()
+			geodata = json.loads(data)
+			geodata = ' | '.join(["%s=%s" % (k, geodata[k]) for k in sorted(geodata.keys())])
+			ads['ConnectClientGeoData'] = geodata
+		except Exception, e:
+			ads['ConnectClientGeoData'] = 'error: ' + str(e)
+
+		return ads
 
 
 	@clientcmd('', [])
