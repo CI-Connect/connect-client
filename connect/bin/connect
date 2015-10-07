@@ -1,9 +1,4 @@
-#!/usr/bin/env python
-
-# /usr/bin/env python is the correct way to invoke a program,
-# but we can't do it because of CERN's terrible habit of mucking
-# up the user's environment - you get a python in $PATH that does
-# not have htcondor installed.
+#!/usr/bin/env @@python@@
 
 import os
 import sys
