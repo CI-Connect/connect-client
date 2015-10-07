@@ -2,16 +2,6 @@
 # as a submodule.
 
 status ... connect command
-copyfiles . "$base/."
-sed -e "s/@@version@@/$version/" \
-	< lib/connect/extensions/client.py \
-	> ${base}/lib/connect/extensions/client.py
-
-status "... paramiko (for connect command)"
-
-builddir=${HOME}/.tmp/pip-build
-rm -rf "${builddir}"
-mkdir -p "${builddir}"
 
 # Figure out where the correct pip is
 for pip in pip27 pip2.7 pip pip26 pip2.6; do
@@ -24,6 +14,20 @@ for python in python27 python2.7 python python26 python2.6; do
 	$python --version >/dev/null 2>&1 && break
 	python=
 done
+
+copyfiles . "$base/."
+sed -e "s/@@version@@/$version/" \
+	< lib/connect/extensions/client.py \
+	> ${base}/lib/connect/extensions/client.py
+sed -e "s/@@python@@/$python/" \
+	< bin/connect \
+	> ${base}/bin/connect
+
+status "... paramiko (for connect command)"
+
+builddir=${HOME}/.tmp/pip-build
+rm -rf "${builddir}"
+mkdir -p "${builddir}"
 
 if [ -z "$pip" ]; then
 	code=$?
