@@ -14,7 +14,7 @@ rm -rf "${builddir}"
 mkdir -p "${builddir}"
 
 # Figure out where the correct pip is
-for pip in pip27 pip2.7 pip; do
+for pip in pip27 pip2.7 pip pip26 pip2.6; do
 	$pip --version >/dev/null 2>&1 && break
 	pip=
 done
