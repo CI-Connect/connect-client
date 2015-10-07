@@ -26,12 +26,22 @@ if [ -z "$pip" ]; then
 else
 	lib=$(python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
 	target="$base/lib/$lib"
-	$pip install \
-		--log="${builddir}/log" \
-		-b "${builddir}" \
-		--target="$target" \
-		pycrypto paramiko \
-		||
+	(
+		$pip install \
+			--log="${builddir}/log" \
+			-b "${builddir}" \
+			--target="$target" \
+			pycrypto paramiko \
+	) > pip.log 2>&1 ||
 	{ code=$?; echo "== Do you need to load a python module?"; }
 	rm -rf "${builddir}"
+
+	python <<EOF
+try:
+	import paramiko
+	print '== Connect Client dependencies installed.'
+except ImportError:
+	print '== Failed Connect Client dependency installation.'
+EOF
+	code=$?
 fi
