@@ -19,12 +19,22 @@ for pip in pip27 pip2.7 pip pip26 pip2.6; do
 	pip=
 done
 
+# Figure out where the correct python is
+for python in python27 python2.7 python python26 python2.6; do
+	$python --version >/dev/null 2>&1 && break
+	python=
+done
+
 if [ -z "$pip" ]; then
 	code=$?
 	echo >&2 "== No pip program available - installation failed."
 
+elif [ -z "$python" ]; then
+	code=$?
+	echo >&2 "== No python program available - installation failed."
+
 else
-	lib=$(python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
+	lib=$($python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
 	target="$base/lib/$lib"
 	(
 		$pip install \
@@ -36,7 +46,7 @@ else
 	{ code=$?; echo "== Do you need to load a python module?"; }
 	rm -rf "${builddir}"
 
-	python <<EOF
+	env "PYTHONPATH=$target" $python <<EOF
 try:
 	import paramiko
 	print '== Connect Client dependencies installed.'
