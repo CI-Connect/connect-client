@@ -36,7 +36,7 @@ else
 fi
 
 if [ -z "$base" -o "$base" = "-h" -o "$base" = "--help" ]; then
-	echo >&2 "usage: $0 software-install-directory modulefiles-directory"
+	echo >&2 "usage: $0 software-install-directory [modulefiles-directory]"
 	echo >&2
 	echo >&2 "A software installation directory is required. If no modulefiles library"
 	echo >&2 "is provided, a modulefile will be created in the installation directory."
