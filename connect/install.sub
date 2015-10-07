@@ -13,13 +13,25 @@ builddir=${HOME}/.tmp/pip-build
 rm -rf "${builddir}"
 mkdir -p "${builddir}"
 
-lib=$(python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
-target="$base/lib/$lib"
-pip install \
-	--log="${builddir}/log" \
-	-b "${builddir}" \
-	--target="$target" \
-	pycrypto paramiko \
-	||
-{ code=$?; echo "== Do you need to load a python module?"; }
-rm -rf "${builddir}"
+# Figure out where the correct pip is
+for pip in pip27 pip2.7 pip; do
+	$pip --version >/dev/null 2>&1 && break
+	pip=
+done
+
+if [ -z "$pip" ]; then
+	code=$?
+	echo >&2 "== No pip program available - installation failed."
+
+else
+	lib=$(python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
+	target="$base/lib/$lib"
+	$pip install \
+		--log="${builddir}/log" \
+		-b "${builddir}" \
+		--target="$target" \
+		pycrypto paramiko \
+		||
+	{ code=$?; echo "== Do you need to load a python module?"; }
+	rm -rf "${builddir}"
+fi
