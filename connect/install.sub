@@ -1,8 +1,6 @@
 # used by connect-client, a repo that includes connect-command
 # as a submodule.
 
-status ... connect command
-
 # Figure out where the correct pip is
 for pip in pip27 pip2.7 pip pip26 pip2.6; do
 	$pip --version >/dev/null 2>&1 && break
@@ -15,47 +13,69 @@ for python in python27 python2.7 python python26 python2.6; do
 	python=
 done
 
-copyfiles . "$base/."
-sed -e "s/@@version@@/$version/" \
-	< lib/connect/extensions/client.py \
-	> ${base}/lib/connect/extensions/client.py
-sed -e "s/@@python@@/$python/" \
-	< bin/connect \
-	> ${base}/bin/connect
+install_connect () {
+	copyfiles . "$base/."
+	sed -e "s/@@version@@/$version/" \
+		< lib/connect/extensions/client.py \
+		> ${base}/lib/connect/extensions/client.py
+	sed -e "s/@@python@@/$python/" \
+		< bin/connect \
+		> ${base}/bin/connect
+}
 
-status "... paramiko (for connect command)"
-
-builddir=${HOME}/.tmp/pip-build
-rm -rf "${builddir}"
-mkdir -p "${builddir}"
-
-if [ -z "$pip" ]; then
-	code=$?
-	echo >&2 "== No pip program available - installation failed."
-
-elif [ -z "$python" ]; then
-	code=$?
-	echo >&2 "== No python program available - installation failed."
-
-else
-	lib=$($python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
-	target="$base/lib/$lib"
-	(
-		$pip install \
-			--log="${builddir}/log" \
-			-b "${builddir}" \
-			--target="$target" \
-			pycrypto paramiko \
-	) > pip.log 2>&1 ||
-	{ code=$?; echo "== Do you need to load a python module?"; }
-	rm -rf "${builddir}"
-
+test_paramiko () {
 	env "PYTHONPATH=$target" $python <<EOF
+import sys
 try:
 	import paramiko
-	print '== Connect Client dependencies installed.'
+	sys.exit(0)
 except ImportError:
-	print '== Failed Connect Client dependency installation.'
+	sys.exit(255)
 EOF
-	code=$?
+}
+
+install_paramiko () {
+	builddir=${HOME}/.tmp/pip-build
+	rm -rf "${builddir}"
+	mkdir -p "${builddir}"
+
+	if [ -z "$pip" ]; then
+		code=$?
+		echo >&2 "== No pip program available - installation failed."
+
+	elif [ -z "$python" ]; then
+		code=$?
+		echo >&2 "== No python program available - installation failed."
+
+	else
+		lib=$($python -c "import sys; print 'python%d.%d/site-packages' % (sys.version_info[0], sys.version_info[1])")
+		target="$base/lib/$lib"
+		(
+			$pip install \
+				--log="${builddir}/log" \
+				-b "${builddir}" \
+				--target="$target" \
+				pycrypto paramiko \
+		) > pip.log 2>&1 ||
+		{ code=$?; echo "== Do you need to load a python module?"; }
+		rm -rf "${builddir}"
+
+	fi
+}
+
+status ... connect command
+install_connect
+
+status "... paramiko (for connect command)"
+if test_paramiko; then
+	echo "== Paramiko already present"
+else
+	install_paramiko
+	if test_paramiko; then
+		code=$?
+		echo '== Paramiko installed.'
+	else
+		code=$?
+		echo '== Paramiko installation failed.'
+	fi
 fi

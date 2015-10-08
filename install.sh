@@ -44,7 +44,10 @@ if [ -z "$base" -o "$base" = "-h" -o "$base" = "--help" ]; then
 fi
 
 copyfiles () {
-	rsync -a --exclude install.sub "$@"
+	# Try not to depend on rsync
+	#rsync -a --exclude install.sub "$@"
+	cp -rp "$1/." "$2/."
+	[ -f "$2/install.sub" ] && rm "$2/install.sub"
 }
 
 status () {
@@ -82,8 +85,8 @@ status ... tutorial command
 # turns out this isn't useful because once python has the git module,
 # it just runs git in a subprocess.
 #sh scripts/tutorial/bundle-prereqs "$base" 2>&1 | sed -e 's/^/ | /'
-copyfiles scripts/tutorial/tutorial "$base/bin/"
-copyfiles scripts/distribution "$base/bin/"
+cp -p scripts/tutorial/tutorial "$base/bin/"
+cp -p scripts/distribution "$base/bin/"
 
 # Install switch-module functions?
 if $oasisinstall; then
