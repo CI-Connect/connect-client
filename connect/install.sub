@@ -24,7 +24,7 @@ install_connect () {
 }
 
 test_paramiko () {
-	env "PYTHONPATH=$target" $python <<EOF
+	env "PYTHONPATH=$target" $python >/dev/null 2>&1 <<EOF
 import sys
 try:
 	import paramiko
