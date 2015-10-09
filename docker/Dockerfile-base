@@ -1,0 +1,12 @@
+#
+# This dockerfile builds a CentOS6 base image with $HOME set to /root,
+# to prevent accidentally stomping on the system.  This image is
+# suitable for a from-scratch Connect Client installation.
+#
+
+FROM centos:centos6
+MAINTAINER <connect-support@opensciencegrid.org>
+ENV HOME=/root
+
+COPY boot.sh /
+CMD /boot.sh

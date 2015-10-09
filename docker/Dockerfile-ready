@@ -1,0 +1,12 @@
+#
+# This dockerfile builds on connect-client-prep.  It uses the
+# prepared system to download and install the Connect Client
+# in /usr/local.
+#
+# This image is ready for a user to try out the Connect Client.
+#
+
+FROM connect-client-prep
+RUN curl -L https://github.com/CI-Connect/connect-client/releases/download/v0.5.2/connect-client-0.5.2.tar.gz | tar xzvf -
+WORKDIR connect-client-0.5.2
+RUN ./install.sh /usr/local

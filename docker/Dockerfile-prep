@@ -1,0 +1,7 @@
+#
+# This dockerfile builds on connect-clent-base, pre-installing all the
+# packages needed to build Connect Client.
+#
+
+FROM connect-client-base
+RUN yum -y install curl python-paramiko tar rsync
