@@ -7,6 +7,6 @@
 #
 
 FROM connect-client-prep
-RUN curl -L https://github.com/CI-Connect/connect-client/releases/download/v0.5.2/connect-client-0.5.2.tar.gz | tar xzvf -
-WORKDIR connect-client-0.5.2
+RUN curl -L https://github.com/CI-Connect/connect-client/releases/download/v@@version@@/connect-client-@@version@@.tar.gz | tar xzvf -
+WORKDIR connect-client-@@version@@
 RUN ./install.sh /usr/local

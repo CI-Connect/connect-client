@@ -3,7 +3,11 @@
 # Run ./build.sh to build all of the Docker images in this
 # directory.
 
-for sub in base prep ready; do
-	docker build -t $(basename $(pwd))-$sub -f Dockerfile-$sub .
-done
+VERSION=$(sed -e 's/^v//' <../.version); export VERSION
 
+docker build -t connect-client-base -f Dockerfile-base .
+docker build -t connect-client-prep -f Dockerfile-prep .
+
+sed -e "s,@@version@@,$VERSION,g" <Dockerfile-ready >tmp
+docker build -t connect-client-ready:$VERSION -f tmp .
+rm -f tmp
