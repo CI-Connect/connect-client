@@ -1,0 +1,39 @@
+It is STRONGLY ENCOURAGED to deactivate MacPorts, Homebrew, etc
+before building a redistributably copy of Connect Client.  Do this by
+removing them from your PATH before building.  The mkapp script will
+attempt to use the system Python by updating its internal PATH to look
+in /usr/bin first, but there can still be some hitches.
+
+From a stock MacOS system, you will need to install pip:
+	sudo easy_install pip
+
+You will also need XCode and the XCode command line tools.  Note that
+if you have not run XCode command line tools before, you may need to do
+so as root before building this app, in order to accept Apple's XCode
+TOS.
+
+To build a Mac relocatable application, run the mkapp script:
+
+cd connect-client		# where you cloned or unzipped the software
+package/macos/mkapp
+
+After some churning, you'll find the application in ./dist:
+
+ls dist
+...
+
+
+The application may be moved around at will.  Installing the Connect
+Client is simply a matter of copying it onto your hard drive.  It can
+live anywhere.
+
+Note that there is no graphical application for the Connect Client.
+Connect Client exists only in the command line terminal (Terminal.app,
+or iTerm, etc.)  Running the app from Finder only updates your shell
+settings to be able to locate the software.
+
+After installing the application, you should run it once from Finder to
+ensure that your terminal path is up to date.
+
+Run the application from Finder again any time you move the application
+to a new location.

@@ -1,0 +1,37 @@
+#!/bin/sh
+
+work=$(dirname "$0")
+cd "$work"
+mkdir -p ../../dist >/dev/null 2>&1
+
+name="Connect Client Setup"
+app="../../dist/$name.app"
+icon="$app/Icon"
+
+if [ -d "$app" ]; then
+	echo >&2 "$app already exists. Please remove or rename then"
+	echo >&2 "run this program again."
+	exit 10
+fi
+
+(
+	mkdir "$app"
+	mkdir "$app/Contents"
+	mkdir "$app/Contents/MacOS"
+	mkdir "$app/Contents/Resources"
+) 2>/dev/null
+
+# Create Icon
+touch "$icon"
+Rez -append client_icns.rsrc -o "$icon"
+SetFile -a C "$app"
+
+# Install executable
+cp setup.sh "$app/Contents/MacOS/Connect Client Setup"
+
+# Install into Resources
+(
+	dst="$(pwd)/$app/Contents/Resources"
+	cd ../..
+	./install.sh "$dst"
+)
