@@ -334,18 +334,68 @@ class ClientSession(object):
 				return bytes
 			events[channel.fileno()] = _
 
-		poll = select.poll()
-		for fd in events:
-			poll.register(fd, select.POLLIN)
-
+		# Switch to using select only for portability
 		ready = True
 		while ready:
-			for fd, event in poll.poll():
-				if event == select.POLLIN:
+			try:
+				rset, wset, eset = select.select(events.keys(), [], [])
+				for fd in rset:
 					if events[fd]() == 0:
 						ready = False
 						break
-			sys.stdout.flush()
+			except select.error, e:
+				if e.args[0] != errno.EINTR:
+					raise
+
+		# XXX Discovered that MacOS native python doesn't support
+		# select.poll() even though MacOS has a poll() syscall and
+		# MacPorts Python has select.poll().  Initially added kqueue
+		# support to overcome this, but it's probably better at
+		# this low scale (very few file descriptors) to just use
+		# select.  Leaving the poll/kqueue here for the moment but
+		# it is not used.
+		return
+
+		if hasattr(select, 'poll'):
+			# Most everything
+
+			poll = select.poll()
+			for fd in events:
+				poll.register(fd, select.POLLIN)
+
+			ready = True
+			while ready:
+				for fd, event in poll.poll():
+					if event == select.POLLIN:
+						if events[fd]() == 0:
+							ready = False
+							break
+				sys.stdout.flush()
+
+		elif hasattr(select, 'kqueue'):
+			# MacOS with native python
+
+			kq = select.kqueue()
+			kevents = [select.kevent(fd, filter=select.KQ_FILTER_READ,
+			                         flags=select.KQ_EV_ADD|select.KQ_EV_EOF)
+			           for fd in events.keys()]
+			kq.control(kevents, 0, 0)
+
+			ready = True
+			n = 0
+			while ready:
+				for ev in kq.control(None, 5, None):
+					#if ev.flags & select.KQ_EV_EOF:
+					#	ready = False
+					#	break
+					if ev.filter == select.KQ_FILTER_READ:
+						n += 1
+						L = events[ev.ident]()
+						print '>>', n, L
+						if L == 0:
+							ready = False
+							break
+				sys.stdout.flush()
 
 
 	def termio(self, channel):
