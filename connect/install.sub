@@ -1,14 +1,25 @@
 # used by connect-client, a repo that includes connect-command
 # as a submodule.
 
+pyversions=${PYVERSIONS-27 2.7 - 26 2.6}
+
+versions () {
+	for version in $pyversions; do
+		if [ "$version" = "-" ]; then
+			version=
+		fi
+		echo $1$version
+	done
+}
+
 # Figure out where the correct pip is
-for pip in pip27 pip2.7 pip pip26 pip2.6; do
+for pip in $(versions pip); do
 	$pip --version >/dev/null 2>&1 && break
 	pip=
 done
 
 # Figure out where the correct python is
-for python in python27 python2.7 python python26 python2.6; do
+for python in $(versions python); do
 	$python --version >/dev/null 2>&1 && break
 	python=
 done
@@ -27,6 +38,9 @@ test_paramiko () {
 	env "PYTHONPATH=$target" $python >/dev/null 2>&1 <<EOF
 import sys
 try:
+	import warnings
+	with warnings.catch_warnings():
+		warnings.simplefilter("ignore")
 	import paramiko
 	sys.exit(0)
 except ImportError:
