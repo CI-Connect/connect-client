@@ -1,5 +1,7 @@
 #!/bin/sh
 
+version=${1-unknown}
+
 work=$(dirname "$0")
 cd "$work"
 mkdir -p ../../dist >/dev/null 2>&1
@@ -7,6 +9,7 @@ mkdir -p ../../dist >/dev/null 2>&1
 name="Connect Client Setup"
 app="../../dist/$name.app"
 icon="$app/Icon"
+info="$app/Contents/Info.plist"
 
 if [ -d "$app" ]; then
 	echo >&2 "$app already exists. Please remove or rename then"
@@ -25,6 +28,9 @@ fi
 touch "$icon"
 Rez -append client_icns.rsrc -o "$icon"
 SetFile -a C "$app"
+
+# Update Info.plist
+sed -e "s/@@version@@/$version/g" <Info.plist.in >"$info"
 
 # Install executable
 cp setup.sh "$app/Contents/MacOS/Connect Client Setup"

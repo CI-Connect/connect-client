@@ -12,10 +12,11 @@ if you have not run XCode command line tools before, you may need to do
 so as root before building this app, in order to accept Apple's XCode
 TOS.
 
-To build a Mac relocatable application, run the mkapp script:
+To build a Mac relocatable application, run the mkapp script.  Pass
+the version number (with or without build details) as an argument.
 
 cd connect-client		# where you cloned or unzipped the software
-package/macos/mkapp
+package/macos/mkapp 0.5.4
 
 After some churning, you'll find the application in ./dist:
 

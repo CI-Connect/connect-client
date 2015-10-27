@@ -18,14 +18,14 @@ popup () {
 }
 
 # Check that app link is in path
-cd "$HOME"
+cd
 magic="connect client setup-1"
-if grep "# $magic" .bashrc >/dev/null; then
+if grep "# $magic" .profile >/dev/null; then
 	: ok
 	popup "Your Connect Client installation has been updated."
 else
 	q='"'
 	d='$'
-	echo "PATH=$q$HOME/.ciconnect/macos/bin:${d}PATH$q # $magic" >>.bashrc
+	echo "PATH=$q$HOME/.ciconnect/macos/bin:${d}PATH$q # $magic" >>.profile
 	popup "Your Connect Client installation has been located. You will need to quit and restart Terminal.app to use the connect command."
 fi
