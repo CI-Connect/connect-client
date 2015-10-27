@@ -1,0 +1,18 @@
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleExecutable</key>
+	<string>Connect Client Setup</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Connect Client setup and reconfiguration tool</string>
+	<key>CFBundleIdentifier</key>
+	<string>net.ci-connect.connect-client</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>@@version@@</string>
+</dict>
+</plist>
+
