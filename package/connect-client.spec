@@ -34,7 +34,7 @@ rm -rf %{buildroot}
 (
 	cd "$OLDPWD"
 	# Allow only python 2.6 here
-	env PYVERSIONS=26 ./install.sh %{buildroot}/usr
+	env PYVERSIONS="26 -" ./install.sh %{buildroot}/usr
 
 	#cp -p connect/bin/connect %{buildroot}%{_bindir}/
 	#cp -p connect/bin/distribution %{buildroot}%{_bindir}/
@@ -51,7 +51,10 @@ rm -rf %{buildroot}
 cd %{buildroot}
 rm -f usr/pip.log usr/.gitignore
 mv usr/etc etc
-find .
+
+# debugging
+#find .
+#head usr/bin/connect
 
 %clean
 rm -rf %{buildroot}
