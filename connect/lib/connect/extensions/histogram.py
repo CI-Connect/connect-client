@@ -28,12 +28,12 @@ compute-\d-\d{2}.local           *       swt2.org
 golub\d{3}                       *       mwt2.org/illinois
 taub\d{3}                        *       mwt2.org/illinois
 iu.edu                           *       mwt2.org/indiana
-uct2-c                           *       mwt2.org/chicago
+uct2-c.*                         *       mwt2.org/chicago
 midway\d{3}                      *       uchicago/rcc
 midway-\d{3}-\d{2}               *       uchicago/rcc
 uc3-.*.mwt2.org                  *       uchicago/uc3
 .*-its-.*-nfs-\d{8}              *       syracuse/orangegrid
-^CRUSH-OSG                       *       syracuse/orangegrid
+^CRUSH-OSG.*                     *       syracuse/orangegrid
 r\w+-s\d+.ufhpc                  *       ufhpc            # e.g. r18a-s31.ufhpc
 
 # This one is the wildcard catchall for domains: *.dom.ain -> dom.ain
