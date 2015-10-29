@@ -58,6 +58,9 @@ class Watch(object):
 					continue
 				anything = True
 				index += 1
+				if index == 1:
+					window.clear()
+					window.refresh()
 				mode = curses.A_NORMAL | color
 				msg = line
 				try:
