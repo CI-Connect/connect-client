@@ -40,4 +40,5 @@ cp setup.sh "$app/Contents/MacOS/Connect Client Setup"
 	dst="$(pwd)/$app/Contents/Resources"
 	cd ../..
 	./install.sh "$dst"
+	echo $version > "$dst"/version
 )
