@@ -1,17 +1,18 @@
 #!python
 
+
 # We need to extend this to collect EITHER LastRemoteHost
 # or MATCH_EXP_JOBGLIDEIN_ResourceName and match in the same table.
 DOMAINMAP = '''
 .*\?{8}                          *       [glidein]
-qgp\d{2}                         *       duke.edu
-lqcd\d{2}                        *       duke.edu
-neutrino-\d{2}                   *       duke.edu
-neuron-\d{2}                     *       duke.edu
-neutron-\d{2}                    *       duke.edu
-nano\d{2}                        *       duke.edu
+qgp\d{2}                         *       duke/physics
+lqcd\d{2}                        *       duke/physics
+neutrino-\d{2}                   *       duke/physics
+neuron-\d{2}                     *       duke/physics
+neutron-\d{2}                    *       duke/physics
+nano\d{2}                        *       duke/physics
 compute-\d{2}-\d{2}\.local\d     *       uconn.edu
-compute-\d-\d{2}.nysu\d          *       uconn.edu
+compute-\d-\d{2}.nysu\d          *       nysu?
 nodo\d{2}                        *       cinvestav.mx
 compute-\d-\d.local              atlas   swt2.org
 compute-\d+-\d+.local            *       vt.edu
@@ -20,17 +21,20 @@ compute-\d+-\d+.local            *       vt.edu
 computer?-\d+n?-\d+.tier2        *       caltech.edu
 node\d{3}.local                  atlas   swt2.org
 node\d{3}.local                  *       unesp.br
+node\d{4}$                       *       clemson/palmetto
 compute-\d-\d{2}.nys1            *       swt2.org
 compute-\d-\d.nys1               *       swt2.org
 compute-\d-\d{2}.local           *       swt2.org
-golub\d{3}                       *       mwt2.org
-taub\d{3}                        *       mwt2.org
-iu.edu                           *       mwt2.org
-midway\d{3}                      *       rcc.uchicago.edu
-midway-\d{3}-\d{2}               *       rcc.uchicago.edu
-uc3-.*.mwt2.org                  *       uc3
-.*-its-.*-nfs-\d{8}              *       orangegrid
-r\w+-s\d+.ufhpc                  *       ufhpc                # e.g. r18a-s31.ufhpc
+golub\d{3}                       *       mwt2.org/illinois
+taub\d{3}                        *       mwt2.org/illinois
+iu.edu                           *       mwt2.org/indiana
+uct2-c                           *       mwt2.org/chicago
+midway\d{3}                      *       uchicago/rcc
+midway-\d{3}-\d{2}               *       uchicago/rcc
+uc3-.*.mwt2.org                  *       uchicago/uc3
+.*-its-.*-nfs-\d{8}              *       syracuse/orangegrid
+^CRUSH-OSG                       *       syracuse/orangegrid
+r\w+-s\d+.ufhpc                  *       ufhpc            # e.g. r18a-s31.ufhpc
 
 # This one is the wildcard catchall for domains: *.dom.ain -> dom.ain
 .*\.([^.]*\.[^.]*)$              *       \\1
