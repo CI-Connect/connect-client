@@ -40,7 +40,7 @@ class Watch(object):
 		window.clear()
 
 		curses.cbreak()
-		window.timeout(timeout * 1000)
+		window.timeout(int(timeout) * 1000)
 
 		while True:
 			h, w = window.getmaxyx()
