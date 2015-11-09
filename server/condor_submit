@@ -10,6 +10,8 @@ import grp
 import tempfile
 import subprocess
 import time
+import types
+import inspect
 
 CondorSubmit = '/usr/bin/.condor_submit'
 ProjectFiles = ('~/.osg_default_project',
@@ -25,6 +27,23 @@ SupplementalClassAds = [
 LockFile = "/tmp/condor-submit-lock." + str(os.getuid())
 
 Debug = False
+
+class hookdebug(object):
+	def preparse(self, *args, **kwargs):
+		print 'running preparse hooks'
+
+	def postparse(self, *args, **kwargs):
+		print 'running postparse hooks'
+
+	def presubmit(self, *args, **kwargs):
+		print 'running presubmit hooks'
+
+	def isubmit(self, *args, **kwargs):
+		print 'running isubmit hooks'
+
+	def postsubmit(self, *args, **kwargs):
+		print 'running postsubmit hooks'
+
 
 def groups(user):
 	'''Get all groups (for a given user)'''
@@ -66,7 +85,71 @@ def getproject(sub):
 class submit(list):
 	def __init__(self, *args):
 		self.text = ''
+		self.hooks = {
+			'preparse': [],
+			'postparse': [],
+			'presubmit': [],
+			'isubmit': [],
+			'postsubmit': [],
+		}
+
 		list.__init__(self, *args)
+
+	def preparse(self, *args, **kwargs):
+		return self.callhook('preparse', *args, **kwargs)
+
+	def postparse(self, *args, **kwargs):
+		return self.callhook('postparse', *args, **kwargs)
+
+	def presubmit(self, *args, **kwargs):
+		return self.callhook('presubmit', *args, **kwargs)
+
+	def isubmit(self, *args, **kwargs):
+		return self.callhook('isubmit', *args, **kwargs)
+
+	def postsubmit(self, *args, **kwargs):
+		return self.callhook('postsubmit', *args, **kwargs)
+
+	def callhook(self, type, *args, **kwargs):
+		rc = True
+		for hook in self.hooks[type]:
+			# each hook may return True, False, or None
+			# True -> continue, no errors
+			# False -> continue with hooks, but error at end
+			# None -> error immediately
+			nrc = hook(*args, **kwargs)
+			if nrc is None:
+				return None
+			if nrc is False:
+				rc = False
+		return rc
+
+	def hook(self, type, f):
+		self.hooks[type].append(f)
+
+	def sethooks(self, cfg):
+		if not cfg.has_section('hooks'):
+			return
+		instances = {}
+		for opt in sorted(cfg.options('hooks')):
+			if '.' in opt:
+				hooktype, sortkey = opt.split('.', 1)
+			else:
+				hooktype = opt
+			obj = eval(cfg.get('hooks', opt))
+			if inspect.isclass(obj):
+				# if a class, use cls.hooktype as the hook entry point
+				# e.g. given this:
+				# [hooks]
+				# presubmit = myclass
+				# We will call myclass().presubmit() during hook processing.  Note
+				# that myclass will be instantiated ONCE.
+				if obj not in instances:
+					instances[obj] = obj()
+				if hasattr(instances[obj], hooktype):
+					self.hook(hooktype, getattr(instances[obj], hooktype))
+			else:
+				self.hook(hooktype, obj)
 
 	def update(self):
 		'''Replace original text with reconstructed submit file'''
@@ -138,6 +221,87 @@ class submit(list):
 				return True
 		return False
 
+
+# There is room here to allow use of grid-proxy-init if VOMS
+# is not in use, but it is not implemented.  Tip: design this
+# to use grid-proxy-init if [submit]proxy.voms = false (or something).
+def x509setup(cfg):
+	def find_x509():
+		'''Look for the proxy cert in the standard locations, or
+		alternately in the location pointed to by $X509_USER_PROXY.'''
+
+		for file in (os.environ.get('X509_USER_PROXY'),
+		             '~/.globus/usercert.pem',
+		             '/tmp/x509up_u%d' % os.getuid()):
+			if file:
+				file = os.path.expanduser(file)
+				if os.path.isfile(file):
+					return file
+		return None
+
+	if cfg.has_option('submit', 'proxy.voms'):
+		voms = cfg.get('submit', 'proxy.voms')
+	else:
+		voms = 'osg'
+
+	if cfg.has_option('submit', 'proxy.validity'):
+		validity = cfg.get('submit', 'proxy.validity')
+	else:
+		validity = '192:00'
+
+	if cfg.has_option('submit', 'proxy.renew'):
+		# With fewer than proxy.renew seconds in proxy life, force renewal
+		# If 0, do not force renewal.
+		renew = cfg.get('submit', 'proxy.renew')
+	else:
+		renew = 3 * 86400		# 3 days
+
+	proxy = find_x509()
+	if not proxy:
+		print 
+		print 'Couldn\'t find a proxy certificate. Please set up VOMS proxy!'
+		print
+		subprocess.check_call(['voms-proxy-init',
+		                       '-voms', voms,
+		                       '-valid', validity])
+		proxy = find_x509()
+		if not proxy:
+			print 'Error setting up VOMS proxy.'
+			return None
+
+	# Check lifespan of proxy cert
+	fp = subprocess.Popen(['voms-proxy-info', '-timeleft'],
+	                      stdout=subprocess.PIPE,
+	                      stderr=subprocess.PIPE)
+	try:
+		life = int(fp.communicate()[0].replace('\n', ''))
+	except ValueError:
+		print
+		print 'No valid proxy certificate. Please set up VOMS proxy!'
+		print
+		subprocess.check_call(['voms-proxy-init',
+		                       '-voms', voms,
+		                       '-valid', validity])
+	fp.close()
+
+	if renew and life <= 0:
+		print
+		print 'Your VOMS proxy certificate has expired. Please renew!'
+		print
+		subprocess.check_call(['voms-proxy-init',
+		                       '-voms', voms,
+		                       '-valid', validity])
+	if renew and life < renew:
+		print
+		print 'Your VOMS proxy expires soon. Please renew!'
+		print
+		subprocess.check_call(['voms-proxy-init',
+		                       '-voms', voms,
+		                       '-valid', validity])
+
+	return proxy
+
+
 def setacctgroup(user, project):
 	#acctgroup = 'group_other.' + user.pw_name
 	acctgroup = 'group_opportunistic.' + user.pw_name
@@ -163,9 +327,8 @@ def setacctgroup(user, project):
 
 
 def get_submit_lock():
-	"""
-	Slows down submittors who submit jobs in parallel - this is to protect our schedd
-	"""
+	'''Slow down submitters who submit jobs in parallel.
+	This is to protect our schedd.'''
 
 	def create():
 		try:
@@ -263,24 +426,33 @@ def main(args):
 		if arg == '--debug':
 			Debug = True	# wrapper option, do not append to options[]
 			matched = True
+		if arg.startswith('--config='):
+			cfg.read(arg[9:])
+			matched = True
+		if arg == '--dump':
+			cfg.write(sys.stdout)
+			return 0
 		if not matched:
 			submitfile = arg
 
 	if Debug:
 		print '>>', options
 
-	try:
-		sub = submit()
+	sub = submit()
+	sub.sethooks(cfg)
+	sub.preparse()
 
-		if readcmds:
-			# Print usual Condor pre-reponse
-			sys.stdout.write('Submitting job(s)')
-			sys.stdout.flush()
+	if readcmds:
+		# Print usual Condor pre-reponse
+		sys.stdout.write('Submitting job(s)')
+		sys.stdout.flush()
+		try:
 			sub.parse(submitfile)
+		except KeyboardInterrupt:
+			print '\nbreak (no jobs submitted)'
+			return 10
 
-	except KeyboardInterrupt:
-		print '\nbreak (no jobs submitted)'
-		return 10
+	sub.postparse()
 
 	needproject = True
 
@@ -324,32 +496,24 @@ def main(args):
 			showprojects()
 			return 1
 
-    #try:
-    #    if cfg.has_section('submit'):
-    #        if cfg.getboolean('submit','requirex509'):
-            # Check to see if the proxy lives in the standard location
-            # or X509_USER_PROXY is defined and tells us where the proxy lives
-            # ATLAS code does this, but it's not necessary:
-            #if ( os.path.isfile(os.environ['HOME'] + '/.globus/usercert.pem') and os.path.isfile(os.environ['HOME'] + '/.globus/userkey.pem')) or \
-                #if ( os.environ.get('X509_USER_PROXY') and os.path.isfile(os.environ.get('X509_USER_PROXY')) ) or \
-                #( os.path.isfile('/tmp/x509up_u' + str(os.getuid())) ):
-                    #proxytime = subprocess.Popen(['voms-proxy-info', '-timeleft'], stdout=subprocess.PIPE).communicate()[0].replace('\n','')
-#                    if int(proxytime) == 0:
-#                        print "\n\nError: Your voms proxy has expired.  Please renew (voms-proxy-init -voms cms)."
-#                        return 1
-#                elif int(proxytime) <= 7200:
-#                    print "\n\nError: Your voms proxy expires in " + proxytime + "s; Please renew (voms-proxy-init -voms cms)."
-#                    return 1
-#                else:
-#                    print "\n\nError: Couldn't find a proxy. \nPlease setup voms proxy (voms-proxy-init -voms cms)."
-#                    return 1
-#                # Also need to check that the submit file has a proxy
-#                if 'x509userproxy' not in sub:
-#                    print "\n\nError: Couldn't find proxy. Have you set x509userproxy?"
-#                    print "Best guess: x509userproxy = /tmp/x509up_u" + str(os.getuid())
-#                    return 1
-#    except ConfigParser.Error:
-#        pass
+	# Check for valid proxies if needed, option to renew.
+	# Injects the x509userproxy classad for the user.
+	if cfg.has_section('submit') and \
+	   cfg.has_option('submit', 'requirex509') and \
+	   cfg.getboolean('submit', 'requirex509'):
+		try:
+			proxy = x509setup(cfg)
+			if proxy is None:
+				return 20
+		except subprocess.CalledProcessError:
+			print
+			print 'Error setting up VOMS proxy certificate.'
+			print
+			return 22
+
+		# Ensure that the user proxy goes into the submit file
+		if 'x509userproxy' not in sub:
+			classads.append(('x509userproxy', proxy))
 
 	acctgroup = setacctgroup(user, project)
 
@@ -362,7 +526,7 @@ def main(args):
 
 	# We could instead do:
 	# for ad, value in classads:
-	# 	sub['+' + ad] = value
+	#	sub['+' + ad] = value
 	# sub.update()
 	# But this would rely more heavily on the submit file parse/reconstruct
 	# logic.  It probably is fine, but so long as -a works for us let's just
@@ -376,19 +540,26 @@ def main(args):
 		print sub.text
 		return 0
 
+	sub.presubmit()
+
 	# slow down aggresive submitters
 	get_submit_lock()
 
 	p = subprocess.Popen(nargs, executable=CondorSubmit,
-	                     stdin=subprocess.PIPE,
-	                     stdout=subprocess.PIPE,
-	                     stderr=subprocess.STDOUT)
+						 stdin=subprocess.PIPE,
+						 stdout=subprocess.PIPE,
+						 stderr=subprocess.STDOUT)
 	try:
 		p.stdin.write(sub.text)
 		p.stdin.close()
 	except IOError, e:
 		pass
+
 	while True:
+		# XXX TODO read dots character by character to echo them in real time.
+		# This is not as simple as read(1) because we need to replace strings
+		# too. So we need to read whole strings when possible, single bytes
+		# otherwise.
 		data = p.stdout.read()
 		data = data.replace('Submitting job(s)', '')
 		data = data.replace(os.path.basename(CondorSubmit), os.path.basename(sys.argv[0]))
@@ -396,7 +567,10 @@ def main(args):
 			break
 		sys.stdout.write(data)
 		sys.stdout.flush()
+		sub.isubmit()
 	rc = p.wait()
+
+	sub.postsubmit()
 	release_submit_lock()
 	if rc < 0:
 		print 'condor_submit received signal', -rc
