@@ -24,25 +24,76 @@ SupplementalClassAds = [
 	('ConnectWrapper', str(__version__)),
 ]
 
-LockFile = "/tmp/condor-submit-lock." + str(os.getuid())
+class hook(object):
+	debug = False
 
-Debug = False
+	def __init__(self, debug=None):
+		if debug in (True, False):
+			self.debug = debug
 
-class hookdebug(object):
-	def preparse(self, *args, **kwargs):
-		print 'running preparse hooks'
+	def __call__(self, type, *args, **kwargs):
+		if self.debug:
+			print 'running', type, 'hooks', '[' + self.__class__.__name__ + ']'
+		if hasattr(self, type):
+			getattr(self, type)(*args, **kwargs)
 
-	def postparse(self, *args, **kwargs):
-		print 'running postparse hooks'
+
+class hook_debug(hook):
+	debug = True
+
+
+class hook_lock(hook):
+	def __init__(self, *args, **kwargs):
+		self.lockfile = '/tmp/condor-submit-lock.' + str(os.getuid())
+
+	def lock(self):
+		'''Slow down submitters who submit jobs in parallel.
+		This is to protect our schedd.'''
+		try:
+			open(self.lockfile, 'w+')
+			return True
+		except:
+			return False
+
+	def locked(self):
+		try:
+			s = os.stat(self.lockfile)
+			return s
+		except:
+			return None
+
+	def ensure(self):
+		max_time = 360
+
+		while True:
+			s = self.locked()
+			if not s:
+				# not locked? fall through
+				break
+
+			# sleep until max_time seconds from lock file's mtime
+			if time.time() >= s.st_mtime + max_time:
+				self.unlock()
+				break
+			if self.debug:
+				print 'spin while %d < %d' % (time.time(), s.st_mtime + max_time)
+			time.sleep(5)
+
+		# create lock and return
+		return self.lock()
+
+	def unlock(self):
+		'''remove the lock file'''
+		try:
+			os.unlink(self.lockfile)
+		except:
+			pass
 
 	def presubmit(self, *args, **kwargs):
-		print 'running presubmit hooks'
-
-	def isubmit(self, *args, **kwargs):
-		print 'running isubmit hooks'
+		self.ensure()
 
 	def postsubmit(self, *args, **kwargs):
-		print 'running postsubmit hooks'
+		self.unlock()
 
 
 def groups(user):
@@ -85,6 +136,7 @@ def getproject(sub):
 class submit(list):
 	def __init__(self, *args):
 		self.text = ''
+		self.instances = {}
 		self.hooks = {
 			'preparse': [],
 			'postparse': [],
@@ -111,45 +163,39 @@ class submit(list):
 		return self.callhook('postsubmit', *args, **kwargs)
 
 	def callhook(self, type, *args, **kwargs):
-		rc = True
 		for hook in self.hooks[type]:
-			# each hook may return True, False, or None
+			# each hook may return True or False
 			# True -> continue, no errors
-			# False -> continue with hooks, but error at end
-			# None -> error immediately
-			nrc = hook(*args, **kwargs)
-			if nrc is None:
-				return None
-			if nrc is False:
-				rc = False
-		return rc
+			# False -> stop
+			# None -> True
+			if hook(type, *args, **kwargs) is False:
+				return False
+		return True
 
-	def hook(self, type, f):
-		self.hooks[type].append(f)
+	def hook(self, type, cls):
+		if not inspect.isclass(cls):
+			raise ValueError, '%s is not a class' % str(cls)
+
+		# use cls.hooktype as the hook entry point
+		# e.g. given this:
+		# [hooks]
+		# presubmit = myclass
+		# We will call myclass().presubmit() during hook processing.  Note
+		# that myclass will be instantiated ONCE.
+		if cls not in self.instances:
+			self.instances[cls] = cls()
+		self.hooks[type].append(self.instances[cls])
+
 
 	def sethooks(self, cfg):
 		if not cfg.has_section('hooks'):
 			return
-		instances = {}
 		for opt in sorted(cfg.options('hooks')):
 			if '.' in opt:
 				hooktype, sortkey = opt.split('.', 1)
 			else:
 				hooktype = opt
-			obj = eval(cfg.get('hooks', opt))
-			if inspect.isclass(obj):
-				# if a class, use cls.hooktype as the hook entry point
-				# e.g. given this:
-				# [hooks]
-				# presubmit = myclass
-				# We will call myclass().presubmit() during hook processing.  Note
-				# that myclass will be instantiated ONCE.
-				if obj not in instances:
-					instances[obj] = obj()
-				if hasattr(instances[obj], hooktype):
-					self.hook(hooktype, getattr(instances[obj], hooktype))
-			else:
-				self.hook(hooktype, obj)
+			self.hook(hooktype, eval(cfg.get('hooks', opt)))
 
 	def update(self):
 		'''Replace original text with reconstructed submit file'''
@@ -326,49 +372,9 @@ def setacctgroup(user, project):
 	return acctgroup
 
 
-def get_submit_lock():
-	'''Slow down submitters who submit jobs in parallel.
-	This is to protect our schedd.'''
-
-	def create():
-		try:
-			open(LockFile, 'w+')
-		except:
-			pass
-
-	try:
-		s = os.stat(LockFile)
-	except:
-		# if no lock file, create one and return
-		return create()
-
-	# sleep until max_time seconds from lock file's mtime
-	max_time = 360
-	end_time = s.st_mtime + max_time
-	while time.time() < end_time and os.path.exists(LockFile):
-		time.sleep(5)
-
-	# remove the lock file and create new
-	try:
-		os.unlink(LockFile)
-	except:
-		pass
-
-	return create()
-
-
-def release_submit_lock():
-	"""
-	Clean up the submit lock
-	"""
-	try:
-		os.unlink(LockFile)
-	except:
-		pass
-
-
 def main(args):
-	global Debug
+	debug = False
+	lock = True
 
 	cfg = ConfigParser.RawConfigParser()
 	cfg.read(ConfigFile)
@@ -407,7 +413,7 @@ def main(args):
 	skip = False
 	readcmds = True
 	for arg in args:
-		if Debug:
+		if debug:
 			print '==', arg
 		matched = False
 		if skip:
@@ -424,7 +430,7 @@ def main(args):
 				matched = True
 				break
 		if arg == '--debug':
-			Debug = True	# wrapper option, do not append to options[]
+			debug = True	# wrapper option, do not append to options[]
 			matched = True
 		if arg.startswith('--config='):
 			cfg.read(arg[9:])
@@ -432,14 +438,22 @@ def main(args):
 		if arg == '--dump':
 			cfg.write(sys.stdout)
 			return 0
+		if arg == '--nolock':
+			lock = False
+			matched = True
 		if not matched:
 			submitfile = arg
 
-	if Debug:
+	if debug:
 		print '>>', options
 
 	sub = submit()
 	sub.sethooks(cfg)
+
+	if lock:
+		sub.hook('presubmit', hook_lock)
+		sub.hook('postsubmit', hook_lock)
+
 	sub.preparse()
 
 	if readcmds:
@@ -535,15 +549,12 @@ def main(args):
 		nargs += ['-a', '+%s = "%s"' % (ad, value)]
 	nargs += options
 
-	if Debug:
+	if debug:
 		print nargs
 		print sub.text
 		return 0
 
 	sub.presubmit()
-
-	# slow down aggresive submitters
-	get_submit_lock()
 
 	p = subprocess.Popen(nargs, executable=CondorSubmit,
 						 stdin=subprocess.PIPE,
@@ -571,7 +582,6 @@ def main(args):
 	rc = p.wait()
 
 	sub.postsubmit()
-	release_submit_lock()
 	if rc < 0:
 		print 'condor_submit received signal', -rc
 		return 1
