@@ -27,7 +27,8 @@ SupplementalClassAds = [
 class hook(object):
 	debug = False
 
-	def __init__(self, debug=None):
+	def __init__(self, cfg, debug=None):
+		self.cfg = cfg
 		if debug in (True, False):
 			self.debug = debug
 
@@ -45,6 +46,7 @@ class hook_debug(hook):
 class hook_lock(hook):
 	def __init__(self, *args, **kwargs):
 		self.lockfile = '/tmp/condor-submit-lock.' + str(os.getuid())
+		hook.__init__(self, *args, **kwargs)
 
 	def lock(self):
 		'''Slow down submitters who submit jobs in parallel.
@@ -134,7 +136,8 @@ def getproject(sub):
 
 
 class submit(list):
-	def __init__(self, *args):
+	def __init__(self, cfg, *args):
+		self.cfg = cfg
 		self.text = ''
 		self.instances = {}
 		self.hooks = {
@@ -183,19 +186,19 @@ class submit(list):
 		# We will call myclass().presubmit() during hook processing.  Note
 		# that myclass will be instantiated ONCE.
 		if cls not in self.instances:
-			self.instances[cls] = cls()
+			self.instances[cls] = cls(self.cfg)
 		self.hooks[type].append(self.instances[cls])
 
 
-	def sethooks(self, cfg):
-		if not cfg.has_section('hooks'):
+	def sethooks(self):
+		if not self.cfg.has_section('hooks'):
 			return
-		for opt in sorted(cfg.options('hooks')):
+		for opt in sorted(self.cfg.options('hooks')):
 			if '.' in opt:
 				hooktype, sortkey = opt.split('.', 1)
 			else:
 				hooktype = opt
-			self.hook(hooktype, eval(cfg.get('hooks', opt)))
+			self.hook(hooktype, eval(self.cfg.get('hooks', opt)))
 
 	def update(self):
 		'''Replace original text with reconstructed submit file'''
@@ -447,8 +450,8 @@ def main(args):
 	if debug:
 		print '>>', options
 
-	sub = submit()
-	sub.sethooks(cfg)
+	sub = submit(cfg)
+	sub.sethooks()
 
 	if lock:
 		sub.hook('presubmit', hook_lock)
