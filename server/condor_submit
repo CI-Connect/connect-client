@@ -219,6 +219,8 @@ class submit(list):
 			# * "path/to/file:clsname" -- in this case we will exec
 			#   the file at the given path and seek clsname in its
 			#   namespace.
+			# * "file.py:clsname" -- in this case we will search for file.py
+			#   in the module search path, then find clsname as above.
 
 			cls = self.resolveclass(self.cfg.get('hooks', opt))
 			self.hook(hooktype, cls)
@@ -228,12 +230,21 @@ class submit(list):
 			return eval(desc)
 
 		path, cls = desc.split(':', 1)
+		ns = dict(globals())
 		if '/' in path:
 			# filesystem location
-			ns = dict(globals())
 			fp = open(path)
 			exec fp in ns
 			return ns[cls]
+
+		elif '.' in path:
+			for dir in sys.path:
+				try:
+					fp = open(os.path.join(dir, path))
+					exec fp in ns
+					return ns[cls]
+				except IOError:
+					pass
 
 		else:
 			# regular python module
