@@ -212,7 +212,8 @@ class Job(list):
 			if key.lower() == k.lower():
 				self[i][k] = (k, value)
 				return
-		self.append((key, value))
+		# key not in job file. PREPEND IT so that it comes before any Queue statements
+		self.insert(0, (key, value))
 
 	def __contains__(self, key):
 		key = key.lower()
