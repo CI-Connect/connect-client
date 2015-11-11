@@ -91,10 +91,10 @@ class hook_lock(hook):
 		except:
 			pass
 
-	def presubmit(self, *args, **kwargs):
+	def presubmit(self, sub, *args, **kwargs):
 		self.ensure()
 
-	def postsubmit(self, *args, **kwargs):
+	def postsubmit(self, sub, *args, **kwargs):
 		self.unlock()
 
 
@@ -136,7 +136,7 @@ def getproject(sub):
 
 
 class submit(list):
-	def __init__(self, cfg, *args):
+	def __init__(self, cfg, *args, **kwargs):
 		self.cfg = cfg
 		self.text = ''
 		self.instances = {}
@@ -148,6 +148,11 @@ class submit(list):
 			'postsubmit': [],
 		}
 
+		if 'addads' in kwargs:
+			self.addads = list(kwargs['addads'])
+		else:
+			self.addads = []
+
 		list.__init__(self, *args)
 
 	def preparse(self, *args, **kwargs):
@@ -157,13 +162,13 @@ class submit(list):
 		return self.callhook('postparse', *args, **kwargs)
 
 	def presubmit(self, *args, **kwargs):
-		return self.callhook('presubmit', *args, **kwargs)
+		return self.callhook('presubmit', self, *args, **kwargs)
 
 	def isubmit(self, *args, **kwargs):
-		return self.callhook('isubmit', *args, **kwargs)
+		return self.callhook('isubmit', self, *args, **kwargs)
 
 	def postsubmit(self, *args, **kwargs):
-		return self.callhook('postsubmit', *args, **kwargs)
+		return self.callhook('postsubmit', self, *args, **kwargs)
 
 	def callhook(self, type, *args, **kwargs):
 		for hook in self.hooks[type]:
@@ -193,12 +198,47 @@ class submit(list):
 	def sethooks(self):
 		if not self.cfg.has_section('hooks'):
 			return
+
 		for opt in sorted(self.cfg.options('hooks')):
 			if '.' in opt:
 				hooktype, sortkey = opt.split('.', 1)
 			else:
 				hooktype = opt
-			self.hook(hooktype, eval(self.cfg.get('hooks', opt)))
+
+			# opt refers to a class which we will instantiate to
+			# call its hooks.
+			#
+			# opt may be a bare class name from within the condor_submit
+			# wrapper text -- e.g. hook_debug.
+			#
+			# opt may contain a colon to identify a namespace that
+			# contains the class.  There are two such patterns:
+			# 
+			# * "module:clsname" -- in this case we will import module
+			#   and seek clsname in its namespace.
+			# * "path/to/file:clsname" -- in this case we will exec
+			#   the file at the given path and seek clsname in its
+			#   namespace.
+
+			cls = self.resolveclass(self.cfg.get('hooks', opt))
+			self.hook(hooktype, cls)
+
+	def resolveclass(self, desc):
+		if not ':' in desc:
+			return eval(desc)
+
+		path, cls = desc.split(':', 1)
+		if '/' in path:
+			# filesystem location
+			ns = dict(globals())
+			fp = open(path)
+			exec fp in ns
+			return ns[cls]
+
+		else:
+			# regular python module
+			mod = __import__(path)
+			return getattr(mod, cls)
 
 	def update(self):
 		'''Replace original text with reconstructed submit file'''
@@ -271,11 +311,8 @@ class submit(list):
 		return False
 
 
-# There is room here to allow use of grid-proxy-init if VOMS
-# is not in use, but it is not implemented.  Tip: design this
-# to use grid-proxy-init if [submit]proxy.voms = false (or something).
-def x509setup(cfg):
-	def find_x509():
+class hook_x509(hook):
+	def find_x509(self):
 		'''Look for the proxy cert in the standard locations, or
 		alternately in the location pointed to by $X509_USER_PROXY.'''
 
@@ -288,67 +325,84 @@ def x509setup(cfg):
 					return file
 		return None
 
-	if cfg.has_option('submit', 'proxy.voms'):
-		voms = cfg.get('submit', 'proxy.voms')
-	else:
-		voms = 'osg'
+	def param(self, section, option, default):
+		if self.cfg.has_option(section, option):
+			return self.cfg.get(section, option)
+		return default
 
-	if cfg.has_option('submit', 'proxy.validity'):
-		validity = cfg.get('submit', 'proxy.validity')
-	else:
-		validity = '192:00'
+	def __init__(self, *args, **kwargs):
+		hook.__init__(self, *args, **kwargs)
+		self.proxy = self.find_x509()
+		self.voms = self.param('submit', 'proxy.voms', 'osg')
+		self.validity = self.param('submit', 'proxy.validity', '192:00')
+		self.renew = int(self.param('submit', 'proxy.renew', 3 * 86400))	# 3 days
 
-	if cfg.has_option('submit', 'proxy.renew'):
-		# With fewer than proxy.renew seconds in proxy life, force renewal
-		# If 0, do not force renewal.
-		renew = cfg.get('submit', 'proxy.renew')
-	else:
-		renew = 3 * 86400		# 3 days
 
-	proxy = find_x509()
-	if not proxy:
-		print 
-		print 'Couldn\'t find a proxy certificate. Please set up VOMS proxy!'
-		print
-		subprocess.check_call(['voms-proxy-init',
-		                       '-voms', voms,
-		                       '-valid', validity])
-		proxy = find_x509()
-		if not proxy:
+	# There is room here to allow use of grid-proxy-init if VOMS
+	# is not in use, but it is not implemented.  Tip: design this
+	# to use grid-proxy-init if [submit]proxy.voms = false (or something).
+	def proxyinit(self):
+		try:
+			subprocess.check_call(['voms-proxy-init',
+			                       '-voms', self.voms,
+			                       '-valid', self.validity])
+			self.proxy = self.find_x509()
+		except subprocess.CalledProcessError:
+			self.proxy = None
+
+	def proxylife(self):
+		try:
+			fp = subprocess.Popen(['voms-proxy-info', '-timeleft'],
+			                      stdout=subprocess.PIPE,
+			                      stderr=subprocess.PIPE)
+			try:
+				life = int(fp.communicate()[0].replace('\n', ''))
+			except ValueError:
+				life = None
+			return life
+
+		except subprocess.CalledProcessError:
+			self.proxy = None
+
+
+	def presubmit(self, sub, *args, **kwargs):
+		if not self.proxy:
+			print 
+			print 'Couldn\'t find a proxy certificate. Please set up VOMS proxy!'
+			print
+			self.proxyinit()
+
+			if not self.proxy:
+				print 'Error setting up VOMS proxy.'
+				return False
+
+		# Check lifespan of proxy cert
+		life = self.proxylife()
+		if life is None:
+			print
+			print 'No valid proxy certificate. Please set up VOMS proxy!'
+			print
+			self.proxyinit()
+
+		elif self.renew and life <= 0:
+			print
+			print 'Your VOMS proxy certificate has expired. Please renew!'
+			print
+			self.proxyinit()
+
+		elif self.renew and life < self.renew:
+			print
+			print 'Your VOMS proxy expires soon. Please renew!'
+			print
+			self.proxyinit()
+
+		if not self.proxy:
 			print 'Error setting up VOMS proxy.'
-			return None
+			return False
 
-	# Check lifespan of proxy cert
-	fp = subprocess.Popen(['voms-proxy-info', '-timeleft'],
-	                      stdout=subprocess.PIPE,
-	                      stderr=subprocess.PIPE)
-	try:
-		life = int(fp.communicate()[0].replace('\n', ''))
-	except ValueError:
-		print
-		print 'No valid proxy certificate. Please set up VOMS proxy!'
-		print
-		subprocess.check_call(['voms-proxy-init',
-		                       '-voms', voms,
-		                       '-valid', validity])
-	fp.close()
-
-	if renew and life <= 0:
-		print
-		print 'Your VOMS proxy certificate has expired. Please renew!'
-		print
-		subprocess.check_call(['voms-proxy-init',
-		                       '-voms', voms,
-		                       '-valid', validity])
-	if renew and life < renew:
-		print
-		print 'Your VOMS proxy expires soon. Please renew!'
-		print
-		subprocess.check_call(['voms-proxy-init',
-		                       '-voms', voms,
-		                       '-valid', validity])
-
-	return proxy
+		# Ensure that the user proxy goes into the submit file
+		if 'x509userproxy' not in sub:
+			sub.addads.append(('x509userproxy', self.proxy))
 
 
 def setacctgroup(user, project):
@@ -381,7 +435,6 @@ def main(args):
 
 	cfg = ConfigParser.RawConfigParser()
 	cfg.read(ConfigFile)
-	classads = list(SupplementalClassAds)
 
 	user = pwd.getpwuid(os.getuid())
 	#not used#group = grp.getgrgid(os.getgid())
@@ -416,8 +469,6 @@ def main(args):
 	skip = False
 	readcmds = True
 	for arg in args:
-		if debug:
-			print '==', arg
 		matched = False
 		if skip:
 			skip = False
@@ -447,10 +498,7 @@ def main(args):
 		if not matched:
 			submitfile = arg
 
-	if debug:
-		print '>>', options
-
-	sub = submit(cfg)
+	sub = submit(cfg, addads=SupplementalClassAds)
 	sub.sethooks()
 
 	if lock:
@@ -470,6 +518,13 @@ def main(args):
 			return 10
 
 	sub.postparse()
+
+	# Check for valid proxies if needed, option to renew.
+	# Injects the x509userproxy classad for the user.
+	if cfg.has_section('submit') and \
+	   cfg.has_option('submit', 'requirex509') and \
+	   cfg.getboolean('submit', 'requirex509'):
+		sub.hook('presubmit', hook_x509)
 
 	needproject = True
 
@@ -513,76 +568,63 @@ def main(args):
 			showprojects()
 			return 1
 
-	# Check for valid proxies if needed, option to renew.
-	# Injects the x509userproxy classad for the user.
-	if cfg.has_section('submit') and \
-	   cfg.has_option('submit', 'requirex509') and \
-	   cfg.getboolean('submit', 'requirex509'):
-		try:
-			proxy = x509setup(cfg)
-			if proxy is None:
-				return 20
-		except subprocess.CalledProcessError:
-			print
-			print 'Error setting up VOMS proxy certificate.'
-			print
-			return 22
-
-		# Ensure that the user proxy goes into the submit file
-		if 'x509userproxy' not in sub:
-			classads.append(('x509userproxy', proxy))
-
-	acctgroup = setacctgroup(user, project)
-
 	nargs = [CondorSubmit, '-disable']
-	classads.append(('ProjectName', project))
-	classads.append(('SubmitFile', str(submitfile)))
+	sub.addads.append(('ProjectName', project))
+	sub.addads.append(('SubmitFile', str(submitfile)))
 
+	# Move to hook_acctgroup
+	acctgroup = setacctgroup(user, project)
 	if acctgroup:
-		classads.append(('AccountingGroup', acctgroup))
+		sub.addads.append(('AccountingGroup', acctgroup))
+
+	# All the submission stuff below should move to submit.submit().
+	sub.presubmit()
+	print sub.addads
 
 	# We could instead do:
-	# for ad, value in classads:
+	# for ad, value in sub.addads:
 	#	sub['+' + ad] = value
 	# sub.update()
 	# But this would rely more heavily on the submit file parse/reconstruct
 	# logic.  It probably is fine, but so long as -a works for us let's just
 	# use that.
-	for ad, value in classads:
+	for ad, value in sub.addads:
 		nargs += ['-a', '+%s = "%s"' % (ad, value)]
 	nargs += options
 
 	if debug:
 		print nargs
 		print sub.text
-		return 0
 
-	sub.presubmit()
+	if not debug:
+		p = subprocess.Popen(nargs, executable=CondorSubmit,
+							 stdin=subprocess.PIPE,
+							 stdout=subprocess.PIPE,
+							 stderr=subprocess.STDOUT)
 
-	p = subprocess.Popen(nargs, executable=CondorSubmit,
-						 stdin=subprocess.PIPE,
-						 stdout=subprocess.PIPE,
-						 stderr=subprocess.STDOUT)
-	try:
-		p.stdin.write(sub.text)
-		p.stdin.close()
-	except IOError, e:
-		pass
+		try:
+			p.stdin.write(sub.text)
+			p.stdin.close()
+		except IOError, e:
+			pass
 
-	while True:
-		# XXX TODO read dots character by character to echo them in real time.
-		# This is not as simple as read(1) because we need to replace strings
-		# too. So we need to read whole strings when possible, single bytes
-		# otherwise.
-		data = p.stdout.read()
-		data = data.replace('Submitting job(s)', '')
-		data = data.replace(os.path.basename(CondorSubmit), os.path.basename(sys.argv[0]))
-		if not data:
-			break
-		sys.stdout.write(data)
-		sys.stdout.flush()
-		sub.isubmit()
-	rc = p.wait()
+		while True:
+			# XXX TODO read dots character by character to echo them in real time.
+			# This is not as simple as read(1) because we need to replace strings
+			# too. So we need to read whole strings when possible, single bytes
+			# otherwise.
+			data = p.stdout.read()
+			data = data.replace('Submitting job(s)', '')
+			data = data.replace(os.path.basename(CondorSubmit), os.path.basename(sys.argv[0]))
+			if not data:
+				break
+			sys.stdout.write(data)
+			sys.stdout.flush()
+			sub.isubmit()
+		rc = p.wait()
+
+	else:
+		rc = 0
 
 	sub.postsubmit()
 	if rc < 0:
