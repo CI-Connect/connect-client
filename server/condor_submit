@@ -14,7 +14,6 @@ import types
 import inspect
 import shlex
 
-CondorSubmit = '/usr/bin/.condor_submit'
 ProjectFiles = ('~/.osg_default_project',
                 '~/.default_project',
                 '~/.ciconnect/defaultproject')
@@ -28,8 +27,9 @@ SupplementalClassAds = [
 class hook(object):
 	debug = False
 
-	def __init__(self, cfg, *args, **kwargs):
-		self.cfg = cfg
+	def __init__(self, sub, *args, **kwargs):
+		self.sub = sub
+		self.cfg = sub.cfg
 		self.args = args
 		self.kwargs = kwargs
 		if 'debug' in kwargs:
@@ -95,62 +95,42 @@ class hook_lock(hook):
 		except:
 			pass
 
-	def presubmit(self, sub, *args, **kwargs):
+	def presubmit(self, *args, **kwargs):
 		self.ensure()
 
-	def postsubmit(self, sub, *args, **kwargs):
+	def postsubmit(self, *args, **kwargs):
 		self.unlock()
 
 
-def groups(user):
-	'''Get all groups (for a given user)'''
-	groups = []
-
-	fp = open('/etc/ciconnect/project_blacklist')
-	blacklist = [line.strip() for line in fp if not line.startswith('#')]
-	fp.close()
-
-	for group in grp.getgrall():
-		name = group.gr_name.replace('@', '')
-		if name in blacklist:
-			continue
-		if user and user.pw_name in group.gr_mem:
-			groups.append(name)
-		elif user is None:
-			groups.append(name)
-	return groups
-
-
-def getproject(sub):
-	project = None
-	if '+projectname' in sub:
-		project = sub['+projectname'][1]
-
-	for file in ProjectFiles:
-		file = os.path.expanduser(file)
-		if not project:
-			try:
-				fp = open(file, 'r')
-				project = fp.readline().strip()
-				fp.close()
-			except:
-				pass
-
-	return project
-
-
 class submit(list):
+	CondorSubmit = '/usr/bin/.condor_submit'
+
 	def __init__(self, cfg, *args, **kwargs):
 		self.cfg = cfg
 		self.text = ''
 		self.hooks = []
+		self.addads = []
 
-		if 'addads' in kwargs:
-			self.addads = list(kwargs['addads'])
+		if 'submitprog' in kwargs:
+			self.submitprog = kwargs['submitprog']
 		else:
-			self.addads = []
+			self.submitprog = self.CondorSubmit
 
 		list.__init__(self, *args)
+
+	def addad(self, *args):
+		if not args:
+			return
+		if len(args) == 2 and isinstance(args[0], str):
+			self.addads.append(tuple(args))
+			return
+
+		for arg in args:
+			if len(arg) == 2 and isinstance(arg[0], str):
+				self.addads.append((arg[0], arg[1]))
+				return
+			if isinstance(arg, list) or isinstance(arg, tuple):
+				self.addads += list(arg)
 
 	def preparse(self, *args, **kwargs):
 		return self.callhook('preparse', *args, **kwargs)
@@ -181,7 +161,7 @@ class submit(list):
 		if not inspect.isclass(cls):
 			raise ValueError, '%s is not a class' % str(cls)
 
-		hook = cls(self.cfg, *args, **kwargs)
+		hook = cls(self, *args, **kwargs)
 		self.hooks.append((name, hook))
 		self.hooks.sort(key=lambda x: x[0])
 
@@ -284,6 +264,10 @@ class submit(list):
 			else:
 				yield k
 
+	def unparse(self):
+		self.update()
+		return self.text
+
 	def __getitem__(self, key):
 		if type(key) == type(0):
 			return list.__getitem__(self, key)
@@ -363,7 +347,7 @@ class hook_x509(hook):
 			self.proxy = None
 
 
-	def presubmit(self, sub, *args, **kwargs):
+	def presubmit(self, *args, **kwargs):
 		if not self.proxy:
 			print 
 			print 'Couldn\'t find a proxy certificate. Please set up VOMS proxy!'
@@ -399,32 +383,135 @@ class hook_x509(hook):
 			return False
 
 		# Ensure that the user proxy goes into the submit file
-		if 'x509userproxy' not in sub:
-			sub.addads.append(('x509userproxy', self.proxy))
+		if 'x509userproxy' not in self.sub:
+			self.sub.addad('x509userproxy', self.proxy)
 
 
-def setacctgroup(user, project):
-	#acctgroup = 'group_other.' + user.pw_name
-	acctgroup = 'group_opportunistic.' + user.pw_name
+class hook_project(hook):
+	def __init__(self, *args, **kwargs):
+		hook.__init__(self, *args, **kwargs)
 
-	# xsede logics:
-	#if grep -i "^$PROJECT:" /etc/osg/xsede-projects-low-priority >/dev/null 2>&1; then
-	#	#acctgroup="group_xsede.low.$me"
-	#	acctgroup="group_opportunistic.$me"
-	#elif grep -i "^$PROJECT:" /etc/osg/xsede-projects-high-priority >/dev/null 2>&1; then
-	#	acctgroup="group_xsede.high.$me"
-	#elif [ "x$XSEDE_PROJECT" = "xTG-TRA100004" ];then
-	#	# special rule for TG-TRA100004 - rynge 8/12/13
-	#	acctgroup="group_other.$me"
-	#fi
+		self.user = pwd.getpwuid(os.getuid())
+		self.mygroups = self.groups(self.user)
+		self.mygroups.sort()
 
-	if project == 'OSG-Staff':
-		acctgroup = 'group_xsede.high.' + user.pw_name
+	def postparse(self, *args, **kwargs):
+		needproject = True
 
-	# Accouting group OVERRIDE required by MWT2
-	acctgroup = 'group_opport.vo.uc3.' + user.pw_name
+		if 'universe' in self.sub:
+			if self.sub['universe'][1] == 'local':
+				needproject = False
+			if self.sub['universe'][1] == 'scheduler':
+				needproject = False
+		else:
+			self.sub['universe'] = 'vanilla'
+			self.sub.update()
 
-	return acctgroup
+		project = self.getproject()
+		if needproject and not project:
+			print
+			print 'No ProjectName ClassAd defined!'
+			print 'Please run "connect project" to set your default project.'
+			print 'Alternatively, define your %s project ID in your submit file.' % cfg.get('connect', 'name')
+			print '	 Example:  +ProjectName = "MyProjectName"'
+			print
+			self.showprojects()
+			return 1
+
+		if project:
+			if self.cfg.has_section('project-replacements'):
+				for left, right in self.cfg.items('project-replacements'):
+					off = project.lower().find(left.lower())
+					if off > -1:
+						project = project[:off] + right + project[off+len(left):]
+
+			if project not in self.mygroups:
+				print
+				print 'Sorry, the project you specified (%s) is not valid' % project
+				print 'or you are not in its list of allowed users.'
+				print
+				self.showprojects()
+				return 1
+
+		self.sub.addad('ProjectName', project)
+
+		acctgroup = self.acctgroup(project)
+		if acctgroup:
+			self.sub.addad('AccountingGroup', acctgroup)
+
+
+	def groups(self, user):
+		'''Get all groups (for a given user)'''
+		groups = []
+
+		# blacklist should just be in the ini file
+		fp = open('/etc/ciconnect/project_blacklist')
+		blacklist = [line.strip() for line in fp if not line.startswith('#')]
+		fp.close()
+
+		for group in grp.getgrall():
+			name = group.gr_name.replace('@', '')
+			if name in blacklist:
+				continue
+			if user and user.pw_name in group.gr_mem:
+				groups.append(name)
+			elif user is None:
+				groups.append(name)
+		return groups
+
+
+	def getproject(self):
+		project = None
+		if '+projectname' in self.sub:
+			project = self.sub['+projectname'][1]
+
+		for file in ProjectFiles:
+			file = os.path.expanduser(file)
+			if not project:
+				try:
+					fp = open(file, 'r')
+					project = fp.readline().strip()
+					fp.close()
+				except:
+					pass
+
+		return project
+
+
+	def showprojects(self):
+		print 'The following projects are available to you:'
+		for group in self.mygroups:
+			print "	 " + group
+
+
+	def acctgroup(self, project):
+		#acctgroup = 'group_other.' + self.user.pw_name
+		acctgroup = 'group_opportunistic.' + self.user.pw_name
+
+		# xsede logics:
+		#if grep -i "^$PROJECT:" /etc/osg/xsede-projects-low-priority >/dev/null 2>&1; then
+		#	#acctgroup="group_xsede.low.$me"
+		#	acctgroup="group_opportunistic.$me"
+		#elif grep -i "^$PROJECT:" /etc/osg/xsede-projects-high-priority >/dev/null 2>&1; then
+		#	acctgroup="group_xsede.high.$me"
+		#elif [ "x$XSEDE_PROJECT" = "xTG-TRA100004" ];then
+		#	# special rule for TG-TRA100004 - rynge 8/12/13
+		#	acctgroup="group_other.$me"
+		#fi
+
+		if project == 'OSG-Staff':
+			acctgroup = 'group_xsede.high.' + self.user.pw_name
+
+		# Accouting group OVERRIDE required by MWT2
+		acctgroup = 'group_opport.vo.uc3.' + self.user.pw_name
+		return acctgroup
+
+
+class hook_printsub(hook):
+	def presubmit(self, *args, **kwargs):
+		print
+		print self.sub.unparse()
+		return False
 
 
 def main(args):
@@ -434,14 +521,13 @@ def main(args):
 	cfg = ConfigParser.RawConfigParser()
 	cfg.read(ConfigFile)
 
-	user = pwd.getpwuid(os.getuid())
-	#not used#group = grp.getgrgid(os.getgid())
-	mygroups = groups(user)
-	mygroups.sort()
+	sub = submit(cfg)
+	sub.addad(SupplementalClassAds)
 
 	# First off, let's reset $HOME.  os.path uses $HOME for '~'
 	# expansion, but HOME is altered by connect client. We need
 	# to use the actual home.
+	user = pwd.getpwuid(os.getuid())
 	os.environ['HOME'] = user.pw_dir
 
 	validoptions = (
@@ -487,23 +573,35 @@ def main(args):
 		if arg.startswith('--config='):
 			cfg.read(arg[9:])
 			matched = True
-		if arg == '--dump':
+		if arg == '--printconf':
 			cfg.write(sys.stdout)
 			return 0
+		if arg == '--printsub':
+			sub.addhook('99printsub', hook_printsub)
+			matched = True
 		if arg == '--nolock':
 			lock = False
 			matched = True
 		if not matched:
 			submitfile = arg
 
-	sub = submit(cfg, addads=SupplementalClassAds)
 	sub.sethooks()
 
 	if lock:
 		sub.addhook('00lock', hook_lock)
 
+	# If x509 cert is required, add that hook
+	if cfg.has_section('submit') and \
+	   cfg.has_option('submit', 'requirex509') and \
+	   cfg.getboolean('submit', 'requirex509'):
+		sub.addhook('00x509', hook_x509)
+
+	sub.addad('SubmitFile', str(submitfile))
+
+	# Call preparse hooks before parsing the submit file
 	sub.preparse()
 
+	# Parse the submit file
 	if readcmds:
 		# Print usual Condor pre-reponse
 		sys.stdout.write('Submitting job(s)')
@@ -514,65 +612,11 @@ def main(args):
 			print '\nbreak (no jobs submitted)'
 			return 10
 
+	# Call postparse hooks
 	sub.postparse()
 
-	# Check for valid proxies if needed, option to renew.
-	# Injects the x509userproxy classad for the user.
-	if cfg.has_section('submit') and \
-	   cfg.has_option('submit', 'requirex509') and \
-	   cfg.getboolean('submit', 'requirex509'):
-		sub.addhook('00x509', hook_x509)
 
-	needproject = True
-
-	if 'universe' in sub:
-		if sub['universe'][1] == 'local':
-			needproject = False
-		if sub['universe'][1] == 'scheduler':
-			needproject = False
-	else:
-		sub['universe'] = 'vanilla'
-		sub.update()
-
-	def showprojects():
-		print 'The following projects are available to you:'
-		for group in mygroups:
-			print "	 " + group
-
-	project = getproject(sub)
-	if needproject and not project:
-		print
-		print 'No ProjectName ClassAd defined!'
-		print 'Please run "connect project" to set your default project.'
-		print 'Alternatively, define your %s project ID in your submit file.' % cfg.get('connect', 'name')
-		print '	 Example:  +ProjectName = "MyProjectName"'
-		print
-		showprojects()
-		return 1
-
-	if project:
-		if cfg.has_section('project-replacements'):
-			for left, right in cfg.items('project-replacements'):
-				off = project.lower().find(left.lower())
-				if off > -1:
-					project = project[:off] + right + project[off+len(left):]
-
-		if project not in mygroups:
-			print
-			print 'Sorry, the project you specified (%s) is not valid' % project
-			print 'or you are not in its list of allowed users.'
-			print
-			showprojects()
-			return 1
-
-	nargs = [CondorSubmit, '-disable']
-	sub.addads.append(('ProjectName', project))
-	sub.addads.append(('SubmitFile', str(submitfile)))
-
-	# Move to hook_acctgroup
-	acctgroup = setacctgroup(user, project)
-	if acctgroup:
-		sub.addads.append(('AccountingGroup', acctgroup))
+	nargs = [sub.submitprog, '-disable']
 
 	# All the submission stuff below should move to submit.submit().
 	sub.presubmit()
