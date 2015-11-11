@@ -37,10 +37,10 @@ class hook(object):
 				self.debug = kwargs['debug']
 
 	def __call__(self, type, *args, **kwargs):
-		if self.debug:
-			print 'running', type, 'hooks', '[' + self.__class__.__name__ + ']'
 		if hasattr(self, type):
-			getattr(self, type)(*args, **kwargs)
+			if self.debug:
+				print 'running', type, 'hooks', '[' + self.__class__.__name__ + ']'
+			return getattr(self, type)(*args, **kwargs)
 
 
 class hook_debug(hook):
@@ -101,6 +101,9 @@ class hook_lock(hook):
 	def postsubmit(self, *args, **kwargs):
 		self.unlock()
 
+	def cleanup(self, *args, **kwargs):
+		self.unlock()
+
 
 class submit(list):
 	CondorSubmit = '/usr/bin/.condor_submit'
@@ -110,11 +113,14 @@ class submit(list):
 		self.text = ''
 		self.hooks = []
 		self.addads = []
+		self.debug = False
+		self.submitprog = self.CondorSubmit
+
+		if 'debug' in kwargs:
+			self.debug = kwargs['debug']
 
 		if 'submitprog' in kwargs:
 			self.submitprog = kwargs['submitprog']
-		else:
-			self.submitprog = self.CondorSubmit
 
 		list.__init__(self, *args)
 
@@ -147,6 +153,9 @@ class submit(list):
 	def postsubmit(self, *args, **kwargs):
 		return self.callhook('postsubmit', self, *args, **kwargs)
 
+	def cleanup(self, *args, **kwargs):
+		return self.callhook('cleanup', self, *args, **kwargs)
+
 	def callhook(self, type, *args, **kwargs):
 		for name, hook in self.hooks:
 			# each hook may return True or False
@@ -161,6 +170,7 @@ class submit(list):
 		if not inspect.isclass(cls):
 			raise ValueError, '%s is not a class' % str(cls)
 
+		kwargs['debug'] = self.debug
 		hook = cls(self, *args, **kwargs)
 		self.hooks.append((name, hook))
 		self.hooks.sort(key=lambda x: x[0])
@@ -292,6 +302,31 @@ class submit(list):
 				return True
 		return False
 
+	def submit(self, options, debug=False):
+		nargs = [self.submitprog, '-disable']
+
+		# We could instead do:
+		# for ad, value in sub.addads:
+		#	sub['+' + ad] = value
+		# sub.update()
+		# But this would rely more heavily on the submit file parse/reconstruct
+		# logic.  It probably is fine, but so long as -a works for us let's just
+		# use that.
+		for ad, value in self.addads:
+			nargs += ['-a', '+%s = "%s"' % (ad, value)]
+		nargs += options
+
+		if self.debug:
+			print 'execv', nargs
+			return None
+
+		else:
+			p = subprocess.Popen(nargs, executable=CondorSubmit,
+								 stdin=subprocess.PIPE,
+								 stdout=subprocess.PIPE,
+								 stderr=subprocess.STDOUT)
+			return p
+
 
 class hook_x509(hook):
 	def find_x509(self):
@@ -341,6 +376,7 @@ class hook_x509(hook):
 				life = int(fp.communicate()[0].replace('\n', ''))
 			except ValueError:
 				life = None
+			fp.wait()
 			return life
 
 		except subprocess.CalledProcessError:
@@ -515,13 +551,12 @@ class hook_printsub(hook):
 
 
 def main(args):
-	debug = False
 	lock = True
 
 	cfg = ConfigParser.RawConfigParser()
 	cfg.read(ConfigFile)
 
-	sub = submit(cfg)
+	sub = submit(cfg, debug=False)
 	sub.addad(SupplementalClassAds)
 
 	# First off, let's reset $HOME.  os.path uses $HOME for '~'
@@ -568,7 +603,7 @@ def main(args):
 				matched = True
 				break
 		if arg == '--debug':
-			debug = True	# wrapper option, do not append to options[]
+			sub.debug = True
 			matched = True
 		if arg.startswith('--config='):
 			cfg.read(arg[9:])
@@ -599,7 +634,9 @@ def main(args):
 	sub.addad('SubmitFile', str(submitfile))
 
 	# Call preparse hooks before parsing the submit file
-	sub.preparse()
+	if sub.preparse() is False:
+		sub.cleanup()
+		return 31
 
 	# Parse the submit file
 	if readcmds:
@@ -613,36 +650,18 @@ def main(args):
 			return 10
 
 	# Call postparse hooks
-	sub.postparse()
-
-
-	nargs = [sub.submitprog, '-disable']
+	if sub.postparse() is False:
+		sub.cleanup()
+		return 32
 
 	# All the submission stuff below should move to submit.submit().
-	sub.presubmit()
-	print sub.addads
+	if sub.presubmit() is False:
+		sub.cleanup()
+		return 33
 
-	# We could instead do:
-	# for ad, value in sub.addads:
-	#	sub['+' + ad] = value
-	# sub.update()
-	# But this would rely more heavily on the submit file parse/reconstruct
-	# logic.  It probably is fine, but so long as -a works for us let's just
-	# use that.
-	for ad, value in sub.addads:
-		nargs += ['-a', '+%s = "%s"' % (ad, value)]
-	nargs += options
-
-	if debug:
-		print nargs
-		print sub.text
-
-	if not debug:
-		p = subprocess.Popen(nargs, executable=CondorSubmit,
-							 stdin=subprocess.PIPE,
-							 stdout=subprocess.PIPE,
-							 stderr=subprocess.STDOUT)
-
+	# Submit job
+	p = sub.submit(options)
+	if p:
 		try:
 			p.stdin.write(sub.text)
 			p.stdin.close()
@@ -667,7 +686,12 @@ def main(args):
 	else:
 		rc = 0
 
-	sub.postsubmit()
+	# Call postsubmit hooks
+	if sub.postsubmit() is False:
+		sub.cleanup()
+		return 34
+
+	# Evaluate result
 	if rc < 0:
 		print 'condor_submit received signal', -rc
 		return 1
