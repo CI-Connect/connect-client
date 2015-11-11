@@ -20,12 +20,11 @@ ProjectFiles = ('~/.osg_default_project',
 ConfigFile = '/etc/ciconnect/config.ini'
 
 SupplementalClassAds = [
-	#('UsedOCWrapper', 'TRUE'),
 	('ConnectWrapper', str(__version__)),
 ]
 
 
-class submit(list):
+class Job(list):
 	CondorSubmit = '/usr/bin/.condor_submit'
 
 	def __init__(self, cfg, *args, **kwargs):
@@ -226,9 +225,9 @@ class submit(list):
 		nargs = [self.submitprog, '-disable']
 
 		# We could instead do:
-		# for ad, value in sub.addads:
-		#	sub['+' + ad] = value
-		# sub.update()
+		# for ad, value in job.addads:
+		#	job['+' + ad] = value
+		# job.update()
 		# But this would rely more heavily on the submit file parse/reconstruct
 		# logic.  It probably is fine, but so long as -a works for us let's just
 		# use that.
@@ -266,9 +265,9 @@ class submit(list):
 class hook(object):
 	debug = False
 
-	def __init__(self, sub, *args, **kwargs):
-		self.sub = sub
-		self.cfg = sub.cfg
+	def __init__(self, job, *args, **kwargs):
+		self.job = job
+		self.cfg = job.cfg
 		self.args = args
 		self.kwargs = kwargs
 		if 'debug' in kwargs:
@@ -278,7 +277,7 @@ class hook(object):
 	def __call__(self, type, *args, **kwargs):
 		if hasattr(self, type):
 			if self.debug:
-				self.sub.debug('running', type, 'hooks', '[' + self.__class__.__name__ + ']')
+				self.job.debug('running', type, 'hooks', '[' + self.__class__.__name__ + ']')
 			return getattr(self, type)(*args, **kwargs)
 
 
@@ -321,7 +320,7 @@ class hook_lock(hook):
 				self.unlock()
 				break
 			if self.debug:
-				self.sub.debug('spin while %d < %d' % (time.time(), s.st_mtime + max_time))
+				self.job.debug('spin while %d < %d' % (time.time(), s.st_mtime + max_time))
 			time.sleep(5)
 
 		# create lock and return
@@ -401,34 +400,34 @@ class hook_x509(hook):
 
 	def presubmit(self, *args, **kwargs):
 		if not self.proxy:
-			self.sub.msg('\nCouldn\'t find a proxy certificate. Please set up VOMS proxy!\n')
+			self.job.msg('\nCouldn\'t find a proxy certificate. Please set up VOMS proxy!\n')
 			self.proxyinit()
 
 			if not self.proxy:
-				self.sub.error('Error setting up VOMS proxy.')
+				self.job.error('Error setting up VOMS proxy.')
 				return False
 
 		# Check lifespan of proxy cert
 		life = self.proxylife()
 		if life is None:
-			self.sub.msg('\nNo valid proxy certificate. Please set up VOMS proxy!\n')
+			self.job.msg('\nNo valid proxy certificate. Please set up VOMS proxy!\n')
 			self.proxyinit()
 
 		elif self.renew and life <= 0:
-			self.sub.msg('\nYour VOMS proxy certificate has expired. Please renew!\n')
+			self.job.msg('\nYour VOMS proxy certificate has expired. Please renew!\n')
 			self.proxyinit()
 
 		elif self.renew and life < self.renew:
-			self.sub.msg('\nYour VOMS proxy expires soon. Please renew!\n')
+			self.job.msg('\nYour VOMS proxy expires soon. Please renew!\n')
 			self.proxyinit()
 
 		if not self.proxy:
-			self.sub.msg('\nError setting up VOMS proxy.\n')
+			self.job.msg('\nError setting up VOMS proxy.\n')
 			return False
 
 		# Ensure that the user proxy goes into the submit file
-		if 'x509userproxy' not in self.sub:
-			self.sub.addad('x509userproxy', self.proxy)
+		if 'x509userproxy' not in self.job:
+			self.job.addad('x509userproxy', self.proxy)
 
 
 class hook_project(hook):
@@ -442,23 +441,23 @@ class hook_project(hook):
 	def postparse(self, *args, **kwargs):
 		needproject = True
 
-		if 'universe' in self.sub:
-			if self.sub['universe'][1] == 'local':
+		if 'universe' in self.job:
+			if self.job['universe'][1] == 'local':
 				needproject = False
-			if self.sub['universe'][1] == 'scheduler':
+			if self.job['universe'][1] == 'scheduler':
 				needproject = False
 		else:
-			self.sub['universe'] = 'vanilla'
-			self.sub.update()
+			self.job['universe'] = 'vanilla'
+			self.job.update()
 
 		project = self.getproject()
 		if needproject and not project:
-			self.sub.msg('')
-			self.sub.msg('No ProjectName ClassAd defined!')
-			self.sub.msg('Please run "connect project" to set your default project.')
-			self.sub.msg('Alternatively, define your %s project ID in your submit file.' % cfg.get('connect', 'name'))
-			self.sub.msg('	 Example:  +ProjectName = "MyProjectName"')
-			self.sub.msg('')
+			self.job.msg('')
+			self.job.msg('No ProjectName ClassAd defined!')
+			self.job.msg('Please run "connect project" to set your default project.')
+			self.job.msg('Alternatively, define your %s project ID in your submit file.' % cfg.get('connect', 'name'))
+			self.job.msg('	 Example:  +ProjectName = "MyProjectName"')
+			self.job.msg('')
 			self.showprojects()
 			return 1
 
@@ -470,18 +469,18 @@ class hook_project(hook):
 						project = project[:off] + right + project[off+len(left):]
 
 			if project not in self.mygroups:
-				self.sub.msg('')
-				self.sub.msg('Sorry, the project you specified (%s) is not valid' % project)
-				self.sub.msg('or you are not in its list of allowed users.')
-				self.sub.msg('')
+				self.job.msg('')
+				self.job.msg('Sorry, the project you specified (%s) is not valid' % project)
+				self.job.msg('or you are not in its list of allowed users.')
+				self.job.msg('')
 				self.showprojects()
 				return 1
 
-		self.sub.addad('ProjectName', project)
+		self.job.addad('ProjectName', project)
 
 		acctgroup = self.acctgroup(project)
 		if acctgroup:
-			self.sub.addad('AccountingGroup', acctgroup)
+			self.job.addad('AccountingGroup', acctgroup)
 
 
 	def groups(self, user):
@@ -506,8 +505,8 @@ class hook_project(hook):
 
 	def getproject(self):
 		project = None
-		if '+projectname' in self.sub:
-			project = self.sub['+projectname'][1]
+		if '+projectname' in self.job:
+			project = self.job['+projectname'][1]
 
 		for file in ProjectFiles:
 			file = os.path.expanduser(file)
@@ -523,9 +522,9 @@ class hook_project(hook):
 
 
 	def showprojects(self):
-		self.sub.msg('The following projects are available to you:')
+		self.job.msg('The following projects are available to you:')
 		for group in self.mygroups:
-			self.sub.msg("	 " + group)
+			self.job.msg("	 " + group)
 
 
 	def acctgroup(self, project):
@@ -553,8 +552,8 @@ class hook_project(hook):
 
 class hook_printsub(hook):
 	def presubmit(self, *args, **kwargs):
-		self.sub.msg('')
-		self.sub.msg(self.sub.unparse())
+		self.job.msg('')
+		self.job.msg(self.job.unparse())
 		return False
 
 
@@ -564,8 +563,8 @@ def main(args):
 	cfg = ConfigParser.RawConfigParser()
 	cfg.read(ConfigFile)
 
-	sub = submit(cfg, debug=False)
-	sub.addad(SupplementalClassAds)
+	job = Job(cfg, debug=False)
+	job.addad(SupplementalClassAds)
 
 	# First off, let's reset $HOME.  os.path uses $HOME for '~'
 	# expansion, but HOME is altered by connect client. We need
@@ -611,7 +610,7 @@ def main(args):
 				matched = True
 				break
 		if arg == '--debug':
-			sub.debugmode = True
+			job.debugmode = True
 			matched = True
 		if arg.startswith('--config='):
 			cfg.read(arg[9:])
@@ -620,7 +619,7 @@ def main(args):
 			cfg.write(sys.stdout)
 			return 0
 		if arg == '--printsub':
-			sub.addhook('99printsub', hook_printsub)
+			job.addhook('99printsub', hook_printsub)
 			matched = True
 		if arg == '--nolock':
 			lock = False
@@ -628,47 +627,47 @@ def main(args):
 		if not matched:
 			submitfile = arg
 
-	sub.sethooks()
+	job.sethooks()
 
 	if lock:
-		sub.addhook('00lock', hook_lock)
+		job.addhook('00lock', hook_lock)
 
 	# If x509 cert is required, add that hook
 	if cfg.has_section('submit') and \
 	   cfg.has_option('submit', 'requirex509') and \
 	   cfg.getboolean('submit', 'requirex509'):
-		sub.addhook('00x509', hook_x509)
+		job.addhook('00x509', hook_x509)
 
-	sub.addad('SubmitFile', str(submitfile))
+	job.addad('SubmitFile', str(submitfile))
 
 	# Call preparse hooks before parsing the submit file
-	if sub.preparse() is False:
-		sub.cleanup()
+	if job.preparse() is False:
+		job.cleanup()
 		return 31
 
 	# Parse the submit file
 	if readcmds:
 		try:
-			sub.parse(submitfile)
+			job.parse(submitfile)
 		except KeyboardInterrupt:
-			self.sub.msg('\nbreak (no jobs submitted)')
+			self.job.msg('\nbreak (no jobs submitted)')
 			return 10
 
 	# Call postparse hooks
-	if sub.postparse() is False:
-		sub.cleanup()
+	if job.postparse() is False:
+		job.cleanup()
 		return 32
 
 	# Run presubmit hooks
-	if sub.presubmit() is False:
-		sub.cleanup()
+	if job.presubmit() is False:
+		job.cleanup()
 		return 33
 
 	# Submit job
-	p = sub.submit(options)
+	p = job.submit(options)
 	if p:
 		try:
-			p.stdin.write(sub.text)
+			p.stdin.write(job.text)
 			p.stdin.close()
 		except IOError, e:
 			pass
@@ -685,20 +684,20 @@ def main(args):
 				break
 			sys.stdout.write(data)
 			sys.stdout.flush()
-			sub.isubmit(data)
+			job.isubmit(data)
 		rc = p.wait()
 
 	else:
 		rc = 0
 
 	# Call postsubmit hooks
-	if sub.postsubmit() is False:
-		sub.cleanup()
+	if job.postsubmit() is False:
+		job.cleanup()
 		return 34
 
 	# Evaluate result
 	if rc < 0:
-		sub.error('condor_submit received signal', -rc)
+		job.error('condor_submit received signal', -rc)
 		return 1
 	return rc
 
