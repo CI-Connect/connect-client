@@ -12,6 +12,7 @@ import subprocess
 import time
 import types
 import inspect
+import shlex
 
 CondorSubmit = '/usr/bin/.condor_submit'
 ProjectFiles = ('~/.osg_default_project',
@@ -27,10 +28,13 @@ SupplementalClassAds = [
 class hook(object):
 	debug = False
 
-	def __init__(self, cfg, debug=None):
+	def __init__(self, cfg, *args, **kwargs):
 		self.cfg = cfg
-		if debug in (True, False):
-			self.debug = debug
+		self.args = args
+		self.kwargs = kwargs
+		if 'debug' in kwargs:
+			if kwargs['debug'] in (True, False):
+				self.debug = kwargs['debug']
 
 	def __call__(self, type, *args, **kwargs):
 		if self.debug:
@@ -139,14 +143,7 @@ class submit(list):
 	def __init__(self, cfg, *args, **kwargs):
 		self.cfg = cfg
 		self.text = ''
-		self.instances = {}
-		self.hooks = {
-			'preparse': [],
-			'postparse': [],
-			'presubmit': [],
-			'isubmit': [],
-			'postsubmit': [],
-		}
+		self.hooks = []
 
 		if 'addads' in kwargs:
 			self.addads = list(kwargs['addads'])
@@ -171,7 +168,7 @@ class submit(list):
 		return self.callhook('postsubmit', self, *args, **kwargs)
 
 	def callhook(self, type, *args, **kwargs):
-		for hook in self.hooks[type]:
+		for name, hook in self.hooks:
 			# each hook may return True or False
 			# True -> continue, no errors
 			# False -> stop
@@ -180,31 +177,20 @@ class submit(list):
 				return False
 		return True
 
-	def hook(self, type, cls):
+	def addhook(self, name, cls, *args, **kwargs):
 		if not inspect.isclass(cls):
 			raise ValueError, '%s is not a class' % str(cls)
 
-		# use cls.hooktype as the hook entry point
-		# e.g. given this:
-		# [hooks]
-		# presubmit = myclass
-		# We will call myclass().presubmit() during hook processing.  Note
-		# that myclass will be instantiated ONCE.
-		if cls not in self.instances:
-			self.instances[cls] = cls(self.cfg)
-		self.hooks[type].append(self.instances[cls])
+		hook = cls(self.cfg, *args, **kwargs)
+		self.hooks.append((name, hook))
+		self.hooks.sort(key=lambda x: x[0])
 
 
 	def sethooks(self):
 		if not self.cfg.has_section('hooks'):
 			return
 
-		for opt in sorted(self.cfg.options('hooks')):
-			if '.' in opt:
-				hooktype, sortkey = opt.split('.', 1)
-			else:
-				hooktype = opt
-
+		for opt in self.cfg.options('hooks'):
 			# opt refers to a class which we will instantiate to
 			# call its hooks.
 			#
@@ -222,8 +208,9 @@ class submit(list):
 			# * "file.py:clsname" -- in this case we will search for file.py
 			#   in the module search path, then find clsname as above.
 
-			cls = self.resolveclass(self.cfg.get('hooks', opt))
-			self.hook(hooktype, cls)
+			args = shlex.split(self.cfg.get('hooks', opt))
+			cls = self.resolveclass(args.pop(0))
+			self.addhook(opt, cls, *args)
 
 	def resolveclass(self, desc):
 		if not ':' in desc:
@@ -513,8 +500,7 @@ def main(args):
 	sub.sethooks()
 
 	if lock:
-		sub.hook('presubmit', hook_lock)
-		sub.hook('postsubmit', hook_lock)
+		sub.addhook('00lock', hook_lock)
 
 	sub.preparse()
 
@@ -535,7 +521,7 @@ def main(args):
 	if cfg.has_section('submit') and \
 	   cfg.has_option('submit', 'requirex509') and \
 	   cfg.getboolean('submit', 'requirex509'):
-		sub.hook('presubmit', hook_x509)
+		sub.addhook('00x509', hook_x509)
 
 	needproject = True
 
