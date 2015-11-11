@@ -24,86 +24,6 @@ SupplementalClassAds = [
 	('ConnectWrapper', str(__version__)),
 ]
 
-class hook(object):
-	debug = False
-
-	def __init__(self, sub, *args, **kwargs):
-		self.sub = sub
-		self.cfg = sub.cfg
-		self.args = args
-		self.kwargs = kwargs
-		if 'debug' in kwargs:
-			if kwargs['debug'] in (True, False):
-				self.debug = kwargs['debug']
-
-	def __call__(self, type, *args, **kwargs):
-		if hasattr(self, type):
-			if self.debug:
-				print 'running', type, 'hooks', '[' + self.__class__.__name__ + ']'
-			return getattr(self, type)(*args, **kwargs)
-
-
-class hook_debug(hook):
-	debug = True
-
-
-class hook_lock(hook):
-	def __init__(self, *args, **kwargs):
-		self.lockfile = '/tmp/condor-submit-lock.' + str(os.getuid())
-		hook.__init__(self, *args, **kwargs)
-
-	def lock(self):
-		'''Slow down submitters who submit jobs in parallel.
-		This is to protect our schedd.'''
-		try:
-			open(self.lockfile, 'w+')
-			return True
-		except:
-			return False
-
-	def locked(self):
-		try:
-			s = os.stat(self.lockfile)
-			return s
-		except:
-			return None
-
-	def ensure(self):
-		max_time = 360
-
-		while True:
-			s = self.locked()
-			if not s:
-				# not locked? fall through
-				break
-
-			# sleep until max_time seconds from lock file's mtime
-			if time.time() >= s.st_mtime + max_time:
-				self.unlock()
-				break
-			if self.debug:
-				print 'spin while %d < %d' % (time.time(), s.st_mtime + max_time)
-			time.sleep(5)
-
-		# create lock and return
-		return self.lock()
-
-	def unlock(self):
-		'''remove the lock file'''
-		try:
-			os.unlink(self.lockfile)
-		except:
-			pass
-
-	def presubmit(self, *args, **kwargs):
-		self.ensure()
-
-	def postsubmit(self, *args, **kwargs):
-		self.unlock()
-
-	def cleanup(self, *args, **kwargs):
-		self.unlock()
-
 
 class submit(list):
 	CondorSubmit = '/usr/bin/.condor_submit'
@@ -326,6 +246,87 @@ class submit(list):
 								 stdout=subprocess.PIPE,
 								 stderr=subprocess.STDOUT)
 			return p
+
+
+class hook(object):
+	debug = False
+
+	def __init__(self, sub, *args, **kwargs):
+		self.sub = sub
+		self.cfg = sub.cfg
+		self.args = args
+		self.kwargs = kwargs
+		if 'debug' in kwargs:
+			if kwargs['debug'] in (True, False):
+				self.debug = kwargs['debug']
+
+	def __call__(self, type, *args, **kwargs):
+		if hasattr(self, type):
+			if self.debug:
+				print 'running', type, 'hooks', '[' + self.__class__.__name__ + ']'
+			return getattr(self, type)(*args, **kwargs)
+
+
+class hook_debug(hook):
+	debug = True
+
+
+class hook_lock(hook):
+	def __init__(self, *args, **kwargs):
+		self.lockfile = '/tmp/condor-submit-lock.' + str(os.getuid())
+		hook.__init__(self, *args, **kwargs)
+
+	def lock(self):
+		'''Slow down submitters who submit jobs in parallel.
+		This is to protect our schedd.'''
+		try:
+			open(self.lockfile, 'w+')
+			return True
+		except:
+			return False
+
+	def locked(self):
+		try:
+			s = os.stat(self.lockfile)
+			return s
+		except:
+			return None
+
+	def ensure(self):
+		max_time = 360
+
+		while True:
+			s = self.locked()
+			if not s:
+				# not locked? fall through
+				break
+
+			# sleep until max_time seconds from lock file's mtime
+			if time.time() >= s.st_mtime + max_time:
+				self.unlock()
+				break
+			if self.debug:
+				print 'spin while %d < %d' % (time.time(), s.st_mtime + max_time)
+			time.sleep(5)
+
+		# create lock and return
+		return self.lock()
+
+	def unlock(self):
+		'''remove the lock file'''
+		try:
+			os.unlink(self.lockfile)
+		except:
+			pass
+
+	def presubmit(self, *args, **kwargs):
+		self.ensure()
+
+	def postsubmit(self, *args, **kwargs):
+		self.unlock()
+
+	def cleanup(self, *args, **kwargs):
+		self.unlock()
 
 
 class hook_x509(hook):
