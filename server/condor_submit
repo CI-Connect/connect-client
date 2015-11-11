@@ -33,11 +33,11 @@ class submit(list):
 		self.text = ''
 		self.hooks = []
 		self.addads = []
-		self.debug = False
+		self.debugmode = False
 		self.submitprog = self.CondorSubmit
 
 		if 'debug' in kwargs:
-			self.debug = kwargs['debug']
+			self.debugmode = kwargs['debug']
 
 		if 'submitprog' in kwargs:
 			self.submitprog = kwargs['submitprog']
@@ -90,7 +90,7 @@ class submit(list):
 		if not inspect.isclass(cls):
 			raise ValueError, '%s is not a class' % str(cls)
 
-		kwargs['debug'] = self.debug
+		kwargs['debug'] = self.debugmode
 		hook = cls(self, *args, **kwargs)
 		self.hooks.append((name, hook))
 		self.hooks.sort(key=lambda x: x[0])
@@ -236,16 +236,31 @@ class submit(list):
 			nargs += ['-a', '+%s = "%s"' % (ad, value)]
 		nargs += options
 
-		if self.debug:
-			print 'execv', nargs
+		if self.debugmode:
+			self.debug('execv', nargs)
 			return None
 
 		else:
-			p = subprocess.Popen(nargs, executable=CondorSubmit,
+			p = subprocess.Popen(nargs, executable=self.submitprog,
 								 stdin=subprocess.PIPE,
 								 stdout=subprocess.PIPE,
 								 stderr=subprocess.STDOUT)
 			return p
+
+
+	def _msg(self, fp, args):
+		fp.write(' '.join([str(x) for x in args]) + '\n')
+		fp.flush()
+
+	def msg(self, *args):
+		self._msg(sys.stdout, args)
+
+	def debug(self, *args):
+		if self.debugmode:
+			self._msg(sys.stderr, ('[debug]',) + args)
+
+	def error(self, *args):
+		self._msg(sys.stderr, ('[error]',) + args)
 
 
 class hook(object):
@@ -263,7 +278,7 @@ class hook(object):
 	def __call__(self, type, *args, **kwargs):
 		if hasattr(self, type):
 			if self.debug:
-				print 'running', type, 'hooks', '[' + self.__class__.__name__ + ']'
+				self.sub.debug('running', type, 'hooks', '[' + self.__class__.__name__ + ']')
 			return getattr(self, type)(*args, **kwargs)
 
 
@@ -306,7 +321,7 @@ class hook_lock(hook):
 				self.unlock()
 				break
 			if self.debug:
-				print 'spin while %d < %d' % (time.time(), s.st_mtime + max_time)
+				self.sub.debug('spin while %d < %d' % (time.time(), s.st_mtime + max_time))
 			time.sleep(5)
 
 		# create lock and return
@@ -386,37 +401,29 @@ class hook_x509(hook):
 
 	def presubmit(self, *args, **kwargs):
 		if not self.proxy:
-			print 
-			print 'Couldn\'t find a proxy certificate. Please set up VOMS proxy!'
-			print
+			self.sub.msg('\nCouldn\'t find a proxy certificate. Please set up VOMS proxy!\n')
 			self.proxyinit()
 
 			if not self.proxy:
-				print 'Error setting up VOMS proxy.'
+				self.sub.error('Error setting up VOMS proxy.')
 				return False
 
 		# Check lifespan of proxy cert
 		life = self.proxylife()
 		if life is None:
-			print
-			print 'No valid proxy certificate. Please set up VOMS proxy!'
-			print
+			self.sub.msg('\nNo valid proxy certificate. Please set up VOMS proxy!\n')
 			self.proxyinit()
 
 		elif self.renew and life <= 0:
-			print
-			print 'Your VOMS proxy certificate has expired. Please renew!'
-			print
+			self.sub.msg('\nYour VOMS proxy certificate has expired. Please renew!\n')
 			self.proxyinit()
 
 		elif self.renew and life < self.renew:
-			print
-			print 'Your VOMS proxy expires soon. Please renew!'
-			print
+			self.sub.msg('\nYour VOMS proxy expires soon. Please renew!\n')
 			self.proxyinit()
 
 		if not self.proxy:
-			print 'Error setting up VOMS proxy.'
+			self.sub.msg('\nError setting up VOMS proxy.\n')
 			return False
 
 		# Ensure that the user proxy goes into the submit file
@@ -446,12 +453,12 @@ class hook_project(hook):
 
 		project = self.getproject()
 		if needproject and not project:
-			print
-			print 'No ProjectName ClassAd defined!'
-			print 'Please run "connect project" to set your default project.'
-			print 'Alternatively, define your %s project ID in your submit file.' % cfg.get('connect', 'name')
-			print '	 Example:  +ProjectName = "MyProjectName"'
-			print
+			self.sub.msg('')
+			self.sub.msg('No ProjectName ClassAd defined!')
+			self.sub.msg('Please run "connect project" to set your default project.')
+			self.sub.msg('Alternatively, define your %s project ID in your submit file.' % cfg.get('connect', 'name'))
+			self.sub.msg('	 Example:  +ProjectName = "MyProjectName"')
+			self.sub.msg('')
 			self.showprojects()
 			return 1
 
@@ -463,10 +470,10 @@ class hook_project(hook):
 						project = project[:off] + right + project[off+len(left):]
 
 			if project not in self.mygroups:
-				print
-				print 'Sorry, the project you specified (%s) is not valid' % project
-				print 'or you are not in its list of allowed users.'
-				print
+				self.sub.msg('')
+				self.sub.msg('Sorry, the project you specified (%s) is not valid' % project)
+				self.sub.msg('or you are not in its list of allowed users.')
+				self.sub.msg('')
 				self.showprojects()
 				return 1
 
@@ -516,9 +523,9 @@ class hook_project(hook):
 
 
 	def showprojects(self):
-		print 'The following projects are available to you:'
+		self.sub.msg('The following projects are available to you:')
 		for group in self.mygroups:
-			print "	 " + group
+			self.sub.msg("	 " + group)
 
 
 	def acctgroup(self, project):
@@ -546,8 +553,8 @@ class hook_project(hook):
 
 class hook_printsub(hook):
 	def presubmit(self, *args, **kwargs):
-		print
-		print self.sub.unparse()
+		self.sub.msg('')
+		self.sub.msg(self.sub.unparse())
 		return False
 
 
@@ -604,7 +611,7 @@ def main(args):
 				matched = True
 				break
 		if arg == '--debug':
-			sub.debug = True
+			sub.debugmode = True
 			matched = True
 		if arg.startswith('--config='):
 			cfg.read(arg[9:])
@@ -641,13 +648,10 @@ def main(args):
 
 	# Parse the submit file
 	if readcmds:
-		# Print usual Condor pre-reponse
-		sys.stdout.write('Submitting job(s)')
-		sys.stdout.flush()
 		try:
 			sub.parse(submitfile)
 		except KeyboardInterrupt:
-			print '\nbreak (no jobs submitted)'
+			self.sub.msg('\nbreak (no jobs submitted)')
 			return 10
 
 	# Call postparse hooks
@@ -655,7 +659,7 @@ def main(args):
 		sub.cleanup()
 		return 32
 
-	# All the submission stuff below should move to submit.submit().
+	# Run presubmit hooks
 	if sub.presubmit() is False:
 		sub.cleanup()
 		return 33
@@ -675,13 +679,13 @@ def main(args):
 			# too. So we need to read whole strings when possible, single bytes
 			# otherwise.
 			data = p.stdout.read()
-			data = data.replace('Submitting job(s)', '')
-			data = data.replace(os.path.basename(CondorSubmit), os.path.basename(sys.argv[0]))
+			#data = data.replace('Submitting job(s)', '')
+			#data = data.replace(os.path.basename(CondorSubmit), os.path.basename(sys.argv[0]))
 			if not data:
 				break
 			sys.stdout.write(data)
 			sys.stdout.flush()
-			sub.isubmit()
+			sub.isubmit(data)
 		rc = p.wait()
 
 	else:
@@ -694,7 +698,7 @@ def main(args):
 
 	# Evaluate result
 	if rc < 0:
-		print 'condor_submit received signal', -rc
+		sub.error('condor_submit received signal', -rc)
 		return 1
 	return rc
 
