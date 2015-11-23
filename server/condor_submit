@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+#
+# XXX TODO
+# * job.submit(): insert classads directly instead of using -a. The -a
+#   approach causes some occasional bizarrity with connect client because
+#   of so many layers of shell quote parsing.
+# * add a json interface for connect client to cleanly pass options over
+#   several shell layers.
 
 __version__ = '2.0'
 
@@ -13,6 +20,7 @@ import time
 import types
 import inspect
 import shlex
+import errno
 
 ProjectFiles = ('~/.osg_default_project',
                 '~/.default_project',
@@ -30,6 +38,7 @@ class Job(list):
 	def __init__(self, cfg, *args, **kwargs):
 		self.cfg = cfg
 		self.text = ''
+		self.files = []
 		self.hooks = []
 		self.addads = []
 		self.debugmode = False
@@ -56,6 +65,9 @@ class Job(list):
 				return
 			if isinstance(arg, list) or isinstance(arg, tuple):
 				self.addads += list(arg)
+
+	def options(self, *args, **kwargs):
+		return self.callhook('options', *args, **kwargs)
 
 	def preparse(self, *args, **kwargs):
 		return self.callhook('preparse', *args, **kwargs)
@@ -154,8 +166,10 @@ class Job(list):
 	def parse(self, file):
 		if file:
 			fp = open(file, 'r')
+			self.files.append(file)
 		else:
 			fp = sys.stdin
+			self.files.append('-')
 
 		carry = ''
 		for line in fp:
@@ -295,25 +309,36 @@ class hook_lock(hook):
 		'''Slow down submitters who submit jobs in parallel.
 		This is to protect our schedd.'''
 		try:
-			open(self.lockfile, 'w+')
+			os.symlink(str(os.getpid()), self.lockfile)
 			return True
 		except:
 			return False
 
-	def locked(self):
+	def locked(self, owner=False):
 		try:
-			s = os.stat(self.lockfile)
-			return s
+			return os.lstat(self.lockfile)
 		except:
 			return None
 
+	def owner(self):
+		# tell whether we own the lock
+		try:
+			return os.readlink(self.lockfile) == str(os.getpid())
+		except:
+			return False
+
 	def ensure(self):
-		max_time = 360
+		max_time = 33
+		iter = 0
 
 		while True:
 			s = self.locked()
 			if not s:
 				# not locked? fall through
+				break
+
+			# our lock? don't spin.
+			if self.owner():
 				break
 
 			# sleep until max_time seconds from lock file's mtime
@@ -322,6 +347,9 @@ class hook_lock(hook):
 				break
 			if self.debug:
 				self.job.debug('spin while %d < %d' % (time.time(), s.st_mtime + max_time))
+			elif iter % 6 == 0:
+				self.job.msg('waiting for lock...')
+			iter += 1
 			time.sleep(5)
 
 		# create lock and return
@@ -341,7 +369,8 @@ class hook_lock(hook):
 		self.unlock()
 
 	def cleanup(self, *args, **kwargs):
-		self.unlock()
+		if self.owner():
+			self.unlock()
 
 
 class hook_x509(hook):
@@ -558,89 +587,7 @@ class hook_printsub(hook):
 		return False
 
 
-def main(args):
-	lock = True
-
-	cfg = ConfigParser.RawConfigParser()
-	cfg.read(ConfigFile)
-
-	job = Job(cfg, debug=False)
-	job.addad(SupplementalClassAds)
-
-	# First off, let's reset $HOME.  os.path uses $HOME for '~'
-	# expansion, but HOME is altered by connect client. We need
-	# to use the actual home.
-	user = pwd.getpwuid(os.getuid())
-	os.environ['HOME'] = user.pw_dir
-
-	validoptions = (
-		# option, requires optarg?, skip submitfile?
-		('-help', False, True),
-		('-verbose', False, False),
-		('-interactive', False, False),
-		('-unused', False, False),
-		('-name', True, False),
-		('-remote', True, False),
-		('-append', True, False),
-		('-addr', True, False),
-		('-disable', False, False),
-		('-spool', False, False),
-		('-password', True, False),
-		('-pool', True, False),
-		('-dump', True, False),
-		('-stm', True, False),
-	)
-
-	submitfile = None
-	options = []
-	skip = False
-	readcmds = True
-	for arg in args:
-		matched = False
-		if skip:
-			skip = False
-			options.append(arg)
-			continue
-		for vopt, hasargs, skipsub in validoptions:
-			if vopt.startswith(arg):
-				options.append(arg)
-				if hasargs:
-					skip = True
-				if skipsub:
-					readcmds = False
-				matched = True
-				break
-		if arg == '--debug':
-			job.debugmode = True
-			matched = True
-		if arg.startswith('--config='):
-			cfg.read(arg[9:])
-			matched = True
-		if arg == '--printconf':
-			cfg.write(sys.stdout)
-			return 0
-		if arg == '--printsub':
-			job.addhook('99printsub', hook_printsub)
-			matched = True
-		if arg == '--nolock':
-			lock = False
-			matched = True
-		if not matched:
-			submitfile = arg
-
-	job.sethooks()
-
-	if lock:
-		job.addhook('00lock', hook_lock)
-
-	# If x509 cert is required, add that hook
-	if cfg.has_section('submit') and \
-	   cfg.has_option('submit', 'requirex509') and \
-	   cfg.getboolean('submit', 'requirex509'):
-		job.addhook('00x509', hook_x509)
-
-	job.addad('SubmitFile', str(submitfile))
-
+def parse_submit(job, submitfile, options, readcmds=False):
 	# Call preparse hooks before parsing the submit file
 	if job.preparse() is False:
 		job.cleanup()
@@ -650,6 +597,11 @@ def main(args):
 	if readcmds:
 		try:
 			job.parse(submitfile)
+		except IOError, e:
+			if e.errno == errno.ENOENT:
+				job.error('cannot read submit file "%s"' % submitfile)
+				return 11
+			raise
 		except KeyboardInterrupt:
 			self.job.msg('\nbreak (no jobs submitted)')
 			return 10
@@ -701,6 +653,112 @@ def main(args):
 		job.error('condor_submit received signal', -rc)
 		return 1
 	return rc
+
+
+def main(args):
+	lock = True
+
+	cfg = ConfigParser.RawConfigParser()
+	cfg.read(ConfigFile)
+
+	job = Job(cfg, debug=False)
+	job.addad(SupplementalClassAds)
+
+	# First off, let's reset $HOME.  os.path uses $HOME for '~'
+	# expansion, but HOME is altered by connect client. We need
+	# to use the actual home.
+	user = pwd.getpwuid(os.getuid())
+	os.environ['HOME'] = user.pw_dir
+
+	validoptions = (
+		# option, requires optarg?, skip submitfile?
+		('-help', False, True),
+		('-verbose', False, False),
+		('-interactive', False, False),
+		('-unused', False, False),
+		('-name', True, False),
+		('-remote', True, False),
+		('-append', True, False),
+		('-addr', True, False),
+		('-disable', False, False),
+		('-spool', False, False),
+		('-password', True, False),
+		('-pool', True, False),
+		('-dump', True, False),
+		('-stm', True, False),
+	)
+
+	submitfile = None
+	options = []
+	nargs = []
+	skip = False
+	readcmds = True
+	for arg in args:
+		matched = False
+		if skip:
+			skip = False
+			options.append(arg)
+			continue
+		for vopt, hasargs, skipsub in validoptions:
+			if vopt.startswith(arg):
+				options.append(arg)
+				if hasargs:
+					skip = True
+				if skipsub:
+					readcmds = False
+				matched = True
+				break
+
+		if arg == '--debug':
+			job.debugmode = True
+			matched = True
+		if arg.startswith('--config='):
+			cfg.read(arg[9:])
+			matched = True
+		if arg == '--printconf':
+			cfg.write(sys.stdout)
+			return 0
+		if arg == '--printsub':
+			job.addhook('99printsub', hook_printsub)
+			matched = True
+		if arg == '--nolock':
+			lock = False
+			matched = True
+
+		if not matched:
+			nargs.append(arg)
+
+	job.sethooks()
+
+	# Call options hooks first thing after option parsing
+	if job.options(nargs) is False:
+		job.cleanup()
+		return 30
+
+	# submit file in nargs
+	if nargs:
+		submitfile = nargs.pop(0)
+
+	if lock:
+		job.addhook('00lock', hook_lock)
+
+	# If x509 cert is required, add that hook
+	if cfg.has_section('submit') and \
+	   cfg.has_option('submit', 'requirex509') and \
+	   cfg.getboolean('submit', 'requirex509'):
+		job.addhook('00x509', hook_x509)
+
+	job.addad('SubmitFile', str(submitfile))
+
+	try:
+		return parse_submit(job, submitfile, options, readcmds=readcmds)
+	except KeyboardInterrupt:
+		job.cleanup()
+		print '\nbreak'
+		return 1
+	except:
+		job.cleanup()
+		raise
 
 
 if __name__ == '__main__':
