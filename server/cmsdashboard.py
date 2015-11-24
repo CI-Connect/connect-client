@@ -1,5 +1,3 @@
-#! /bin/env python
-
 import os
 import sys
 import datetime
@@ -14,6 +12,34 @@ from DashboardAPI import apmonSend, apmonFree
 
 #import DashboardAPI
 #DashboardAPI.apmonLoggingLevel = "DEBUG"
+
+
+class cmsdashboard(hook):
+	debug = True
+
+	def options(self, *args, **kwargs):
+		self.use_dashboard = True
+
+		if args:
+			# command line args are only the first argument to this function
+			clargs = list(args[0])
+
+		nargs = []
+		for arg in clargs:
+			if arg == '--disable-dashboard':
+				self.use_dashboard = False
+				continue
+			nargs.append(arg)
+
+		# Replace elements of the original arg list.  The [:] is
+		# important. (This is a bit of a cheat around the fact
+		# that we can't return args from the hook.)
+		args[0][:] = nargs
+
+
+	def presubmit(self, job, *args, **kwargs):
+		reporter = CMSReporter(job.files[0])
+
 
 class CMSReporter(object):
     def __init__(self, submitfile):
