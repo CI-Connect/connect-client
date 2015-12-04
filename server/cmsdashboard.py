@@ -10,35 +10,35 @@ import re
 sys.path.insert(0, '/cvmfs/cms.cern.ch/crab/CRAB_2_11_1_patch1/python/')
 from DashboardAPI import apmonSend, apmonFree
 
-#import DashboardAPI
-#DashboardAPI.apmonLoggingLevel = "DEBUG"
+
+# import DashboardAPI
+# DashboardAPI.apmonLoggingLevel = "DEBUG"
 
 
 class cmsdashboard(hook):
-	debug = True
+    debug = True
 
-	def options(self, *args, **kwargs):
-		self.use_dashboard = True
+    def options(self, *args, **kwargs):
+        self.use_dashboard = True
 
-		if args:
-			# command line args are only the first argument to this function
-			clargs = list(args[0])
+        if args:
+            # command line args are only the first argument to this function
+            clargs = list(args[0])
 
-		nargs = []
-		for arg in clargs:
-			if arg == '--disable-dashboard':
-				self.use_dashboard = False
-				continue
-			nargs.append(arg)
+        nargs = []
+        for arg in clargs:
+            if arg == '--disable-dashboard':
+                self.use_dashboard = False
+                continue
+            nargs.append(arg)
 
-		# Replace elements of the original arg list.  The [:] is
-		# important. (This is a bit of a cheat around the fact
-		# that we can't return args from the hook.)
-		args[0][:] = nargs
+        # Replace elements of the original arg list.  The [:] is
+        # important. (This is a bit of a cheat around the fact
+        # that we can't return args from the hook.)
+        args[0][:] = nargs
 
-
-	def presubmit(self, job, *args, **kwargs):
-		reporter = CMSReporter(job.files[0])
+    def presubmit(self, job, *args, **kwargs):
+        reporter = CMSReporter(job.files[0])
 
 
 class CMSReporter(object):
@@ -78,8 +78,8 @@ class CMSReporter(object):
         # Ignore first executable position
         blocks = [0] + self._search_key_values(sub, 'executable')[1:] + [len(sub)]
         sublists = []
-        for i in range(len(blocks)-1):
-            sublists += [ sub[blocks[i]:blocks[i+1]] ]
+        for i in range(len(blocks) - 1):
+            sublists += [sub[blocks[i]:blocks[i + 1]]]
 
         return sublists
 
@@ -106,28 +106,27 @@ class CMSReporter(object):
                 if 'arguments' in sublist:
                     self._preppend_to_item_values(sublist, 'arguments', exe_cmd)
                 else:
-                    #sublist['arguments'] = exe_cmd
-                    sublist.insert(exe_index+1,('Arguments', exe_cmd))
+                    # sublist['arguments'] = exe_cmd
+                    sublist.insert(exe_index + 1, ('Arguments', exe_cmd))
                 # Update transfer_input_files
                 if 'transfer_input_files' in sublist:
                     latest_transfer_input_files = sublist['transfer_input_files'][1]
-                    self._preppend_to_item_values(sublist, 'transfer_input_files', exe_cmd,',')
+                    self._preppend_to_item_values(sublist, 'transfer_input_files', exe_cmd, ',')
                 else:
                     if latest_transfer_input_files:
-                        sublist.insert(exe_index+1, ('transfer_input_files', '{0},{1}'.format(exe_cmd, latest_transfer_input_files)))
+                        sublist.insert(exe_index + 1,
+                                       ('transfer_input_files', '{0},{1}'.format(exe_cmd, latest_transfer_input_files)))
                     else:
-                        sublist.insert(exe_index+1, ('transfer_input_files', exe_cmd))
+                        sublist.insert(exe_index + 1, ('transfer_input_files', exe_cmd))
                 newsub.extend(sublist)
         newsub.update()
         return newsub
-
 
     def _get_taskid(self, jdl_name):
         filename = os.path.splitext(jdl_name)[0]
         taskid = 'cmsconnect_{0}_{1}_{2}'.format(getpass.getuser(), filename,
                                                  sha1(str(datetime.datetime.utcnow())).hexdigest()[-16:])
         return taskid
-
 
     def _cluster_jobs(self, output):
         cluster_jobs = []
@@ -156,8 +155,8 @@ class CMSReporter(object):
                 new_id = str(int(jobs_previous) + int(procid))
                 schedd.edit(['{0}.{1}'.format(cluster, procid)], 'Dashboard_Id', new_id)
                 schedd.edit(['{0}.{1}'.format(cluster, procid)], 'Environment',
-                        "\"{0} Dashboard_Id='{1}'\"".format(self.monitor.environment,new_id))
-            jobs_previous+=int(jobs)
+                            "\"{0} Dashboard_Id='{1}'\"".format(self.monitor.environment, new_id))
+            jobs_previous += int(jobs)
 
         # Report jobs
         njobs = jobs_previous
@@ -169,7 +168,6 @@ class CMSReporter(object):
             self.monitor.update_job(str(id), 'Pending')
 
         return
-
 
     def cms_dashboard_report(self, sub, classads, nargs):
         ''' - Register jobs to monitor(s).
@@ -204,7 +202,7 @@ class CMSReporter(object):
                                 ]
         classads += dashboard_parameters
         # Add dashboard paramenters to the SHELL environment
-        envpars =  ' '.join("{0}='{1}'".format(ad, value) for ad, value in dashboard_parameters)
+        envpars = ' '.join("{0}='{1}'".format(ad, value) for ad, value in dashboard_parameters)
         # envpars += ' Dashboard_Id=$(Process)'
         nargs += ['-a', '+environment="{0}"'.format(envpars)]
         self.monitor.environment = envpars
@@ -213,7 +211,6 @@ class CMSReporter(object):
 
 
 class Monitor(object):
-
     def __init__(self, taskid):
         self._taskid = taskid
         p = subprocess.Popen(["voms-proxy-info", "-identity"],
@@ -223,11 +220,12 @@ class Monitor(object):
         self.__fullname = id.rsplit('/CN=', 1)[1]
         self.__username = u'unknown'
         self.__cmssw_version = "unknown"
-        #self.__executable = "unknown"
+        # self.__executable = "unknown"
         self.__executable = "unknown"
 
     def generate_ids(self, jobid):
-        monitorid = '{0}_{1}/{0}'.format(jobid, 'https://login.uscms.org/{0}'.format(sha1(self._taskid).hexdigest()[-16:]))
+        monitorid = '{0}_{1}/{0}'.format(jobid,
+                                         'https://login.uscms.org/{0}'.format(sha1(self._taskid).hexdigest()[-16:]))
         syncid = 'https://login.uscms.org//{0}//12345.{1}'.format(self._taskid, jobid)
 
         return monitorid, syncid
@@ -253,9 +251,8 @@ class Monitor(object):
             'datasetFull': '',
             'resubmitter': 'user',
             'exe': self.__executable
-            })
+        })
         self.free()
-
 
     def register_job(self, id):
         monitorid, syncid = self.generate_ids(id)
@@ -281,7 +278,7 @@ class Monitor(object):
             # 'datasetFull': self.datasetPath,
             'resubmitter': 'user',
             'exe': self.__executable
-            })
+        })
         return monitorid, syncid
 
     def update_job(self, id, status):
@@ -293,11 +290,11 @@ class Monitor(object):
             'StatusValueReason': '',
             'StatusValue': status,
             'StatusEnterTime':
-            "{0:%F_%T}".format(datetime.datetime.utcnow()),
+                "{0:%F_%T}".format(datetime.datetime.utcnow()),
             'StatusDestination': 'unknown',
             'RBname': 'condor'
-            })
-        #apmonFree()
+        })
+        # apmonFree()
 
     def set_executable(self, executable):
         self.__executable = executable
