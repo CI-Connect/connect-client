@@ -74,19 +74,24 @@ class GeneralException(Exception):
         raise self
 
 
-class SSHError(GeneralException): pass
+class SSHError(GeneralException):
+    pass
 
 
-class UsageError(GeneralException): pass
+class UsageError(GeneralException):
+    pass
 
 
-class NotPresentError(GeneralException): pass
+class NotPresentError(GeneralException):
+    pass
 
 
-class NoRepoError(GeneralException): pass
+class NoRepoError(GeneralException):
+    pass
 
 
-class InvalidProfile(GeneralException): pass
+class InvalidProfile(GeneralException):
+    pass
 
 
 class codes(object):
@@ -130,8 +135,8 @@ def ttysize():
     '''return (rows, columns) of controlling terminal'''
     import termios, fcntl, struct, os
 
-    def ioctl(fd):
-        r = fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234')
+    def ioctl(file_descripter):
+        r = fcntl.ioctl(file_descripter, termios.TIOCGWINSZ, '1234')
         yx = struct.unpack('hh', r)
         return yx
 
@@ -1593,14 +1598,19 @@ class main(object):
         if args:
             self.profile.split(args.pop(0))
         else:
-            self.output(
-                'Please enter the user name that you created during Connect registration.  Note that it consists only of letters and numbers, with no @ symbol.')
+            self.output('Please enter the user name that you created during '
+                        'Connect registration.  Note that it consists only of '
+                        'letters and numbers, with no @ symbol.')
             self.output('')
             self.output('You will be connecting via the %s server.' % self.profile.server)
             try:
                 user = raw_input('Enter your Connect username: ')
                 if user == '':
                     self.output('')
+                    self.output('Setup cancelled.')
+                    return 0
+                if '[' in user or ']' in user:
+                    self.output("Username can't have brackets in it\n")
                     self.output('Setup cancelled.')
                     return 0
             except:
