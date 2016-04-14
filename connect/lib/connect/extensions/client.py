@@ -1969,6 +1969,8 @@ class main(object):
 
     @clientcmd('', [])
     def c_submit(self, opts, args):
+        '''<submitfile>'''
+
         """
         Run a condor submit on specified file
 
@@ -1985,6 +1987,8 @@ class main(object):
 
     @clientcmd('', [])
     def c_dag(self, opts, args):
+        '''<dagfile>'''
+
         """
         Run a condor_submit_dag on specified file
 
