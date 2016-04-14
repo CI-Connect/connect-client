@@ -1970,7 +1970,7 @@ class main(object):
     @clientcmd('', [])
     def c_submit(self, opts, args):
         """
-        Run a condor submit
+        Run a condor submit on specified file
 
         :param opts:
         :param args: a list with arguments (should have condor submit file)
@@ -1985,7 +1985,18 @@ class main(object):
 
     @clientcmd('', [])
     def c_dag(self, opts, args):
-        '''<dagfile>'''
+        """
+        Run a condor_submit_dag on specified file
+
+        :param opts:
+        :param args: a list with arguments (should have dag file)
+        :return: a return code
+        """
+        if not args:
+            sys.stderr.write("You need to specify a dag file\n")
+            return 1
+        if not os.path.isfile(args[0]):
+            sys.stderr.write("{0} is not a file\n".format(args[0]))
         return self._submit(args, command='condor_submit_dag')
 
     @clientcmd('', [])
