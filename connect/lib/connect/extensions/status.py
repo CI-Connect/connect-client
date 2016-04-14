@@ -1,69 +1,70 @@
 import getopt
 
+
 def usage():
-	yield '@ [-f | --full]'
+    yield '@ [-f | --full]'
+
 
 def status(pool):
-	if pool:
-		cmd = 'condor_status -pool ' + pool
-	else:
-		cmd = 'condor_status'
+    if pool:
+        cmd = 'condor_status -pool ' + pool
+    else:
+        cmd = 'condor_status'
 
-	for line in xsh(cmd):
-		yield line.rstrip()
+    for line in xsh(cmd):
+        yield line.rstrip()
 
 
 def run(*args, **kwargs):
-	try:
-		opts, args = getopt.getopt(args, '?hf', ['help', 'full'])
-	except getopt.GetoptError, e:
-		error(str(e))
+    try:
+        opts, args = getopt.getopt(args, '?hf', ['help', 'full'])
+    except getopt.GetoptError, e:
+        error(str(e))
 
-	full = False
+    full = False
 
-	for opt, arg in opts:
-		if opt in ('-?', '-h', '--help'):
-			usage('[-f | --full]')
-			return 0
+    for opt, arg in opts:
+        if opt in ('-?', '-h', '--help'):
+            usage('[-f | --full]')
+            return 0
 
-		if opt in ('-f', '--full'):
-			full = True
+        if opt in ('-f', '--full'):
+            full = True
 
-	# htcondor bindings, param object needs more dict methods :p
-	pools = [x.strip() for x in param['flock_to'].split(',')]
+    # htcondor bindings, param object needs more dict methods :p
+    pools = [x.strip() for x in param['flock_to'].split(',')]
 
-	map = {}
-	if config.has_section('poolnames'):
-		for opt, value in config.items('poolnames'):
-			try:
-				key, value = value.split(',', 1)
-			except ValueError:
-				continue
-			map[key.strip()] = value.strip()
+    map = {}
+    if config.has_section('poolnames'):
+        for opt, value in config.items('poolnames'):
+            try:
+                key, value = value.split(',', 1)
+            except ValueError:
+                continue
+            map[key.strip()] = value.strip()
 
+    print 'Summary of available resources for all HTCondor pools:'
+    print '    Total  Owner  Claimed  Unclaimed  Matched  Preempting'
+    for pool in [None] + pools:
+        if pool:
+            name = pool
+        else:
+            name = 'LOCAL'
 
-	print 'Summary of available resources for all HTCondor pools:'
-	print '    Total  Owner  Claimed  Unclaimed  Matched  Preempting'
-	for pool in [None] + pools:
-		if pool:
-			name = pool
-		else:
-			name = 'LOCAL'
+        if name in map:
+            name = map[name]
+        print '===', name, '==='
 
-		if name in map:
-			name = map[name]
-		print '===', name, '==='
-
-		if full:
-			for line in status(pool):
-				print line
-		else:
-			for line in status(pool):
-				if 'Total' in line and 'Owner' not in line:
-					vals = [x.strip() for x in line.replace('Total', '').split()]
-					# as a list comprehension, vals is an iterator. Must
-					# convert to list.
-					print '    %5.5s  %5.5s  %7.7s  %9.9s  %7.7s  %10.10s' % tuple(vals[:6])
+        if full:
+            for line in status(pool):
+                print line
+        else:
+            for line in status(pool):
+                if 'Total' in line and 'Owner' not in line:
+                    vals = [x.strip() for x in line.replace('Total', '').split()]
+                    # as a list comprehension, vals is an iterator. Must
+                    # convert to list.
+                    print '    %5.5s  %5.5s  %7.7s  %9.9s  %7.7s  %10.10s' % tuple(vals[:6])
 
 
 '''

@@ -17,18 +17,19 @@ PluginModulesAll = 'htcondor'.split()
 p = os.path.basename(sys.argv[0])
 d = os.path.dirname(sys.argv[0]) + '/'
 Libraries = [
-	'/etc/ciconnect',
-	'/etc/connect',
-	os.path.join('~/lib', p),
-	d.replace('/bin/', '/lib/'),
-	d.replace('/bin/', '/etc/'),
-	sys.argv[0].replace('/bin/', '/lib/'),
-	sys.argv[0].replace('/bin/', '/etc/'),
-	os.path.join('/usr/lib', p),
+    '/etc/ciconnect',
+    '/etc/connect',
+    os.path.join('~/lib', p),
+    d.replace('/bin/', '/lib/'),
+    d.replace('/bin/', '/etc/'),
+    sys.argv[0].replace('/bin/', '/lib/'),
+    sys.argv[0].replace('/bin/', '/etc/'),
+    os.path.join('/usr/lib', p),
 ]
 
 
 class ConnectException(Exception): pass
+
 
 DefaultConfig = '''
 [connect]
@@ -36,644 +37,645 @@ blacklist = /etc/ciconnect/project_blacklist
 client = false
 '''
 
+
 class ConnectConfig(ConfigParser.SafeConfigParser):
-	cleantrans = ['_'] * 256
-	for c in string.ascii_letters + string.digits:
-		cleantrans[ord(c)] = c
-	cleantrans = ''.join(cleantrans)
+    cleantrans = ['_'] * 256
+    for c in string.ascii_letters + string.digits:
+        cleantrans[ord(c)] = c
+    cleantrans = ''.join(cleantrans)
 
-	def _clean(self, s):
-		return s.translate(self.cleantrans)
+    def _clean(self, s):
+        return s.translate(self.cleantrans)
 
-	def toEnv(self):
-		for section in self.sections():
-			for option in self.options(section):
-				key = self._clean(section) + '_' + self._clean(option)
-				yield((key, self.get(section, option)))
+    def toEnv(self):
+        for section in self.sections():
+            for option in self.options(section):
+                key = self._clean(section) + '_' + self._clean(option)
+                yield ((key, self.get(section, option)))
 
-	def toShell(self):
-		yield '''q="'" '''
-		yield '''qq='"' '''
-		for key, val in self.toEnv():
-			val = val.replace('\\', '\\\\').replace("'", "${q}")
-			yield "%s=\"%s\"" % (key, val)
-			yield('export ' + key)
+    def toShell(self):
+        yield '''q="'" '''
+        yield '''qq='"' '''
+        for key, val in self.toEnv():
+            val = val.replace('\\', '\\\\').replace("'", "${q}")
+            yield "%s=\"%s\"" % (key, val)
+            yield ('export ' + key)
 
-	def include(self, section, recurse=True):
-		while self.has_section('include'):
-			found = False
-			for option in self.options('include'):
-				# if it's really from [DEFAULT], ignore
-				value = self.get('include', option)
-				try:
-					if self.get('DEFAULT', option) == value:
-						continue
-				except ConfigParser.NoOptionError:
-					pass
-				found = True
-				self.remove_option('include', option)
-				self.read(value)
-			if not found:
-				break
-			if not recurse:
-				break
+    def include(self, section, recurse=True):
+        while self.has_section('include'):
+            found = False
+            for option in self.options('include'):
+                # if it's really from [DEFAULT], ignore
+                value = self.get('include', option)
+                try:
+                    if self.get('DEFAULT', option) == value:
+                        continue
+                except ConfigParser.NoOptionError:
+                    pass
+                found = True
+                self.remove_option('include', option)
+                self.read(value)
+            if not found:
+                break
+            if not recurse:
+                break
 
 
 class PluginProxy(object):
-	arg0 = os.path.basename(sys.argv[0])
-	agent = ''
+    arg0 = os.path.basename(sys.argv[0])
+    agent = ''
 
-	# Local symbols to export to plugins
-	exports = 'error debug info usage sh xsh'.split()
+    # Local symbols to export to plugins
+    exports = 'error debug info usage sh xsh'.split()
 
-	def error(self, *args):
-		self._msg(sys.stderr, 'error', *args)
+    def error(self, *args):
+        self._msg(sys.stderr, 'error', *args)
 
-	def debug(self, *args):
-		self._msg(sys.stdout, 'debug', *args)
+    def debug(self, *args):
+        self._msg(sys.stdout, 'debug', *args)
 
-	def info(self, *args):
-		self._msg(sys.stdout, '', *args)
+    def info(self, *args):
+        self._msg(sys.stdout, '', *args)
 
-	def _msg(self, fp, prefix, *args):
-		agent = self.agent
-		if agent:
-			agent += ' '
-		print >>fp, ('%s %s%s:' % (self.arg0, agent, prefix)), \
-		            ' '.join([str(x) for x in args])
+    def _msg(self, fp, prefix, *args):
+        agent = self.agent
+        if agent:
+            agent += ' '
+        print >> fp, ('%s %s%s:' % (self.arg0, agent, prefix)), \
+            ' '.join([str(x) for x in args])
 
-	def help(self, *args):
-		yield '@ ' + ' '.join(args)
+    def help(self, *args):
+        yield '@ ' + ' '.join(args)
 
-	def sh(self, command):
-		fp = os.popen(command, 'r')
-		data = fp.read()
-		fp.close()
-		return data
+    def sh(self, command):
+        fp = os.popen(command, 'r')
+        data = fp.read()
+        fp.close()
+        return data
 
-	def xsh(self, command):
-		fp = os.popen(command, 'r')
-		for line in fp:
-			yield line
-		fp.close()
+    def xsh(self, command):
+        fp = os.popen(command, 'r')
+        for line in fp:
+            yield line
+        fp.close()
 
 
 class commandtype(object):
-	def __init__(self, config, name, data):
-		self.name = name
-		self.data = data
-		self.config = config
-		self.secret = False
-		if hasattr(self, '__subinit__'):
-			self.__subinit__()
+    def __init__(self, config, name, data):
+        self.name = name
+        self.data = data
+        self.config = config
+        self.secret = False
+        if hasattr(self, '__subinit__'):
+            self.__subinit__()
 
-		os.environ['ARGV0'] = sys.argv[0]
-		os.environ['ARGV0DIR'] = os.path.dirname(sys.argv[0])
-		os.environ['ARGV0BASE'] = os.path.basename(sys.argv[0])
+        os.environ['ARGV0'] = sys.argv[0]
+        os.environ['ARGV0DIR'] = os.path.dirname(sys.argv[0])
+        os.environ['ARGV0BASE'] = os.path.basename(sys.argv[0])
 
-	@staticmethod
-	def splitpath(*args):
-		if args:
-			return args[0].split(':')
-		elif 'PATH' in os.environ:
-			return os.environ['PATH'].split(':')
-		else:
-			return []
+    @staticmethod
+    def splitpath(*args):
+        if args:
+            return args[0].split(':')
+        elif 'PATH' in os.environ:
+            return os.environ['PATH'].split(':')
+        else:
+            return []
 
-	@classmethod
-	def discover(cls, config, *args, **kwargs):
-		if 'exts' in kwargs:
-			exts = kwargs['exts']
-		else:
-			exts = []
+    @classmethod
+    def discover(cls, config, *args, **kwargs):
+        if 'exts' in kwargs:
+            exts = kwargs['exts']
+        else:
+            exts = []
 
-		if 'prefixes' in kwargs:
-			prefixes = kwargs['prefixes']
-		else:
-			prefixes = []
+        if 'prefixes' in kwargs:
+            prefixes = kwargs['prefixes']
+        else:
+            prefixes = []
 
-		if 'dirs' in kwargs:
-			dirs = kwargs['dirs']
-		elif 'path' in kwargs:
-			dirs = cls.splitpath(kwargs['path'])
-		else:
-			dirs = cls.splitpath()
-		dirs = [os.path.expanduser(dir) for dir in dirs]
+        if 'dirs' in kwargs:
+            dirs = kwargs['dirs']
+        elif 'path' in kwargs:
+            dirs = cls.splitpath(kwargs['path'])
+        else:
+            dirs = cls.splitpath()
+        dirs = [os.path.expanduser(entry) for entry in dirs]
 
-		def pfxfilter(file):
-			for prefix in prefixes:
-				if file.startswith(prefix):
-					return True
-			return False
+        def pfxfilter(file):
+            for prefix in prefixes:
+                if file.startswith(prefix):
+                    return True
+            return False
 
-		def extfilter(file):
-			base, ext = os.path.splitext(file)
-			if ext and ext in exts:
-				return True
-			return False
+        def extfilter(file):
+            base, ext = os.path.splitext(file)
+            if ext and ext in exts:
+                return True
+            return False
 
-		for dir in dirs:
-			try:
-				files = os.listdir(dir)
-			except OSError:
-				continue
-			if prefixes:
-				files = filter(pfxfilter, files)
-			if exts:
-				files = filter(extfilter, files)
-			for name, path in [(file, os.path.join(dir, file)) for file in files]:
-				yield cls(config, name, path)
+        for entry in dirs:
+            try:
+                files = os.listdir(entry)
+            except OSError:
+                continue
+            if prefixes:
+                files = filter(pfxfilter, files)
+            if exts:
+                files = filter(extfilter, files)
+            for name, path in [(file, os.path.join(entry, file)) for file in files]:
+                yield cls(config, name, path)
 
+    def __call__(self, *args, **kwargs):
+        '''dummy'''
+        return False
 
-	def __call__(self, *args, **kwargs):
-		'''dummy'''
-		return False
-
-	def help(self):
-		yield '@'
+    def help(self):
+        yield '@'
 
 
 class builtintype(commandtype):
-	@classmethod
-	def discover(cls, config, namespace=globals()):
-		for name in namespace:
-			if name.startswith('builtin_'):
-				cmd = cls(config, name[8:], namespace[name])
-				try:
-					cmd.secret = namespace[name].secret
-				except AttributeError:
-					cmd.secret = False
-				yield cmd
+    @classmethod
+    def discover(cls, config, namespace=globals()):
+        for name in namespace:
+            if name.startswith('builtin_'):
+                cmd = cls(config, name[8:], namespace[name])
+                try:
+                    cmd.secret = namespace[name].secret
+                except AttributeError:
+                    cmd.secret = False
+                yield cmd
 
-	def __call__(self, *args, **kwargs):
-		handler = self.data
-		return handler(*args, **kwargs)
+    def __call__(self, *args, **kwargs):
+        handler = self.data
+        return handler(*args, **kwargs)
 
-	def help(self):
-		handler = self.data
-		if not handler.__doc__:
-			yield None
-			return
-		for line in handler.__doc__.strip().split('\n'):
-			yield line
+    def help(self):
+        handler = self.data
+        if not handler.__doc__:
+            yield None
+            return
+        for line in handler.__doc__.strip().split('\n'):
+            yield line
+
 
 class condortype(commandtype):
-	@classmethod
-	def discover(cls, config, *args, **kwargs):
-		for cmd in commandtype.discover(config, *args, **kwargs):
-			cmd = cls(config, cmd.name[7:], cmd.data)
-			cmd.secret = True
-			yield cmd
+    @classmethod
+    def discover(cls, config, *args, **kwargs):
+        for cmd in commandtype.discover(config, *args, **kwargs):
+            cmd = cls(config, cmd.name[7:], cmd.data)
+            cmd.secret = True
+            yield cmd
 
-	def __call__(self, *args, **kwargs):
-		try:
-			os.execv(self.data, [self.data] + list(args))
-		except OSError, e:
-			raise ConnectException, 'cannot run %s: %s' % (self.data, str(e.errno))
+    def __call__(self, *args, **kwargs):
+        try:
+            os.execv(self.data, [self.data] + list(args))
+        except OSError, e:
+            raise ConnectException, 'cannot run %s: %s' % (self.data, str(e.errno))
 
-	def help(self):
-		fp = os.popen(self.data + ' -h')
-		for line in fp:
-			line = line.rstrip()
-			if line.lower().startswith('usage:'):
-				yield '@ ' + ' '.join(line.split()[2:])
-			else:
-				yield '>' + line
-		fp.close()
+    def help(self):
+        fp = os.popen(self.data + ' -h')
+        for line in fp:
+            line = line.rstrip()
+            if line.lower().startswith('usage:'):
+                yield '@ ' + ' '.join(line.split()[2:])
+            else:
+                yield '>' + line
+        fp.close()
+
 
 class pyexttype(commandtype):
-	@classmethod
-	def discover(cls, config, *args, **kwargs):
-		kwargs['exts'] = ['.py']
-		for cmd in commandtype.discover(config, *args, **kwargs):
-			dir, modname = os.path.dirname(cmd.data), os.path.basename(cmd.data)
-			if modname.endswith('.py'):
-				modname = modname[:-3]
-			yield cls(config, modname, dir)
+    @classmethod
+    def discover(cls, config, *args, **kwargs):
+        kwargs['exts'] = ['.py']
+        for cmd in commandtype.discover(config, *args, **kwargs):
+            dir, modname = os.path.dirname(cmd.data), os.path.basename(cmd.data)
+            if modname.endswith('.py'):
+                modname = modname[:-3]
+            yield cls(config, modname, dir)
 
-	def __subinit__(self):
-		saved = sys.path
-		sys.path = [self.data] + list(sys.path)
-		self.mod = __import__(self.name)
-		sys.path = saved
+    def __subinit__(self):
+        saved = sys.path
+        sys.path = [self.data] + list(sys.path)
+        self.mod = __import__(self.name)
+        sys.path = saved
 
-		self.mod.agent = self.name
-		self.mod.proxy = PluginProxy()
-		self.mod.proxy.agent = self.mod.agent
-		self.mod.config = self.config
+        self.mod.agent = self.name
+        self.mod.proxy = PluginProxy()
+        self.mod.proxy.agent = self.mod.agent
+        self.mod.config = self.config
 
-		if hasattr(self.mod, 'defaults'):
-			# !! this needs to be RawConfigParser - we do not want
-			# !! to interpolate vars in this merge operation.
-			tmp = ConfigParser.RawConfigParser()
-			fp = StringIO.StringIO(self.mod.defaults)
-			tmp.readfp(fp)
-			fp.close()
+        if hasattr(self.mod, 'defaults'):
+            # !! this needs to be RawConfigParser - we do not want
+            # !! to interpolate vars in this merge operation.
+            tmp = ConfigParser.RawConfigParser()
+            fp = StringIO.StringIO(self.mod.defaults)
+            tmp.readfp(fp)
+            fp.close()
 
-			# merge settings
-			for section in tmp.sections():
-				if not self.config.has_section(section):
-					self.config.add_section(section)
-				for option, value in tmp.items(section):
-					if not self.config.has_option(section, option):
-						self.config.set(section, option, value)
+            # merge settings
+            for section in tmp.sections():
+                if not self.config.has_section(section):
+                    self.config.add_section(section)
+                for option, value in tmp.items(section):
+                    if not self.config.has_option(section, option):
+                        self.config.set(section, option, value)
 
-		if hasattr(self.mod, 'help'):
-			self.help = self.mod.help
-		elif hasattr(self.mod, 'usage'):
-			self.help = self.mod.usage
-		elif hasattr(self, 'usage'):
-			self.help = self.usage
+        if hasattr(self.mod, 'help'):
+            self.help = self.mod.help
+        elif hasattr(self.mod, 'usage'):
+            self.help = self.mod.usage
+        elif hasattr(self, 'usage'):
+            self.help = self.usage
 
-		if hasattr(self.mod, 'secret'):
-			self.secret = self.mod.secret
+        if hasattr(self.mod, 'secret'):
+            self.secret = self.mod.secret
 
-		for name in self.mod.proxy.exports:
-			try:
-				setattr(self.mod, name, getattr(self.mod.proxy, name))
-			except AttributeError, e:
-				pass
+        for name in self.mod.proxy.exports:
+            try:
+                setattr(self.mod, name, getattr(self.mod.proxy, name))
+            except AttributeError, e:
+                pass
 
-		for name in PluginModules:
-			try:
-				setattr(self.mod, name, __import__(name))
-			except ImportError, e:
-				setattr(self.mod, name, None)
+        for name in PluginModules:
+            try:
+                setattr(self.mod, name, __import__(name))
+            except ImportError, e:
+                setattr(self.mod, name, None)
 
-		for name in PluginModulesAll:
-			try:
-				tmp = __import__(name)
-				setattr(self.mod, name, tmp)
-				for name in tmp.__dict__:
-					setattr(self.mod, name, getattr(tmp, name))
-			except:
-				setattr(self.mod, name, None)
+        for name in PluginModulesAll:
+            try:
+                tmp = __import__(name)
+                setattr(self.mod, name, tmp)
+                for name in tmp.__dict__:
+                    setattr(self.mod, name, getattr(tmp, name))
+            except:
+                setattr(self.mod, name, None)
 
-		if hasattr(self.mod, 'setup'):
-			self.mod.setup()
+        if hasattr(self.mod, 'setup'):
+            self.mod.setup()
 
-
-	def __call__(self, *args, **kwargs):
-		# in a python extension, module.run must be a callable
-		os.environ['AGENT'] = self.mod.__file__
-		return self.mod.run(*args, **kwargs)
+    def __call__(self, *args, **kwargs):
+        # in a python extension, module.run must be a callable
+        os.environ['AGENT'] = self.mod.__file__
+        return self.mod.run(*args, **kwargs)
 
 
 class shexttype(commandtype):
-	@classmethod
-	def discover(cls, config, *args, **kwargs):
-		kwargs['exts'] = ['.sh', '.shh']
-		for cmd in commandtype.discover(config, *args, **kwargs):
-			modname = cmd.name
-			secret = False
-			if modname.endswith('.sh'):
-				modname = modname[:-3]
-			if modname.endswith('.shh'):
-				modname = modname[:-4]
-				secret = True
-			_ = cls(config, modname, cmd.data)
-			_.secret = secret
-			yield _
+    @classmethod
+    def discover(cls, config, *args, **kwargs):
+        kwargs['exts'] = ['.sh', '.shh']
+        for cmd in commandtype.discover(config, *args, **kwargs):
+            modname = cmd.name
+            secret = False
+            if modname.endswith('.sh'):
+                modname = modname[:-3]
+            if modname.endswith('.shh'):
+                modname = modname[:-4]
+                secret = True
+            _ = cls(config, modname, cmd.data)
+            _.secret = secret
+            yield _
 
-	def __call__(self, *args, **kwargs):
-		os.environ['AGENT'] = self.data
-		# in a shell extension, the module should run under /bin/sh
-		# and directly produce intended results
-		cmd = ' '.join(['/bin/sh', '-s', '-'] + list(args))
-		sh = os.popen(cmd, 'w')
-		for line in self.config.toShell():
-			sh.write(line + '\n')
-		fp = open(self.data, 'r')
-		for line in fp:
-			sh.write(line)
-		fp.close()
-		rc = sh.close()
-		if rc is None:
-			rc = 0
-		else:
-			rc = os.WEXITSTATUS(rc)
-		sys.exit(rc)
-		#os.execv('/bin/sh', [self.name, self.data] + list(args))
+    def __call__(self, *args, **kwargs):
+        os.environ['AGENT'] = self.data
+        # in a shell extension, the module should run under /bin/sh
+        # and directly produce intended results
+        cmd = ' '.join(['/bin/sh', '-s', '-'] + list(args))
+        sh = os.popen(cmd, 'w')
+        for line in self.config.toShell():
+            sh.write(line + '\n')
+        fp = open(self.data, 'r')
+        for line in fp:
+            sh.write(line)
+        fp.close()
+        rc = sh.close()
+        if rc is None:
+            rc = 0
+        else:
+            rc = os.WEXITSTATUS(rc)
+        sys.exit(rc)
 
-	def help(self):
-		# there are two ways to embed usage/help into a shell extension:
-		#
-		# 1. line by line
-		#     # @help @ [options] arguments
-		#     # @help    ...help text...
-		#     # @help    ...more help text...
-		#
-		# 2. in blocks:
-		#     # @help.begin
-		#     # @ [options] arguments
-		#     #     ...help text...
-		#     #     ...more help text...
-		#     # @help.end
-		#
-		# In either case, a lone "@" is replaced by "usage:" and the
-		# calling syntax for the subcommand in question. (Generally
-		# this is "connect subcommand".)  The usage lines are reported
-		# for usage summaries. The entire help is reproduced for long
-		# help statements (connect help ...).
+    # os.execv('/bin/sh', [self.name, self.data] + list(args))
 
-		# self.data contains path
-		fp = open(self.data, 'r')
-		something = False
-		helpoff = -1
-		for line in fp:
-			if helpoff >= 0:
-				if '@help.end' in line:
-					helpoff = -1
-				else:
-					something = True
-					yield line[helpoff:].rstrip()
-				continue
+    def help(self):
+        # there are two ways to embed usage/help into a shell extension:
+        #
+        # 1. line by line
+        #     # @help @ [options] arguments
+        #     # @help    ...help text...
+        #     # @help    ...more help text...
+        #
+        # 2. in blocks:
+        #     # @help.begin
+        #     # @ [options] arguments
+        #     #     ...help text...
+        #     #     ...more help text...
+        #     # @help.end
+        #
+        # In either case, a lone "@" is replaced by "usage:" and the
+        # calling syntax for the subcommand in question. (Generally
+        # this is "connect subcommand".)  The usage lines are reported
+        # for usage summaries. The entire help is reproduced for long
+        # help statements (connect help ...).
 
-			if '@help.begin' in line:
-				helpoff = line.find('@help.begin')
-				continue
+        # self.data contains path
+        fp = open(self.data, 'r')
+        something = False
+        helpoff = -1
+        for line in fp:
+            if helpoff >= 0:
+                if '@help.end' in line:
+                    helpoff = -1
+                else:
+                    something = True
+                    yield line[helpoff:].rstrip()
+                continue
 
-			if '@help' in line:
-				line = line[line.index('@help') + 5:].rstrip()
-				if line and line[0] == ' ':
-					line = line[1:]
-				something = True
-				yield line
-				continue
+            if '@help.begin' in line:
+                helpoff = line.find('@help.begin')
+                continue
 
-			# for backward compatibility
-			if '@usage' in line:
-				line = line[line.index('@usage') + 6:].rstrip()
-				if line and line[0] == ' ':
-					line = line[1:]
-				if line.strip() != '':
-					something = True
-				if something:
-					yield line
-				continue
+            if '@help' in line:
+                line = line[line.index('@help') + 5:].rstrip()
+                if line and line[0] == ' ':
+                    line = line[1:]
+                something = True
+                yield line
+                continue
 
-		if not something:
-			# at least show usage
-			yield '@'
+            # for backward compatibility
+            if '@usage' in line:
+                line = line[line.index('@usage') + 6:].rstrip()
+                if line and line[0] == ' ':
+                    line = line[1:]
+                if line.strip() != '':
+                    something = True
+                if something:
+                    yield line
+                continue
 
-		fp.close()
+        if not something:
+            # at least show usage
+            yield '@'
+
+        fp.close()
 
 
 class Main(object):
-	def __init__(self):
-		self.arg0 = os.path.basename(sys.argv[0])
-		self.libraries = Libraries
+    def __init__(self):
+        self.arg0 = os.path.basename(sys.argv[0])
+        self.libraries = Libraries
 
-	def error(self, *args):
-		print >>sys.stderr, self.arg0 + ': ' + ' '.join([str(x) for x in args])
+    def error(self, *args):
+        print >> sys.stderr, self.arg0 + ': ' + ' '.join([str(x) for x in args])
 
-	def usage(self, *args):
-		print >>sys.stderr, 'usage: %s <subcommand> [args]' % self.arg0
+    def usage(self, *args):
+        print >> sys.stderr, 'usage: %s <subcommand> [args]' % self.arg0
 
-		for cmd in [x for x in self.cmds if not x.name.startswith('.')]:
-			if cmd.secret:
-				continue
-			if args and cmd.name not in args:
-				continue
-			for line in cmd.help():
-				line = line.rstrip()
-				if line == '@' or line.startswith('@ '):
-					print >>sys.stderr, \
-					      '       %s %s %s' % (self.arg0, cmd.name, line[1:].strip())
+        for cmd in [x for x in self.cmds if not x.name.startswith('.')]:
+            if cmd.secret:
+                continue
+            if args and cmd.name not in args:
+                continue
+            for line in cmd.help():
+                line = line.rstrip()
+                if line == '@' or line.startswith('@ '):
+                    print >> sys.stderr, \
+                        '       %s %s %s' % (self.arg0, cmd.name, line[1:].strip())
 
-		print
-		print 'See "%s help <subcommand>" for more details.' % self.arg0
-		return 2
+        print
+        print 'See "%s help <subcommand>" for more details.' % self.arg0
+        return 2
 
-	def secret(f, *args, **kwargs):
-		f.secret = True
-		return f
+    def secret(f, *args, **kwargs):
+        f.secret = True
+        return f
 
-	@secret
-	def builtin_config(self, *args, **kwargs):
-		'''@
-		Show the connect configuration.
-		'''
-		self.config.write(sys.stdout)
-		return 10
+    @secret
+    def builtin_config(self, *args, **kwargs):
+        '''@
+        Show the connect configuration.
+        '''
+        self.config.write(sys.stdout)
+        return 10
 
-	@secret
-	def builtin_shconfig(self, *args, **kwargs):
-		'''@
-		Show the connect configuration as Bourne shell statements.
-		'''
-		for line in self.config.toShell():
-			print line
-		return 10
+    @secret
+    def builtin_shconfig(self, *args, **kwargs):
+        '''@
+        Show the connect configuration as Bourne shell statements.
+        '''
+        for line in self.config.toShell():
+            print line
+        return 10
 
-	@secret
-	def builtin_debug(self, *args, **kwargs):
-		'''@
-		Start an interactive Python shell within the connect command.
-		'''
+    @secret
+    def builtin_debug(self, *args, **kwargs):
+        '''@
+        Start an interactive Python shell within the connect command.
+        '''
 
-		try:
-			from IPython import embed
-			return embed()
-		except ImportError:
-			pass
+        try:
+            from IPython import embed
+            return embed()
+        except ImportError:
+            pass
 
-		try:
-			from IPython.Shell import IPShellEmbed as embed
-			return embed()()
-		except ImportError:
-			pass
+        try:
+            from IPython.Shell import IPShellEmbed as embed
+            return embed()()
+        except ImportError:
+            pass
 
-		self.error('install IPython to use debug')
-		return 10
+        self.error('install IPython to use debug')
+        return 10
 
-	def builtin_help(self, *args, **kwargs):
-		'''@ [subcommands...]
-		Get help for the connect command or any subcommands.
-		'''
+    def builtin_help(self, *args, **kwargs):
+        '''@ [subcommands...]
+        Get help for the connect command or any subcommands.
+        '''
 
-		if not args:
-			return self.usage()
+        if not args:
+            return self.usage()
 
-		args = dict([x, None] for x in args)
-		if 'all' in args:
-			all = True
-			del args['all']
-		else:
-			all = False
+        args = dict([x, None] for x in args)
+        if 'all' in args:
+            all = True
+            del args['all']
+        else:
+            all = False
 
-		for cmd in self.cmds:
-			this = False
-			if cmd.name in args:
-				del args[cmd.name]
-				this = True
-			if this or all:
-				for line in cmd.help():
-					if line is None:
-						break
-					if line and line[0] == '@':
-						print >>sys.stderr, \
-						      'usage: %s %s %s' % (self.arg0, cmd.name, line[1:].strip())
-					elif line and line[0] in string.whitespace:
-						print >>sys.stderr, '       ' + line.strip()
-					elif line and line[0] == '>':
-						# preserve space
-						print >>sys.stderr, line[1:].rstrip()
-					else:
-						print >>sys.stderr, line.rstrip()
-				print >>sys.stderr
+        for cmd in self.cmds:
+            this = False
+            if cmd.name in args:
+                del args[cmd.name]
+                this = True
+            if this or all:
+                for line in cmd.help():
+                    if line is None:
+                        break
+                    if line and line[0] == '@':
+                        print >> sys.stderr, \
+                            'usage: %s %s %s' % (self.arg0, cmd.name, line[1:].strip())
+                    elif line and line[0] in string.whitespace:
+                        print >> sys.stderr, '       ' + line.strip()
+                    elif line and line[0] == '>':
+                        # preserve space
+                        print >> sys.stderr, line[1:].rstrip()
+                    else:
+                        print >> sys.stderr, line.rstrip()
+                print >> sys.stderr
 
-		# Alert to any subcommands requested but missing
-		for arg in sorted(args.keys()):
-			print >>sys.stderr, 'Unknown subcommand: %s' % arg
+        # Alert to any subcommands requested but missing
+        for arg in sorted(args.keys()):
+            print >> sys.stderr, 'Unknown subcommand: %s' % arg
 
+    def discovercommands(self):
+        # build filter
+        # XXX TODO needs to use Matcher().  And use it on both name and
+        # path (data).  This way we can affect whole dirs of programs.
+        def lines(fp):
+            for line in fp:
+                line = line.strip()
+                if line == '' or line.startswith('#'):
+                    continue
+                yield line
 
-	def discovercommands(self):
-		# build filter
-		# XXX TODO needs to use Matcher().  And use it on both name and
-		# path (data).  This way we can affect whole dirs of programs.
-		def lines(fp):
-			for line in fp:
-				line = line.strip()
-				if line == '' or line.startswith('#'):
-					continue
-				yield line
+        def readfiles(filelist):
+            result = []
+            for fn in filelist:
+                try:
+                    fp = open(os.path.expanduser(fn), 'r')
+                except IOError:
+                    continue
+                result.extend(lines(fp))
+                fp.close()
+            return result
 
-		def readfiles(filelist):
-			result = []
-			for fn in filelist:
-				try:
-					fp = open(os.path.expanduser(fn), 'r')
-				except IOError:
-					continue
-				result.extend(lines(fp))
-				fp.close()
-			return result
+        excludes = readfiles(self.excludes)
+        exposes = readfiles(self.exposes)
 
-		excludes = readfiles(self.excludes)
-		exposes = readfiles(self.exposes)
+        builtin_ns = dict([(k, getattr(self, k)) for k in dir(self)])
+        generators = [
+            # once we have Matcher(), we should discard path=
+            pyexttype.discover(self.config, dirs=self.extensions),
+            shexttype.discover(self.config, dirs=self.extensions),
+            condortype.discover(self.config, prefixes=['condor_'],
+                                path='/usr/bin:/usr/local/bin:' + os.path.expanduser('~/bin')),
+            # builtins come last so that extensions can supersede
+            builtintype.discover(self.config, namespace=builtin_ns),
+        ]
 
-		builtin_ns = dict([(k, getattr(self, k)) for k in dir(self)])
-		generators = [
-			# once we have Matcher(), we should discard path=
-			pyexttype.discover(self.config, dirs=self.extensions),
-			shexttype.discover(self.config, dirs=self.extensions),
-			condortype.discover(self.config, prefixes=['condor_'], path='/usr/bin:/usr/local/bin:' + os.path.expanduser('~/bin')),
-			# builtins come last so that extensions can supersede
-			builtintype.discover(self.config, namespace=builtin_ns),
-		]
+        cmds = []
+        cmddict = {}
+        for generator in generators:
+            for cmd in generator:
+                if cmd.name not in cmddict:
+                    if cmd.name in excludes:
+                        cmd.secret = True
+                    if cmd.name in exposes:
+                        cmd.secret = False
+                    cmds.append(cmd)
+                    cmddict[cmd.name] = cmd
 
-		cmds = []
-		cmddict = {}
-		for generator in generators:
-			for cmd in generator:
-				if cmd.name not in cmddict:
-					if cmd.name in excludes:
-						cmd.secret = True
-					if cmd.name in exposes:
-						cmd.secret = False
-					cmds.append(cmd)
-					cmddict[cmd.name] = cmd
+        return cmds, cmddict
 
-		return cmds, cmddict
+    def __call__(self, args):
+        self.cmds = []
+        self.cmddict = {}
 
+        # We'll read options -before- config, since options may
+        # affect where we find configs.
 
-	def __call__(self, args):
-		self.cmds = []
-		self.cmddict = {}
+        passargs = []
+        opts = []
+        while args:
+            try:
+                opts, args = getopt.getopt(args, 'h', ['help', 'nolocal', 'full'])
+                break
+            except getopt.GetoptError, e:
+                # Unknown options may be options for the subcommand.
+                # Reinsert them to the args list by saving in passargs.
+                passargs += ['--' + e.opt]
+                args = args[1:]
 
-		# We'll read options -before- config, since options may
-		# affect where we find configs.
+        args = passargs + args
 
-		passargs = []
-		opts = []
-		while args:
-			try:
-				opts, args = getopt.getopt(args, 'h', ['help', 'nolocal', 'full'])
-				break
-			except getopt.GetoptError, e:
-				# Unknown options may be options for the subcommand.
-				# Reinsert them to the args list by saving in passargs.
-				passargs += ['--' + e.opt]
-				args = args[1:]
+        # In particular we want to check for this option. Other
+        # options can/should be handled later.
+        if '--nolocal' in [x[0] for x in opts]:
+            self.libraries = [x for x in self.libraries if not x.startswith('~/')]
 
-		args = passargs + args
+        # Add libraries paths to python search path
+        pylib = 'python%d.%d/site-packages' % \
+                (sys.version_info[0], sys.version_info[1])
+        sys.path = [os.path.join(_, pylib) for _ in Libraries] + sys.path
 
-		# In particular we want to check for this option. Other
-		# options can/should be handled later.
-		if '--nolocal' in [x[0] for x in opts]:
-			self.libraries = [x for x in self.libraries if not x.startswith('~/')]
+        self.excludes = [os.path.join(x, 'exclude') for x in self.libraries]
+        self.exposes = [os.path.join(x, 'expose') for x in self.libraries]
+        self.extensions = [os.path.join(x, 'extensions') for x in self.libraries]
+        self.configs = [os.path.join(x, 'config.ini') for x in self.libraries]
 
-		# Add libraries paths to python search path
-		pylib = 'python%d.%d/site-packages' % \
-		        (sys.version_info[0], sys.version_info[1])
-		sys.path = [os.path.join(_, pylib) for _ in Libraries] + sys.path
+        user = pwd.getpwuid(os.getuid())
+        defaults = {
+            'user': os.environ.get('USER', user.pw_name),
+            'home': os.environ.get('HOME', user.pw_dir),
+        }
+        self.config = ConnectConfig(defaults)
+        fp = StringIO.StringIO(DefaultConfig)
+        self.config.readfp(fp)
+        fp.close()
 
-		self.excludes = [os.path.join(x, 'exclude') for x in self.libraries]
-		self.exposes = [os.path.join(x, 'expose') for x in self.libraries]
-		self.extensions = [os.path.join(x, 'extensions') for x in self.libraries]
-		self.configs = [os.path.join(x, 'config.ini') for x in self.libraries]
+        # Read all possible configuration files
+        for path in self.configs:
+            self.config.read(os.path.expanduser(path))
 
-		user = pwd.getpwuid(os.getuid())
-		defaults = {
-			'user': os.environ.get('USER', user.pw_name),
-			'home': os.environ.get('HOME', user.pw_dir),
-		}
-		self.config = ConnectConfig(defaults)
-		fp = StringIO.StringIO(DefaultConfig)
-		self.config.readfp(fp)
-		fp.close()
+        # Search for config inclusions, recursively
+        self.config.include('include', recurse=True)
 
-		# Read all possible configuration files
-		for path in self.configs:
-			self.config.read(os.path.expanduser(path))
+        self.cmds, self.cmddict = self.discovercommands()
+        self.cmds.sort(lambda a, b: cmp(a.name, b.name))
 
-		# Search for config inclusions, recursively
-		self.config.include('include', recurse=True)
+        # If connect.client = true, we have a very restricted subset
+        # of functionality.  Use of the 'client' subcommand is implied,
+        # whatever other subcommands are installed.
+        #
+        # --full allows us to escape this implication and use the full
+        # connect command.  It is not documented for public use.
+        if self.config.getboolean('connect', 'client'):
+            if (not args or args[0] != 'client') and '--full' not in [x[0] for x in opts]:
+                nopts = []
+                for opt, arg in opts:
+                    # move help to client
+                    if opt in ('-h', '--help'):
+                        args = ['--help'] + args
+                    else:
+                        nopts += (opt, arg)
+                opts = nopts
+                args = ['client'] + args
 
-		self.cmds, self.cmddict = self.discovercommands()
-		self.cmds.sort(lambda a, b: cmp(a.name, b.name))
+        # Check usage
+        if not args:
+            return self.usage()
 
-		# If connect.client = true, we have a very restricted subset
-		# of functionality.  Use of the 'client' subcommand is implied,
-		# whatever other subcommands are installed.
-		#
-		# --full allows us to escape this implication and use the full
-		# connect command.  It is not documented for public use.
-		if self.config.getboolean('connect', 'client'):
-			if (not args or args[0] != 'client') and '--full' not in [x[0] for x in opts]:
-				nopts = []
-				for opt, arg in opts:
-					# move help to client
-					if opt in ('-h', '--help'):
-						args = ['--help'] + args
-					else:
-						nopts += (opt, arg)
-				opts = nopts
-				args = ['client'] + args
+        # Resume looking at global options
+        for opt, arg in opts:
+            if opt in ('-h', '--help'):
+                self.usage(*args)
+                return 2
 
-		# Check usage
-		if not args:
-			return self.usage()
+        # Find and execute subcommand
+        subcmd = args.pop(0)
+        if subcmd not in self.cmddict:
+            self.error('unknown command: %s' % subcmd)
+            return 2
 
-		# Resume looking at global options
-		for opt, arg in opts:
-			if opt in ('-h', '--help'):
-				self.usage(*args)
-				return 2
-
-		# Find and execute subcommand
-		subcmd = args.pop(0)
-		if subcmd not in self.cmddict:
-			self.error('unknown command: %s' % subcmd)
-			return 2
-
-		return self.cmddict[subcmd](*args)
+        return self.cmddict[subcmd](*args)
 
 
 if __name__ == '__main__':
-	try:
-		main = Main()
-		sys.exit(main(sys.argv[1:]))
-	except KeyboardInterrupt:
-		print >>sys.stderr, '\ninterrupt'
+    try:
+        main = Main()
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        print >> sys.stderr, '\ninterrupt'

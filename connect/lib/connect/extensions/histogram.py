@@ -44,112 +44,116 @@ import re
 
 domainmap = []
 for line in DOMAINMAP.strip().split('\n'):
-	if '#' in line:
-		line = line[:line.find('#')]
-	if line == '':
-		continue
-	rx, site, mapto = [x.strip() for x in line.split()]
-	rx = re.compile(rx, re.I)
-	domainmap.append((rx, site, mapto))
+    if '#' in line:
+        line = line[:line.find('#')]
+    if line == '':
+        continue
+    rx, site, mapto = [x.strip() for x in line.split()]
+    rx = re.compile(rx, re.I)
+    domainmap.append((rx, site, mapto))
 
 
 def whoami():
-	uid = 0
+    uid = 0
 
-	while uid == 0:
-		# Find the user via uid, unless it's root.
-		uid = os.getuid()
-		if uid > 0:
-			break
+    while uid == 0:
+        # Find the user via uid, unless it's root.
+        uid = os.getuid()
+        if uid > 0:
+            break
 
-		# Find the current user by getting the owner of the terminal.
-		import pwd
-		s = os.fstat(sys.stdin.fileno())
-		uid = s.st_uid
-		if uid > 0:
-			break
+        # Find the current user by getting the owner of the terminal.
+        import pwd
+        s = os.fstat(sys.stdin.fileno())
+        uid = s.st_uid
+        if uid > 0:
+            break
 
-		# Any other options?  If not, give up.
-		break
+        # Any other options?  If not, give up.
+        break
 
-	import pwd
-	pw = pwd.getpwuid(uid)
-	return pw.pw_name
+    import pwd
+    pw = pwd.getpwuid(uid)
+    return pw.pw_name
+
 
 def mapdomain(domain, site):
-	for rx, site, mapto in domainmap:
-		m = rx.match(domain)
-		if m:
-			return rx.sub(mapto, domain)
-	return domain
+    for rx, site, mapto in domainmap:
+        m = rx.match(domain)
+        if m:
+            return rx.sub(mapto, domain)
+    return domain
+
 
 def last_cluster(user):
-	# XXX wish I could do this via bindings
-	iter = xsh('condor_history %s' % user)
-	junk = iter.next()
-	try:
-		line = iter.next()
-	except StopIteration:
-		# no history
-		return None
-	w = line.split()
-	return w[0].split('.')[0]
+    # XXX wish I could do this via bindings
+    iter = xsh('condor_history %s' % user)
+    junk = iter.next()
+    try:
+        line = iter.next()
+    except StopIteration:
+        # no history
+        return None
+    w = line.split()
+    return w[0].split('.')[0]
+
 
 def usage():
-	p = os.path.basename(sys.argv[0])
-	yield '@ [-l | --last] [user]'
+    p = os.path.basename(sys.argv[0])
+    yield '@ [-l | --last] [user]'
+
 
 def run(*args):
-	try:
-		opts, args = getopt.getopt(args, 'l', ['last'])
-	except getopt.GetoptError, e:
-		print >>sys.stderr, str(e)
-		return usage()
+    try:
+        opts, args = getopt.getopt(args, 'l', ['last'])
+    except getopt.GetoptError, e:
+        print >> sys.stderr, str(e)
+        return usage()
 
-	lastjob = False
-	for opt, arg in opts:
-		if opt in ('-l', '--last'):
-			lastjob = True
+    lastjob = False
+    for opt, arg in opts:
+        if opt in ('-l', '--last'):
+            lastjob = True
 
-	if args:
-		user = args[0]
-	else:
-		user = whoami()
+    if args:
+        user = args[0]
+    else:
+        user = whoami()
 
+    if lastjob:
+        cluster = last_cluster(user)
+        if cluster is None:
+            print 'No recent jobs to report on.'
+            return 10
 
-	if lastjob:
-		cluster = last_cluster(user)
-		if cluster is None:
-			print 'No recent jobs to report on.'
-			return 10
-		def source():
-			cmd = "condor_history -format '%s\\n' LastRemoteHost " + str(cluster)
-			for line in xsh(cmd):
-				resource = line.split()[-1]
-				yield resource
+        def source():
+            cmd = "condor_history -format '%s\\n' LastRemoteHost " + str(cluster)
+            for line in xsh(cmd):
+                resource = line.split()[-1]
+                yield resource
 
-	else:
-		def source():
-			cmd = 'condor_q -run %s' % user
-			for line in xsh(cmd):
-				line = line.strip()
-				if 'ID' in line:
-					continue
-				if 'Submitter' in line:
-					continue
-				if line == '':
-					continue
-				resource = line.split()[-1]
-				yield resource
+    else:
+        def source():
+            cmd = 'condor_q -run %s' % user
+            for line in xsh(cmd):
+                line = line.strip()
+                if 'ID' in line:
+                    continue
+                if 'Submitter' in line:
+                    continue
+                if line == '':
+                    continue
+                resource = line.split()[-1]
+                yield resource
 
-	brand = config.get('connect', 'brand')
-	distr = os.popen('distribution --color --char=pb', 'w')
-	for resource in source():
-		if '@' in resource:
-			slot, host = resource.strip().rsplit('@', 1)
-		else:
-			slot = ''
-			host = resource
-		domain = mapdomain(host, brand)
-		distr.write(domain + '\n')
-	distr.close()
+    brand = config.get('connect', 'brand')
+    distr = os.popen('distribution --color --char=pb', 'w')
+    for resource in source():
+        if '@' in resource:
+            slot, host = resource.strip().rsplit('@', 1)
+        else:
+            slot = ''
+            host = resource
+        domain = mapdomain(host, brand)
+        distr.write(domain + '\n')
+    distr.close()
