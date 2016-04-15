@@ -1627,9 +1627,14 @@ class main(object):
         pubfile = keyfile + '.pub'
 
         if os.path.exists(keyfile) and os.path.exists(pubfile) and not overwrite:
-            self.notice('You already have a setup key. (You may wish to run')
-            self.notice('"%s setup --replace-keys" .)', self.local)
-            return 20
+            self.notice("You already have a setup key. \n")
+            response = raw_input('Replace existing key [y/N]?  ')
+            if response.lower() != 'y':
+                # overwrite gets set to true below so just
+                # need to continue
+                self.notice('Exiting without replacing keys.')
+                return 20
+
 
         # If either pubfile or keyfile exists, it's missing its partner;
         # setting overwrite will fix it.  And if neither is present, overwrite
