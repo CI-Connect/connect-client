@@ -8,7 +8,7 @@
 #   several shell layers.
 
 
-import ConfigParser
+import configparser
 import errno
 import grp
 import inspect
@@ -602,7 +602,7 @@ def parse_submit(job, submitfile, options, readcmds=False):
     if readcmds:
         try:
             job.parse(submitfile)
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.ENOENT:
                 job.error('cannot read submit file "%s"' % submitfile)
                 return 11
@@ -663,7 +663,7 @@ def parse_submit(job, submitfile, options, readcmds=False):
 def main(args):
     lock = True
 
-    cfg = ConfigParser.RawConfigParser()
+    cfg = configparser.RawConfigParser()
     cfg.read(ConfigFile)
 
     job = Job(cfg, debug=False)
@@ -759,7 +759,7 @@ def main(args):
         return parse_submit(job, submitfile, options, readcmds=readcmds)
     except KeyboardInterrupt:
         job.cleanup()
-        print '\nbreak'
+        print('\nbreak')
         return 1
     except:
         job.cleanup()
