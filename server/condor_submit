@@ -98,7 +98,7 @@ class Job(list):
 
     def addhook(self, name, cls, *args, **kwargs):
         if not inspect.isclass(cls):
-            raise ValueError, '%s is not a class' % str(cls)
+            raise ValueError('%s is not a class' % str(cls))
 
         kwargs['debug'] = self.debugmode
         hook = cls(self, *args, **kwargs)
@@ -132,7 +132,7 @@ class Job(list):
             self.addhook(opt, cls, *args)
 
     def resolveclass(self, desc):
-        if not ':' in desc:
+        if ':' not in desc:
             return eval(desc)
 
         path, cls = desc.split(':', 1)
@@ -388,13 +388,13 @@ class hook_x509(hook):
         '''Look for the proxy cert in the standard locations, or
         alternately in the location pointed to by $X509_USER_PROXY.'''
 
-        for file in (os.environ.get('X509_USER_PROXY'),
-                     '~/.globus/usercert.pem',
-                     '/tmp/x509up_u%d' % os.getuid()):
-            if file:
-                file = os.path.expanduser(file)
-                if os.path.isfile(file):
-                    return file
+        for filename in (os.environ.get('X509_USER_PROXY'),
+                         '~/.globus/usercert.pem',
+                         '/tmp/x509up_u%d' % os.getuid()):
+            if filename:
+                filename = os.path.expanduser(filename)
+                if os.path.isfile(filename):
+                    return filename
         return None
 
     def param(self, section, option, default):
@@ -545,11 +545,11 @@ class hook_project(hook):
         if '+projectname' in self.job:
             project = self.job['+projectname'][1]
 
-        for file in ProjectFiles:
-            file = os.path.expanduser(file)
+        for filename in ProjectFiles:
+            filename = os.path.expanduser(filename)
             if not project:
                 try:
-                    fp = open(file, 'r')
+                    fp = open(filename, 'r')
                     project = fp.readline().strip()
                     fp.close()
                 except:
@@ -627,7 +627,7 @@ def parse_submit(job, submitfile, options, readcmds=False):
         try:
             p.stdin.write(job.text)
             p.stdin.close()
-        except IOError, e:
+        except IOError:
             pass
 
         while True:
