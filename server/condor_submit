@@ -140,14 +140,14 @@ class Job(list):
         if '/' in path:
             # filesystem location
             fp = open(path)
-            exec fp in ns
+            exec(fp, ns)
             return ns[cls]
 
         elif '.' in path:
-            for dir in sys.path:
+            for directory in sys.path:
                 try:
-                    fp = open(os.path.join(dir, path))
-                    exec fp in ns
+                    fp = open(os.path.join(directory, path))
+                    exec(fp, ns)
                     return ns[cls]
                 except IOError:
                     pass
