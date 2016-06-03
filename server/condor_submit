@@ -625,7 +625,7 @@ def parse_submit(job, submitfile, options, readcmds=False):
     p = job.submit(options)
     if p:
         try:
-            p.stdin.write(job.text)
+            p.stdin.write(job.text.encode('utf-8'))
             p.stdin.close()
         except IOError:
             pass
