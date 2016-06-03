@@ -640,7 +640,7 @@ def parse_submit(job, submitfile, options, readcmds=False):
             # data = data.replace(os.path.basename(CondorSubmit), os.path.basename(sys.argv[0]))
             if not data:
                 break
-            sys.stdout.write(data)
+            sys.stdout.write(data.decode('utf-8'))
             sys.stdout.flush()
             job.isubmit(data)
         rc = p.wait()
