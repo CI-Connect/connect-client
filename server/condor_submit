@@ -32,7 +32,7 @@ SupplementalClassAds = [
 
 
 class Job(list):
-    CondorSubmit = '/usr/bin/.condor_submit'
+    CondorSubmit = '/usr/bin/condor_submit'
 
     def __init__(self, cfg, *args, **kwargs):
         self.cfg = cfg
