@@ -217,11 +217,11 @@ class ClientSession(object):
             self.ssh.connect(self.hostname, username=self.user, port=self.port,
                              password=self.password, key_filename=self.keyfile)
             return None
-        except paramiko.AuthenticationException, e:
+        except paramiko.AuthenticationException as e:
             return e
-        except socket.gaierror, e:
+        except socket.gaierror as e:
             raise GeneralException, 'cannot connect to %s: %s' % (self.hostname, e.args[1])
-        except IOError, e:
+        except IOError as e:
             if e.errno == errno.ENOENT:
                 raise SSHError, 'No key file available.'
             raise
@@ -364,7 +364,7 @@ class ClientSession(object):
                     if events[fd]() == 0:
                         ready = False
                         break
-            except select.error, e:
+            except select.error as e:
                 if e.args[0] != errno.EINTR:
                     raise
 
@@ -451,7 +451,7 @@ class ClientSession(object):
                         if len(buf) == 0:
                             break
                         channel.send(buf)
-                except select.error, e:
+                except select.error as e:
                     if e.args[0] != errno.EINTR:
                         raise
 
@@ -664,7 +664,7 @@ class main(object):
                 lopts += ['help', 'debug']
                 try:
                     nopts, nargs = getopt.getopt(args, sopts, lopts)
-                except getopt.GetoptError, e:
+                except getopt.GetoptError as e:
                     self.error(e)
                     return 2
                 for opt, arg in nopts:
@@ -876,7 +876,7 @@ class main(object):
                                  keyfile=self.keyfile(),
                                  repo=os.path.basename(os.getcwd()),
                                  password='nopassword', debug=self.debug)
-        except SSHError, e:
+        except SSHError as e:
             e.bubble(
                 'You have no access to %s.' % self.profile.server,
             )
@@ -947,17 +947,17 @@ class main(object):
     def push(self, channel, verbose=False, noop=False, timings=False):
         mdcache = set()
 
-        def awfulrecursivemkdir(sftp, dir):
-            if dir in mdcache:
+        def awfulrecursivemkdir(sftp, directory):
+            if directory in mdcache:
                 return
             rel = '.'
-            for part in dir.split('/'):
+            for part in directory.split('/'):
                 rel = os.path.join(rel, part)
                 try:
                     rs = sftp.stat(rel)
                 except:
                     sftp.mkdir(rel)
-            mdcache.add(dir)
+            mdcache.add(directory)
 
         if verbose:
             wanted = self.notice
@@ -1024,7 +1024,10 @@ class main(object):
 
                 else:
                     channel.pcmd('want %s mtime=%d size=%d mode=0%04o' % (
-                    self.fnencode(fn), s.st_mtime, s.st_size, s.st_mode & 07777))
+                        self.fnencode(fn),
+                        s.st_mtime,
+                        s.st_size,
+                        s.st_mode & 07777))
                     args = channel.pgetline(split=True)
                     rcode = int(args.pop(0))
 
@@ -1041,7 +1044,7 @@ class main(object):
                                 cumulative += time.time() - _
                                 size += s.st_size
                             sent += 1
-                        except Exception, e:
+                        except Exception as e:
                             error('error sending %s: %s', rfn, str(e))
                             errors += 1
 
@@ -1120,10 +1123,10 @@ class main(object):
                 # request file
                 # rfn = os.path.join(self.repo, fn)
                 rfn = fn
-                dir = os.path.dirname(fn)
+                directory = os.path.dirname(fn)
                 wanted('fetching %s...', rfn)
                 if not noop:
-                    self.ensure_dir(dir)
+                    self.ensure_dir(directory)
                     _ = time.time()
                     sftp.get(rfn, fn)
                     cumulative += time.time() - _
@@ -1224,16 +1227,16 @@ class main(object):
         yield '    -r|--remote directory      set connect server directory name'
         yield '    -v|--verbose               show additional information'
 
-    def saveconf(self, config, file=None):
-        if file:
-            file = os.path.expanduser(file)
-            dir = os.path.dirname(file)
+    def saveconf(self, config, filename=None):
+        if filename:
+            filename = os.path.expanduser(filename)
+            directory = os.path.dirname(filename)
         else:
-            dir = os.path.join(self.repodir, '.connect')
-            file = os.path.join(dir, 'config.ini')
-        self.ensure_dir(dir)
+            directory = os.path.join(self.repodir, '.connect')
+            filename = os.path.join(directory, 'config.ini')
+        self.ensure_dir(directory)
         try:
-            fp = open(file, 'w')
+            fp = open(filename, 'w')
             config.write(fp)
             fp.close()
             return True
@@ -1246,7 +1249,7 @@ class main(object):
             self.opts, self.args = getopt.getopt(args, 'u:ds:r:vh',
                                                  ['server-mode', 'user=', 'debug', 'server=',
                                                   'show-secret', 'repo=', 'verbose', 'help'])
-        except getopt.GetoptError, e:
+        except getopt.GetoptError as e:
             self.error(e)
             return 2
 
@@ -1334,9 +1337,9 @@ class main(object):
 
         try:
             rc = driver(self.opts, self.args)
-        except SSHError, e:
+        except SSHError as e:
             e.bubble('Did you run "%s setup"?' % self.local)
-        except UsageError, e:
+        except UsageError as e:
             e.bubble('usage: %s %s %s' % (self.local, subcmd, driver.__doc__))
 
         # save final user profile
@@ -1387,10 +1390,10 @@ class main(object):
         self.chdir(self.repodir)
 
     def checkjuid(self, create=False):
-        dir = os.path.join(self.repodir, '.connect')
-        file = os.path.join(dir, 'juid')
+        directory = os.path.join(self.repodir, '.connect')
+        filename = os.path.join(directory, 'juid')
         try:
-            fp = open(file, 'r')
+            fp = open(filename, 'r')
             self.juid = fp.read().strip()
             fp.close()
             return self.juid
@@ -1398,8 +1401,8 @@ class main(object):
             pass
 
         if create:
-            self.ensure_dir(dir)
-            fp = open(file, 'w')
+            self.ensure_dir(directory)
+            fp = open(filename, 'w')
             self.juid = self.mkjuid()
             fp.write(self.juid)
             fp.close()
@@ -1410,15 +1413,15 @@ class main(object):
 
     def _aliascache(self, *args):
         fp = None
-        dir = os.path.expanduser('~/.connect/aliases')
-        file = os.path.join(dir, self.profile.server)
+        directory = os.path.expanduser('~/.connect/aliases')
+        filename = os.path.join(directory, self.profile.server)
 
         if args:
             try:
                 # store aliases
                 aliases, = args
-                self.ensure_dir(dir)
-                fp = open(file, 'w')
+                self.ensure_dir(directory)
+                fp = open(filename, 'w')
                 json.dump(aliases, fp)
                 fp.close()
             except:
@@ -1427,12 +1430,12 @@ class main(object):
         else:
             try:
                 # check cache age
-                s = os.stat(file)
+                s = os.stat(filename)
                 if s.st_mtime - time.time() > 86400:
                     self.debug('expiring the server alias cache')
                     raise Exception, 'cache too old'
                 # retrieve aliases
-                fp = open(file, 'r')
+                fp = open(filename, 'r')
                 aliases = json.load(fp)
                 fp.close()
             except:
@@ -1516,7 +1519,7 @@ class main(object):
             geodata = json.loads(data)
             geodata = ' | '.join(["%s=%s" % (k, geodata[k]) for k in sorted(geodata.keys())])
             ads['ConnectClientGeoData'] = geodata
-        except Exception, e:
+        except Exception as e:
             ads['ConnectClientGeoData'] = 'error: ' + str(e)
 
         return ads
@@ -1635,7 +1638,6 @@ class main(object):
                 self.notice('Exiting without replacing keys.')
                 return 20
 
-
         # If either pubfile or keyfile exists, it's missing its partner;
         # setting overwrite will fix it.  And if neither is present, overwrite
         # does no harm.
@@ -1646,7 +1648,7 @@ class main(object):
         if not pconfig.has_section('client'):
             pconfig.add_section('client')
         pconfig.set('client', 'lastprofile', self.profile.name)
-        self.saveconf(pconfig, file='~/.connect/client.ini')
+        self.saveconf(pconfig, filename='~/.connect/client.ini')
 
         # expressly do not use a keyfile (prompt instead)
         try:
@@ -1654,7 +1656,7 @@ class main(object):
                                     user=self.profile.user, keyfile=None,
                                     repo=os.path.basename(os.getcwd()),
                                     debug=self.debug)
-        except SSHError, e:
+        except SSHError as e:
             # Not sure of a better way to detect this
             if e.args[0] == 'Client authentication failed':
                 self.error('Incorrect password for %s' % self.profile.join())
@@ -1681,13 +1683,18 @@ class main(object):
         try:
             self.savefile(keyfile, key, overwrite=overwrite)
             self.savefile(pubfile, pub, overwrite=overwrite)
-        except IOError, e:
+        except IOError as e:
             self.error(e)
             self.error('(You may wish to run "%s setup --replace-keys" .)', self.local)
             return 20
 
         self.notice('Ongoing client access has been authorized at %s.',
                     self.profile.server)
+        self.notice("Testing access: ")
+
+        if not self.c_test(opts, args):
+            self.notice("Access to server not working, please run "
+                        "\"{0} setup --replace-keys\"".format(self.local))
         self.notice('Use "%s test" to verify access.', self.local)
         return 0
 
@@ -1855,22 +1862,22 @@ class main(object):
                 self.sreply(codes.OK, os.getcwd())
 
             elif cmd == 'dir':
-                dir = cleanfn(args.pop(0))
+                directory = cleanfn(args.pop(0))
                 attrs = self.attrs(args)
                 self.chdir(self.basedir)
                 try:
-                    self.chdir(dir)
+                    self.chdir(directory)
                     self.sreply(codes.OK, dir, 'ok')
                 except:
                     if 'create' in attrs and attrs['create'] == 'yes':
                         try:
-                            os.makedirs(dir)
-                            self.chdir(dir)
-                            self.sreply(codes.OK, dir, 'created')
+                            os.makedirs(directory)
+                            self.chdir(directory)
+                            self.sreply(codes.OK, directory, 'created')
                         except:
-                            self.sreply(codes.FAILED, dir, 'cannot create')
+                            self.sreply(codes.FAILED, directory, 'cannot create')
                     else:
-                        self.sreply(codes.NOTPRESENT, dir, 'not present')
+                        self.sreply(codes.NOTPRESENT, directory, 'not present')
 
             elif cmd == 'multitest':
                 endtag = 'end'
@@ -1891,8 +1898,8 @@ class main(object):
 
                 self.sreply(codes.MULTILINE)
                 for root, dirs, files in os.walk('.'):
-                    for file in files:
-                        fn = os.path.join(root, file)
+                    for filename in files:
+                        fn = os.path.join(root, filename)
                         fn = cleanfn(fn)
                         s = os.lstat(fn)
                         if not stat.S_ISREG(s.st_mode):
@@ -1916,7 +1923,7 @@ class main(object):
                 try:
                     os.utime(recvfile, (mtime, mtime))
                     self.sreply(codes.OK, '')
-                except OSError, e:
+                except OSError as e:
                     self.sreply(codes.FAILED, str(e))
 
             else:
@@ -2079,12 +2086,12 @@ class main(object):
         if mode == 'pull' or mode == 'sync':
             try:
                 self.pull(channel, verbose=verbose, noop=noop, timings=timings)
-            except GeneralException, e:
+            except GeneralException as e:
                 self.error(e)
         if mode == 'pull':
             try:
                 channel.exchange('quit', codes.OK)
-            except GeneralException, e:
+            except GeneralException as e:
                 self.error(e)
         if mode == 'push' or mode == 'sync':
             self.push(channel, verbose=verbose, noop=noop, timings=timings)
@@ -2247,8 +2254,8 @@ class main(object):
             nfiles = 0
             for root, dirs, files in os.walk(path):
                 nfiles += len(files)
-                for file in files:
-                    s = os.stat(os.path.join(root, file))
+                for filename in files:
+                    s = os.stat(os.path.join(root, filename))
                     size += s.st_size
             return nfiles, size
 
@@ -2288,7 +2295,7 @@ def run(*args, **kwargs):
         print '\nbreak'
         sys.exit(1)
 
-    except Exception, e:
+    except Exception as e:
         if isinstance(e, IOError) and e.errno == errno.EPIPE:
             sys.exit(0)
 
@@ -2312,7 +2319,7 @@ try:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         import paramiko
-except ImportError, e:
+except ImportError as e:
     paramiko = e
 
 if __name__ == '__main__':
