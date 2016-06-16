@@ -7,8 +7,12 @@
 # * add a json interface for connect client to cleanly pass options over
 #   several shell layers.
 
+# for python 3 compatibility
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
-import configparser
 import errno
 import grp
 import inspect
@@ -19,7 +23,7 @@ import subprocess
 import sys
 import time
 
-__version__ = '2.0'
+__version__ = '2.1'
 
 ProjectFiles = ('~/.osg_default_project',
                 '~/.default_project',
