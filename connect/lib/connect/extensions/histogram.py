@@ -67,7 +67,6 @@ def whoami():
             break
 
         # Find the current user by getting the owner of the terminal.
-        import pwd
         s = os.fstat(sys.stdin.fileno())
         uid = s.st_uid
         if uid > 0:
@@ -103,7 +102,7 @@ def last_cluster(user):
 
 
 def usage():
-    p = os.path.basename(sys.argv[0])
+    # p = os.path.basename(sys.argv[0])
     yield '@ [-l | --last] [user]'
 
 
