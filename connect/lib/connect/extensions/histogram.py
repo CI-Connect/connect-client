@@ -1,8 +1,13 @@
-#!python
+#!/usr/bin/env python
+import getopt
+import os
+import re
 
 
 # We need to extend this to collect EITHER LastRemoteHost
 # or MATCH_EXP_JOBGLIDEIN_ResourceName and match in the same table.
+import sys
+
 DOMAINMAP = '''
 .*\?{8}                          *       [glidein]
 qgp\d{2}                         *       duke/physics
@@ -40,7 +45,6 @@ r\w+-s\d+.ufhpc                  *       ufhpc            # e.g. r18a-s31.ufhpc
 .*\.([^.]*\.[^.]*)$              *       \\1
 '''
 
-import re
 
 domainmap = []
 for line in DOMAINMAP.strip().split('\n'):
