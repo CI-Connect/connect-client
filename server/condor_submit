@@ -166,7 +166,8 @@ class Job(list):
         self.text = '\n'.join(list(self.lines()))
 
     def parse(self, file):
-        '''The job class is a subclass of list, so that we can
+        """
+        The job class is a subclass of list, so that we can
         interact with it using list primitives.  The members of
         the list are constructed here by parsing the submit file.
         Each list value is a 2-tuple.
@@ -176,7 +177,7 @@ class Job(list):
         the list value is the pair of the left and right sides:
         (key, value).  Otherwise, the list value is a tuple of the
         complete line and None: (textline, None).
-        '''
+        """
 
         if file:
             fp = open(file, 'r')
@@ -736,7 +737,7 @@ def main(args):
 
         if not matched:
             nargs.append(arg)
-
+    job.addhook('02projectname', hook_project)
     job.sethooks()
 
     # Call options hooks first thing after option parsing
