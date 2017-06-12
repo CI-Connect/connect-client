@@ -237,7 +237,7 @@ class Job(list):
 
     def __setitem__(self, key, value):
         key = key.lower()
-        for i in xrange(len(self)):
+        for i in range(len(self)):
             k, v = self[i]
             if key.lower() == k.lower():
                 self[i][k] = (k, value)
@@ -481,6 +481,13 @@ class hook_project(hook):
         self.mygroups = self.groups(self.user)
         self.mygroups.sort()
 
+    def get_blacklist(self):
+        # blacklist should just be in the ini file
+        fp = open('/etc/ciconnect/project_blacklist')
+        blacklist = [line.strip() for line in fp if not line.startswith('#')]
+        fp.close()
+        return blacklist
+
     def postparse(self, *args, **kwargs):
         needproject = True
 
@@ -506,12 +513,8 @@ class hook_project(hook):
             return 1
 
         if project:
-            if self.cfg.has_section('project-replacements'):
-                for left, right in self.cfg.items('project-replacements'):
-                    off = project.lower().find(left.lower())
-                    if off > -1:
-                        project = project[:off] + right + project[off + len(left):]
-
+            if project not in self.get_blacklist() and "." not in project:
+                project = "osg." + project
             if project not in self.mygroups:
                 self.job.msg('')
                 self.job.msg('Sorry, the project you specified (%s) is not valid' % project)
@@ -519,6 +522,12 @@ class hook_project(hook):
                 self.job.msg('')
                 self.showprojects()
                 return 1
+            if self.cfg.has_section('project-replacements'):
+                for left, right in self.cfg.items('project-replacements'):
+                    off = project.lower().find(left.lower())
+                    if off > -1:
+                        project = project[:off] + right + project[off + len(left):]
+
 
         self.job.addad('ProjectName', project)
 
@@ -531,9 +540,7 @@ class hook_project(hook):
         groups = []
 
         # blacklist should just be in the ini file
-        fp = open('/etc/ciconnect/project_blacklist')
-        blacklist = [line.strip() for line in fp if not line.startswith('#')]
-        fp.close()
+        blacklist = self.get_blacklist()
 
         for group in grp.getgrall():
             name = group.gr_name.replace('@', '')
