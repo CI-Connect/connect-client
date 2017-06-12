@@ -575,25 +575,7 @@ class hook_project(hook):
             self.job.msg("	 " + group)
 
     def acctgroup(self, project):
-        # acctgroup = 'group_other.' + self.user.pw_name
-        acctgroup = 'group_opportunistic.' + self.user.pw_name
-
-        # xsede logics:
-        # if grep -i "^$PROJECT:" /etc/osg/xsede-projects-low-priority >/dev/null 2>&1; then
-        #	#acctgroup="group_xsede.low.$me"
-        #	acctgroup="group_opportunistic.$me"
-        # elif grep -i "^$PROJECT:" /etc/osg/xsede-projects-high-priority >/dev/null 2>&1; then
-        #	acctgroup="group_xsede.high.$me"
-        # elif [ "x$XSEDE_PROJECT" = "xTG-TRA100004" ];then
-        #	# special rule for TG-TRA100004 - rynge 8/12/13
-        #	acctgroup="group_other.$me"
-        # fi
-
-        if project == 'OSG-Staff':
-            acctgroup = 'group_xsede.high.' + self.user.pw_name
-
-        # Accouting group OVERRIDE required by MWT2
-        acctgroup = 'group_opport.vo.uc3.' + self.user.pw_name
+        acctgroup = 'group_opportunistic.' + project + '.' + self.user.pw_name
         return acctgroup
 
 
