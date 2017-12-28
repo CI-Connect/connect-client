@@ -107,7 +107,7 @@ def error(*args, **kwargs):
     fp = sys.stdout
     if 'fp' in kwargs:
         fp = kwargs['fp']
-    print >> fp, os.path.basename(sys.argv[0]) + ': ' + ' '.join(args)
+    fp.write(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args) + "\n")
 
 
 def main(*args):
@@ -115,7 +115,7 @@ def main(*args):
 
     try:
         opts, args = getopt.getopt(args, 'j:', ['job'])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         return error(str(e))
 
     for opt, arg in opts:
@@ -139,5 +139,5 @@ if __name__ == '__main__':
     try:
         sys.exit(main(*sys.argv[1:]))
     except KeyboardInterrupt:
-        print '\ninterrupt'
+        sys.stdout.write("\ninterrupt\n")
         sys.exit(1)

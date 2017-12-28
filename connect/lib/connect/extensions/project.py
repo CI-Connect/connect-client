@@ -133,7 +133,7 @@ def error(*args, **kwargs):
     fp = sys.stdout
     if 'fp' in kwargs:
         fp = kwargs['fp']
-    print >> fp, os.path.basename(sys.argv[0]) + ': ' + ' '.join(args)
+    fp.write("{0}".format(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args)))
 
 
 def main(*args):
@@ -141,7 +141,7 @@ def main(*args):
 
     try:
         opts, args = getopt.getopt(args, 'j:', ['job'])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         return error(str(e))
 
     for opt, arg in opts:
@@ -162,7 +162,7 @@ def main(*args):
     blacklist = [x.strip() for x in fp.read().strip().split('\n')]
     fp.close()
     projs = [proj for proj in projs if proj not in blacklist]
-    projs.sort(lambda a, b: cmp(a.lower(), b.lower()))
+    projs.sort(key=lambda x: x.lower())
 
     if job:
         index, name = curses.wrapper(app, user, projs, prompt='Select a project for this job to run under.')
@@ -196,7 +196,7 @@ def main(*args):
     # for condor_submit wrapper
     cfgdir = os.path.expanduser('~%s/.ciconnect' % user.pw_name)
     try:
-        os.makedirs(cfgdir, mode=0700)
+        os.makedirs(cfgdir, mode=0o0700)
         chown(cfgdir)
     except:
         pass
@@ -229,5 +229,5 @@ if __name__ == '__main__':
     try:
         sys.exit(main(*sys.argv[1:]))
     except KeyboardInterrupt:
-        print '\ninterrupt'
+        sys.stdout.write('\ninterrupt')
         sys.exit(1)

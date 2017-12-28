@@ -1,4 +1,5 @@
 import getopt
+import sys
 
 
 def usage():
@@ -18,7 +19,7 @@ def status(pool):
 def run(*args, **kwargs):
     try:
         opts, args = getopt.getopt(args, '?hf', ['help', 'full'])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         error(str(e))
 
     full = False
@@ -43,8 +44,8 @@ def run(*args, **kwargs):
                 continue
             map[key.strip()] = value.strip()
 
-    print 'Summary of available resources for all HTCondor pools:'
-    print '    Total  Owner  Claimed  Unclaimed  Matched  Preempting'
+    sys.stdout.write("Summary of available resources for all HTCondor pools:\n")
+    sys.stdout.write("    Total  Owner  Claimed  Unclaimed  Matched  Preempting\n")
     for pool in [None] + pools:
         if pool:
             name = pool
@@ -53,18 +54,18 @@ def run(*args, **kwargs):
 
         if name in map:
             name = map[name]
-        print '===', name, '==='
+        sys.stdout.write("==={0}===\n".format(name))
 
         if full:
             for line in status(pool):
-                print line
+                sys.stdout.write(line + "\n")
         else:
             for line in status(pool):
                 if 'Total' in line and 'Owner' not in line:
                     vals = [x.strip() for x in line.replace('Total', '').split()]
                     # as a list comprehension, vals is an iterator. Must
                     # convert to list.
-                    print '    %5.5s  %5.5s  %7.7s  %9.9s  %7.7s  %10.10s' % tuple(vals[:6])
+                    sys.stdout.write("    %5.5s  %5.5s  %7.7s  %9.9s  %7.7s  %10.10s\n" % tuple(vals[:6]))
 
 
 '''

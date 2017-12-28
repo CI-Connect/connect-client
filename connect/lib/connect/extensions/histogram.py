@@ -109,8 +109,8 @@ def usage():
 def run(*args):
     try:
         opts, args = getopt.getopt(args, 'l', ['last'])
-    except getopt.GetoptError, e:
-        print >> sys.stderr, str(e)
+    except getopt.GetoptError as e:
+        sys.stderr.write("{0}\n".format(str(e)))
         return usage()
 
     lastjob = False
@@ -126,7 +126,7 @@ def run(*args):
     if lastjob:
         cluster = last_cluster(user)
         if cluster is None:
-            print 'No recent jobs to report on.'
+            print('No recent jobs to report on.')
             return 10
 
         def source():
