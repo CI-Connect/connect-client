@@ -1,12 +1,20 @@
-#!/usr/bin/env @@python@@
+#!/usr/bin/python2
 
 import os
 import sys
 import string
-import ConfigParser
-import StringIO
 import getopt
 import pwd
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
+
+try:
+    import ConfigParser
+except ImportError:
+    import configparser as ConfigParser
 
 # Modules to preload into python plugins
 PluginModules = 'os sys getopt'.split()
@@ -101,8 +109,8 @@ class PluginProxy(object):
         agent = self.agent
         if agent:
             agent += ' '
-        print >> fp, ('%s %s%s:' % (self.arg0, agent, prefix)), \
-            ' '.join([str(x) for x in args])
+        fp.write('%s %s%s:' % (self.arg0, agent, prefix) +
+                 ' '.join([str(x) for x in args]))
 
     def help(self, *args):
         yield '@ ' + ' '.join(args)
@@ -230,8 +238,8 @@ class condortype(commandtype):
     def __call__(self, *args, **kwargs):
         try:
             os.execv(self.data, [self.data] + list(args))
-        except OSError, e:
-            raise ConnectException, 'cannot run %s: %s' % (self.data, str(e.errno))
+        except OSError as e:
+            raise ConnectException('cannot run %s: %s' % (self.data, str(e.errno)))
 
     def help(self):
         fp = os.popen(self.data + ' -h')
@@ -269,7 +277,7 @@ class pyexttype(commandtype):
             # !! this needs to be RawConfigParser - we do not want
             # !! to interpolate vars in this merge operation.
             tmp = ConfigParser.RawConfigParser()
-            fp = StringIO.StringIO(self.mod.defaults)
+            fp = StringIO(self.mod.defaults)
             tmp.readfp(fp)
             fp.close()
 
@@ -294,13 +302,13 @@ class pyexttype(commandtype):
         for name in self.mod.proxy.exports:
             try:
                 setattr(self.mod, name, getattr(self.mod.proxy, name))
-            except AttributeError, e:
+            except AttributeError as e:
                 pass
 
         for name in PluginModules:
             try:
                 setattr(self.mod, name, __import__(name))
-            except ImportError, e:
+            except ImportError as e:
                 setattr(self.mod, name, None)
 
         for name in PluginModulesAll:
@@ -428,10 +436,10 @@ class Main(object):
         self.libraries = Libraries
 
     def error(self, *args):
-        print >> sys.stderr, self.arg0 + ': ' + ' '.join([str(x) for x in args])
+        sys.stderr.write(self.arg0 + ': ' + ' '.join([str(x) for x in args]) + "\n")
 
     def usage(self, *args):
-        print >> sys.stderr, 'usage: %s <subcommand> [args]' % self.arg0
+        sys.stderr.write('usage: %s <subcommand> [args]' % self.arg0 + "\n")
 
         for cmd in [x for x in self.cmds if not x.name.startswith('.')]:
             if cmd.secret:
@@ -445,7 +453,7 @@ class Main(object):
                         '       %s %s %s' % (self.arg0, cmd.name, line[1:].strip())
 
         print
-        print 'See "%s help <subcommand>" for more details.' % self.arg0
+        sys.stdout.write("\nSee \"%s help <subcommand>\" for more details.\n" % self.arg0)
         return 2
 
     def secret(f, *args, **kwargs):
@@ -466,7 +474,7 @@ class Main(object):
         Show the connect configuration as Bourne shell statements.
         '''
         for line in self.config.toShell():
-            print line
+            sys.stdout.write(line + "\n")
         return 10
 
     @secret
@@ -593,7 +601,7 @@ class Main(object):
             try:
                 opts, args = getopt.getopt(args, 'h', ['help', 'nolocal', 'full'])
                 break
-            except getopt.GetoptError, e:
+            except getopt.GetoptError as e:
                 # Unknown options may be options for the subcommand.
                 # Reinsert them to the args list by saving in passargs.
                 passargs += ['--' + e.opt]
@@ -634,7 +642,7 @@ class Main(object):
         self.config.include('include', recurse=True)
 
         self.cmds, self.cmddict = self.discovercommands()
-        self.cmds.sort(lambda a, b: cmp(a.name, b.name))
+        self.cmds.sort(key=lambda x: x.name)
 
         # If connect.client = true, we have a very restricted subset
         # of functionality.  Use of the 'client' subcommand is implied,
@@ -678,4 +686,4 @@ if __name__ == '__main__':
         main = Main()
         sys.exit(main(sys.argv[1:]))
     except KeyboardInterrupt:
-        print >> sys.stderr, '\ninterrupt'
+        sys.stderr.write("\ninterrupt\n")
