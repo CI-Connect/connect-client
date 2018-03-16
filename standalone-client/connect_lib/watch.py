@@ -2,7 +2,6 @@
 
 import os
 import sys
-import string
 import curses
 import curses.panel
 import getopt
@@ -110,34 +109,14 @@ def error(*args, **kwargs):
     fp.write(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args) + "\n")
 
 
-def main(*args):
-    job = False
-
-    try:
-        opts, args = getopt.getopt(args, 'j:', ['job'])
-    except getopt.GetoptError as e:
-        return error(str(e))
-
-    for opt, arg in opts:
-        if opt == '--job':
-            job = True
-        elif opt == '-j':
-            if arg == 'ob':
-                job = True
-            else:
-                return error('option', '-j' + arg, 'not recognized')
-
-    index, name = curses.wrapper(app, os.environ['USER'])
-
+def watch():
+    curses.wrapper(app, os.environ['USER'])
     return 0
 
 
-# make this work as a 'connect' extension
-run = main
-
 if __name__ == '__main__':
     try:
-        sys.exit(main(*sys.argv[1:]))
+        sys.exit(watch())
     except KeyboardInterrupt:
         sys.stdout.write("\ninterrupt\n")
         sys.exit(1)

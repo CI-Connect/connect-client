@@ -10,10 +10,6 @@ import curses.panel
 import getopt
 
 
-def usage():
-    yield '@'
-
-
 # TODO: need a help keystroke
 
 class Menu(list):
@@ -76,8 +72,8 @@ class Menu(list):
                 break
             elif chr(key) in string.digits:
                 self.navigate(key - ord('0'), rel=-1)
-            elif chr(key) in string.letters:
-                for i in xrange(0, len(self)):
+            elif chr(key) in string.ascii_letters:
+                for i in range(0, len(self)):
                     if self[i][0].lower() >= chr(key).lower():
                         self.navigate(i, rel=0)
                         break
@@ -108,7 +104,8 @@ def projects(username):
 
 
 def app(scr, user, projs, prompt=None):
-    name = config.get('connect', 'name')
+    global CONFIG
+    name = CONFIG.get('connect', 'name')
 
     if prompt is None:
         prompt = 'Select a project to be your default %s project.' % name
@@ -136,75 +133,37 @@ def error(*args, **kwargs):
     fp.write("{0}".format(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args)))
 
 
-def main(*args):
-    job = False
+def update_project():
+    global CONFIG
 
-    try:
-        opts, args = getopt.getopt(args, 'j:', ['job'])
-    except getopt.GetoptError as e:
-        return error(str(e))
+    user, projs = projects(None)
 
-    for opt, arg in opts:
-        if opt == '--job':
-            job = True
-        elif opt == '-j':
-            if arg == 'ob':
-                job = True
-            else:
-                return error('option', '-j' + arg, 'not recognized')
-
-    if args:
-        user, projs = projects(args[0])
-    else:
-        user, projs = projects(None)
-
-    fp = open(config.get('connect', 'blacklist'), 'r')
+    fp = open(CONFIG.get('connect', 'blacklist'), 'r')
     blacklist = [x.strip() for x in fp.read().strip().split('\n')]
     fp.close()
     projs = [proj for proj in projs if proj not in blacklist]
     projs.sort(key=lambda x: x.lower())
 
-    if job:
-        index, name = curses.wrapper(app, user, projs, prompt='Select a project for this job to run under.')
-    else:
-        index, name = curses.wrapper(app, user, projs)
+    index, name = curses.wrapper(app, user, projs)
 
     if index is None:
         return 1
-
-    if job:
-        # write proj name to fd=9.  This is necessary because curses acts
-        # on stdout, so using another fd or a static file is the only way
-        # to capture the result from a shell.
-        #
-        # proj=$(connect project -j 9>&1)
-        #
-        fp = os.fdopen(9, 'w')
-        fp.write(name)
-        fp.close()
-        return 0
-
-    # Else update project files
-
-    # attempt chown
-    def chown(fn):
-        try:
-            os.chown(fn, user.pw_uid, user.pw_gid)
-        except:
-            pass
 
     # for condor_submit wrapper
     cfgdir = os.path.expanduser('~%s/.ciconnect' % user.pw_name)
     try:
         os.makedirs(cfgdir, mode=0o0700)
-        chown(cfgdir)
-    except:
+        os.chown(cfgdir, user.pw_uid, user.pw_gid)
+    except OSError:
         pass
     fn = os.path.join(cfgdir, 'defaultproject')
     fp = open(fn, 'w')
     fp.write(name + '\n')
     fp.close()
-    chown(fn)
+    try:
+        os.chown(fn, user.pw_uid, user.pw_gid)
+    except OSError:
+        pass
 
     # for finger
     fn = os.path.join(user.pw_dir, '.project')
@@ -217,17 +176,17 @@ def main(*args):
             fp.write('- ' + proj + '\n')
     fp.write('\n')
     fp.close()
-    chown(fn)
+    try:
+        os.chown(fn, user.pw_uid, user.pw_gid)
+    except OSError:
+        pass
 
     return 0
 
 
-# make this work as a 'connect' extension
-run = main
-
 if __name__ == '__main__':
     try:
-        sys.exit(main(*sys.argv[1:]))
+        sys.exit(update_project())
     except KeyboardInterrupt:
         sys.stdout.write('\ninterrupt')
         sys.exit(1)

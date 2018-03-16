@@ -3,6 +3,7 @@
 import os
 import sys
 import string
+import argparse
 
 from connect_lib.histogram import show_histogram
 from connect_lib.project import update_project
@@ -23,6 +24,8 @@ except ImportError:
 class ConnectException(Exception):
     pass
 
+VERSION = '1.0'
+CONFIG = None
 
 DefaultConfig = '''
 [connect]
@@ -79,8 +82,10 @@ def main():
     Tsting
     :return:
     """
-    parser = argparse.ArgumentParser(description="Connect related commands",
-                                     usage=usage_text)
+
+    global CONFIG
+
+    parser = argparse.ArgumentParser(description="Connect related commands")
     # General arguments
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + VERSION)
@@ -106,7 +111,7 @@ def main():
 
     # create subparser for remove action
     project_parser = subparsers.add_parser('project',
-                                          help='Set project for job submissions')
+                                           help='Set project for job submissions')
     project_parser.set_defaults(func=update_project)
 
     # create subparser for retry action
@@ -116,24 +121,19 @@ def main():
 
     args = parser.parse_args(sys.argv[1:])
 
-    config = ConnectConfig(defaults)
-    fp = StringIO.StringIO(DefaultConfig)
-    config.read_file(fp)
+    CONFIG = ConnectConfig(DefaultConfig)
+    fp = StringIO(DefaultConfig)
+    CONFIG.read_file(fp)
     fp.close()
 
-    # Read all possible configuration files
-    for path in configs:
-        config.read(os.path.expanduser(path))
-
     # Search for config inclusions, recursively
-    config.include('include', recurse=True)
+    CONFIG.include('include', recurse=True)
 
     args.func(args)
 
 
 if __name__ == '__main__':
     try:
-        main = Main()
-        sys.exit(main(sys.argv[1:]))
+        sys.exit(main())
     except KeyboardInterrupt:
         sys.stderr.write("\ninterrupt\n")

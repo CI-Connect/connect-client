@@ -16,7 +16,7 @@ def status(pool):
         yield line.rstrip()
 
 
-def run(*args, **kwargs):
+def get_status():
     try:
         opts, args = getopt.getopt(args, '?hf', ['help', 'full'])
     except getopt.GetoptError as e:
