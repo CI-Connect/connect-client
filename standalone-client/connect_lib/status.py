@@ -12,11 +12,9 @@ def status(pool):
     else:
         cmd = 'condor_status'
 
-    for line in xsh(cmd):
-        yield line.rstrip()
 
 
-def get_status():
+def get_status(args):
     try:
         opts, args = getopt.getopt(args, '?hf', ['help', 'full'])
     except getopt.GetoptError as e:

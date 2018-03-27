@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 
-import os
-import sys
 import curses
 import curses.panel
-import getopt
+import os
+import sys
 import time
 
 
@@ -109,7 +108,7 @@ def error(*args, **kwargs):
     fp.write(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args) + "\n")
 
 
-def watch():
+def watch(args):
     curses.wrapper(app, os.environ['USER'])
     return 0
 

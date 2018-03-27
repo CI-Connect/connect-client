@@ -1,9 +1,8 @@
 #!/usr/bin/python2
 
-import os
-import sys
-import string
 import argparse
+import string
+import sys
 
 from connect_lib.histogram import show_histogram
 from connect_lib.project import update_project
@@ -16,13 +15,14 @@ except ImportError:
     from io import StringIO
 
 try:
-    import ConfigParser
+    import configparser
 except ImportError:
-    import configparser as ConfigParser
+    import ConfigParser as configparser
 
 
 class ConnectException(Exception):
     pass
+
 
 VERSION = '1.0'
 CONFIG = None
@@ -121,13 +121,13 @@ def main():
 
     args = parser.parse_args(sys.argv[1:])
 
-    CONFIG = ConnectConfig(DefaultConfig)
+    CONFIG = configparser.ConfigParser()
     fp = StringIO(DefaultConfig)
-    CONFIG.read_file(fp)
+    CONFIG.readfp(fp)
     fp.close()
 
     # Search for config inclusions, recursively
-    CONFIG.include('include', recurse=True)
+    # CONFIG.include('include', recurse=True)
 
     args.func(args)
 

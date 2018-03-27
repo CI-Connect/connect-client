@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-import getopt
 import os
 import pwd
-import sys
 
 
 def whoami():
@@ -10,7 +8,7 @@ def whoami():
     return pw.pw_name
 
 
-def show_histogram():
+def show_histogram(args):
     """
     Display job histogram
 

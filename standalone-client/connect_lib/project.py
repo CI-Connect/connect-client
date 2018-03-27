@@ -133,7 +133,7 @@ def error(*args, **kwargs):
     fp.write("{0}".format(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args)))
 
 
-def update_project():
+def update_project(args):
     global CONFIG
 
     user, projs = projects(None)
