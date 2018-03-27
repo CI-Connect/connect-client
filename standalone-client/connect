@@ -34,7 +34,7 @@ client = false
 '''
 
 
-class ConnectConfig(ConfigParser.SafeConfigParser):
+class ConnectConfig(configparser.SafeConfigParser):
     cleantrans = ['_'] * 256
     for c in string.ascii_letters + string.digits:
         cleantrans[ord(c)] = c
@@ -66,7 +66,7 @@ class ConnectConfig(ConfigParser.SafeConfigParser):
                 try:
                     if self.get('DEFAULT', option) == value:
                         continue
-                except ConfigParser.NoOptionError:
+                except configparser.NoOptionError:
                     pass
                 found = True
                 self.remove_option('include', option)
