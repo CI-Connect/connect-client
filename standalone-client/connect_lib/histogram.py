@@ -8,7 +8,7 @@ def whoami():
     return pw.pw_name
 
 
-def show_histogram(args):
+def show_histogram(args, config):
     """
     Display job histogram
 

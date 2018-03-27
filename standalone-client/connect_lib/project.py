@@ -133,12 +133,11 @@ def error(*args, **kwargs):
     fp.write("{0}".format(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args)))
 
 
-def update_project(args):
-    global CONFIG
+def update_project(args, config):
 
     user, projs = projects(None)
 
-    fp = open(CONFIG.get('connect', 'blacklist'), 'r')
+    fp = open(config.get('connect', 'blacklist'), 'r')
     blacklist = [x.strip() for x in fp.read().strip().split('\n')]
     fp.close()
     projs = [proj for proj in projs if proj not in blacklist]

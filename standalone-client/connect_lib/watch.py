@@ -108,7 +108,7 @@ def error(*args, **kwargs):
     fp.write(os.path.basename(sys.argv[0]) + ': ' + ' '.join(args) + "\n")
 
 
-def watch(args):
+def watch(args, config):
     curses.wrapper(app, os.environ['USER'])
     return 0
 

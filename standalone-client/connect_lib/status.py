@@ -1,10 +1,4 @@
-import getopt
 import sys
-
-
-def usage():
-    yield '@ [-f | --full]'
-
 
 def status(pool):
     if pool:
@@ -13,23 +7,7 @@ def status(pool):
         cmd = 'condor_status'
 
 
-
-def get_status(args):
-    try:
-        opts, args = getopt.getopt(args, '?hf', ['help', 'full'])
-    except getopt.GetoptError as e:
-        error(str(e))
-
-    full = False
-
-    for opt, arg in opts:
-        if opt in ('-?', '-h', '--help'):
-            usage('[-f | --full]')
-            return 0
-
-        if opt in ('-f', '--full'):
-            full = True
-
+def get_status(args, config):
     # htcondor bindings, param object needs more dict methods :p
     pools = [x.strip() for x in param['flock_to'].split(',')]
 
@@ -54,7 +32,7 @@ def get_status(args):
             name = map[name]
         sys.stdout.write("==={0}===\n".format(name))
 
-        if full:
+        if args.full:
             for line in status(pool):
                 sys.stdout.write(line + "\n")
         else:
