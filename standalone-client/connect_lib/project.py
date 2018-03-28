@@ -93,8 +93,8 @@ def groupmemberships(username):
         user = pwd.getpwuid(os.getuid())
     else:
         user = pwd.getpwnam(username)
-    groups = [g for g in grp.getgrall() if g.gr_name.startswith('@')]
-    groups = [g for g in groups if user.pw_name in g.gr_mem]
+    # get groups that have a . in name and where the user is a member
+    groups = [g for g in grp.getgrall() if (g.gr_name.find('.') > 0) and user.pw_name in g.gr_mem]
     return user, groups
 
 
@@ -103,9 +103,8 @@ def projects(username):
     return user, [g.gr_name.lstrip('@') for g in groups]
 
 
-def app(scr, user, projs, prompt=None):
-    global CONFIG
-    name = CONFIG.get('connect', 'name')
+def app(scr, user, projs, config, prompt=None):
+    name = config.get('connect', 'name')
 
     if prompt is None:
         prompt = 'Select a project to be your default %s project.' % name
@@ -143,7 +142,7 @@ def update_project(args, config):
     projs = [proj for proj in projs if proj not in blacklist]
     projs.sort(key=lambda x: x.lower())
 
-    index, name = curses.wrapper(app, user, projs)
+    index, name = curses.wrapper(app, user, projs, config)
 
     if index is None:
         return 1

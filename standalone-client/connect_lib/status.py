@@ -1,15 +1,28 @@
 import sys
+import os
 
-def status(pool):
+import htcondor
+
+
+def get_pool_status(pool):
+    """
+    Generator that returns lines from condor about pool status
+
+    :param pool: HTCondor pool to query
+    :return: iterable with list of pools
+    """
     if pool:
         cmd = 'condor_status -pool ' + pool
     else:
         cmd = 'condor_status'
 
+    for line in os.popen(cmd, 'r'):
+        yield line
+
 
 def get_status(args, config):
     # htcondor bindings, param object needs more dict methods :p
-    pools = [x.strip() for x in param['flock_to'].split(',')]
+    pools = [x.strip() for x in htcondor.param['flock_to'].split(',')]
 
     map = {}
     if config.has_section('poolnames'):
@@ -33,10 +46,10 @@ def get_status(args, config):
         sys.stdout.write("==={0}===\n".format(name))
 
         if args.full:
-            for line in status(pool):
+            for line in get_pool_status(pool):
                 sys.stdout.write(line + "\n")
         else:
-            for line in status(pool):
+            for line in get_pool_status(pool):
                 if 'Total' in line and 'Owner' not in line:
                     vals = [x.strip() for x in line.replace('Total', '').split()]
                     # as a list comprehension, vals is an iterator. Must
