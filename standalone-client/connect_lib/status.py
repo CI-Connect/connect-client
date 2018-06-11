@@ -21,8 +21,10 @@ def get_pool_status(pool):
 
 
 def get_status(args, config):
-    # htcondor bindings, param object needs more dict methods :p
-    pools = [x.strip() for x in htcondor.param['flock_to'].split(',')]
+    if 'flock_to' in htcondor.param:
+        pools = [x.strip() for x in htcondor.param['flock_to'].split(',')]
+    else:
+        pools = []
 
     map = {}
     if config.has_section('poolnames'):
