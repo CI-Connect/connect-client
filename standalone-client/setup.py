@@ -5,7 +5,7 @@
 from distutils.core import setup
 
 setup(name='connect_client',
-      version='1.0',
+      version='1.0.1',
       description='Scripts for connect client',
       url='https://github.com/CI-Connect/connect-client.git',
       packages=['connect_lib'],
